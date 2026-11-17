@@ -408,7 +408,12 @@ class Game{
   gatherUnlock(p,r){const W=this.W(p); if(!W.gp) return 0; const before=p.hand.filter(id=>this.payments(p,id,1).length).length; const g={worm:0,seed:0,fruit:0}; g[TREE_FOOD[this.trees[r.id]]]+=2; this.treesOnIsland(r.island).forEach(o=>{if(o.id!==r.id) g[TREE_FOOD[this.trees[o.id]]]++;});
     for(const t in g) p.food[t]+=g[t]; let after=0; try{after=p.hand.filter(id=>this.payments(p,id,1).length).length;} finally {for(const t in g) p.food[t]-=g[t];} return (after-before)*W.gp;}
   gatherScore(p,r){const bb=this.blueBonus(p,r)*this.W(p).blue+this.gatherUnlock(p,r); const n=2+this.treesOnIsland(r.island).length-1; const need=this.foodNeed(p,TREE_FOOD[this.trees[r.id]]); return bb+n*0.9+need+this.presenceScore(p,r.island,1)-0.6;}
-  blueBonus(p,r){const o=this.objs[1]; if(o.claims.includes(p.i)||o.th[o.claims.length]===undefined) return 0; const id=o.d.id, tc=this.trees[r.id]||r.tree.color;
+  objNear(o,p,gain){ if(o.claims.includes(p.i)) return 0; const th=o.th[o.claims.length]; if(th===undefined) return 0; return o.d.m(this,p)+gain>=th?1:0;}
+  blueBonus(p,r){ const W=this.W(p); if(W.tempo){ const o=this.objs[1], id=o.d.id, tc=this.trees[r.id]||r.tree.color;
+      const g=((id==='C02'&&tc==='green')||(id==='C03'&&tc==='yellow')||(id==='C04'&&tc==='grey')||(id==='C06'&&r.ruins.length))?1:(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)===1?1:0);
+      if(g&&this.objNear(o,p,1)) return W.tempo*8+this.blueBonus0(p,r); }
+    return this.blueBonus0(p,r);}
+  blueBonus0(p,r){const o=this.objs[1]; if(o.claims.includes(p.i)||o.th[o.claims.length]===undefined) return 0; const id=o.d.id, tc=this.trees[r.id]||r.tree.color;
     if((id==='C02'&&tc==='green')||(id==='C03'&&tc==='yellow')||(id==='C04'&&tc==='grey')||(id==='C06'&&r.ruins.length)) return 1.4;
     if(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)<2) return 1.2; return 0;}
   foodNeed(p,t){let need=0; p.hand.forEach(id=>{const c=this.card(id); if(c.color==='red'&&t==='worm') need+=0.2; if(c.color==='yellow'&&t==='seed') need+=0.15; if(c.color==='green'&&t==='fruit') need+=0.15;}); return need-(p.food[t]>4?0.6:0);}
@@ -446,13 +451,15 @@ class Game{
     if(needSac&&!p.seagulls.some(l=>l===1)) b+=1.8; return b;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
   buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const lvB=this.W(p).lvl?({nest:[0,0.4,1.2,1.3],shrine:[0,0.3,0.6,0.9],workshop:[0,0.2,0.6,0.7]})[b.type][b.lvl]:0; const relNeed=b.type==='shrine'?(this.redOn(p,'B04')?1:0)+p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length*0.5:0; const lvB2=lvB+relNeed*0.6*b.lvl; const base={nest:3.2+lvB,shrine:1.2+lvB2,workshop:2.8+lvB}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1},p.aiw||window.AIW||{});}
+  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1,tempo:1},p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
   playScore(p,id,free){const c=this.card(id); const ob=this.redObj; let objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; objB*=this.W(p).red; const cs=window.COND_STARS&&window.COND_STARS[id]?2.5:0; const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=(c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0);
-    if(c.type!=='bird') return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB+cs+persoB+gb:-9; const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);
-    let v=this.fxValue(p,c)+gb+(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+persoB+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
+    if(c.type!=='bird'){ let t2=0; const W2=this.W(p); if(W2.tempo){const o=this.objs[0]; if(o.d.id==='B04'&&c.type==='relic'&&this.objNear(o,p,1)) t2+=7; if(p.pobj&&p.pClaims<2){const a2=((c.tagMap||{})[p.pobj.tags[0]]||0)+((c.tagMap||{})[p.pobj.tags[1]]||0)+(c.wild||0); if(a2&&this.persoValue(p)+a2>=PERSO_TH[p.pClaims]) t2+=7;} t2*=W2.tempo;} return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB+cs+persoB+gb+t2:-9;} const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);
+    const W1=this.W(p); let tempoB=0; if(W1.tempo){ const o=this.objs[0]; const add=({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[o.d.id]?1:0; if(add&&this.objNear(o,p,1)) tempoB+=7;
+      if(p.pobj&&p.pClaims<2){const add2=(c.tagMap[p.pobj.tags[0]]||0)+(c.tagMap[p.pobj.tags[1]]||0); if(add2&&this.persoValue(p)+add2>=PERSO_TH[p.pClaims]) tempoB+=7;} tempoB*=W1.tempo;}
+    let v=tempoB+this.fxValue(p,c)+gb+(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+persoB+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
   dsScore(p,e){return 1.2;}
   aiMain(p,q){ // évalue globalement les options principales
     const cands=[]; p.plan=[];
