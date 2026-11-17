@@ -33,7 +33,7 @@ function compute(f){
   res.roundsBy={}; [2,3,4].forEach(n=>{const x=G.filter(g=>g.n===n); if(x.length) res.roundsBy[n]=(x.reduce((a,g)=>a+g.rounds,0)/x.length).toFixed(1);});
   res.seatWin=[0,1,2,3].map(i=>{const x=P.filter(p=>p.i===i); return x.length?{n:x.length,w:pct(x.filter(p=>p.win).length,x.length)}:null;});
   // étoiles par source
-  const src={}; let starTot=0; P.forEach(p=>(p.starRounds||[]).forEach(s=>{const k=/^Colonie/.test(s.why)?'colony':/^Objectif personnel/.test(s.why)?'perso':/^Objectif rouge/.test(s.why)?'red':/^Objectif bleu/.test(s.why)?'blue':/Chemin des Anciens/.test(s.why)?'elders':'cards'; src[k]=(src[k]||0)+1; starTot++;}));
+  const src={}; let starTot=0; P.forEach(p=>(p.starRounds||[]).forEach(s=>{const k=/^Colonie/.test(s.why)?'settlement':/^Objectif personnel/.test(s.why)?'perso':/^Objectif rouge/.test(s.why)?'red':/^Objectif bleu/.test(s.why)?'blue':/Chemin des Anciens/.test(s.why)?'elders':'cards'; src[k]=(src[k]||0)+1; starTot++;}));
   res.starSrc=Object.entries(src).map(([k,v])=>({k,v,p:pct(v,starTot)})).sort((a,b)=>b.v-a.v);
   // cartes
   const C={}; P.forEach(p=>{ const seen=new Set(p.played||[]); seen.forEach(id=>{const c=C[id]||(C[id]={id,games:0,wins:0,plays:0}); c.games++; if(p.win) c.wins++;}); (p.played||[]).forEach(id=>{C[id].plays++;}); });
@@ -78,7 +78,7 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
     <span>${L('Parties','Games')} :</span>${seg('src',[['all',L('Toutes','All')],['human',L('Avec humains','With humans')],['sim',L('Simulations IA','AI simulations')]])}
     <span>${L('Joueurs','Players')} :</span>${seg('n',[['all',L('Tous','All')],['2','2'],['3','3'],['4','4']])}</div>`;
   if(!r.games){B.innerHTML=hdr+`<div class="sempty">${L('Aucune partie enregistrée pour ces filtres. Jouez une partie ou lancez des simulations ci-dessus.','No game recorded for these filters. Play a game or run simulations above.')}</div>`; wire(); return;}
-  const starL={colony:L('Colonies','Colonies'),perso:L('Objectifs personnels','Personal objectives'),red:L('Objectifs rouges','Red objectives'),blue:L('Objectifs bleus','Blue objectives'),elders:L('Chemin des Anciens',"Elders' Path"),cards:L('Cartes (Reliques, Alliés…)','Cards (Relics, Allies…)')};
+  const starL={settlement:L('Colonies','Settlements'),perso:L('Objectifs personnels','Personal objectives'),red:L('Objectifs rouges','Red objectives'),blue:L('Objectifs bleus','Blue objectives'),elders:L('Chemin des Anciens',"Elders' Path"),cards:L('Cartes (Reliques, Alliés…)','Cards (Relics, Allies…)')};
   let cards=r.cards.filter(c=>(filt.ctype==='all'||c.type===filt.ctype)&&c.games>=filt.minG);
   const sorters={wr:(a,b)=>b.wr-a.wr,rate:(a,b)=>b.rate-a.rate,plays:(a,b)=>b.plays-a.plays,cost:(a,b)=>(a.info.cost-b.info.cost)};
   cards.sort(sorters[filt.sort]);
@@ -104,7 +104,7 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
   <table class="stab"><tr><th></th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th></tr>${r.misc.map(m=>`<tr><td>${m.l}</td><td style="color:${+m.w>+m.lo?'#2e8b3e':'#c0392b'}"><b>${m.w}</b></td><td>${m.lo}</td></tr>`).join('')}</table>
   <h3>${L('Amulettes','Amulets')}</h3>
   <table class="stab"><tr><th></th><th>${L('Prise par','Taken by')}</th><th>${L('Victoires','Wins')}</th></tr>${r.runes.map(a=>`<tr><td>${esc(window.BirdsGame.RUNES[a.k])}</td><td class="w">${bar(a.pct,100,'#7a4fa0')} ${a.pct}%</td><td style="color:${dcol(a.wr/100-r.baseWin)}">${a.wr}%</td></tr>`).join('')}</table>
-  <h3>${L('Colonies fondées','Colonies founded')}</h3>
+  <h3>${L('Colonies fondées','Settlements founded')}</h3>
   <table class="stab">${r.islands.map(i=>`<tr><td>${ISL[i.k][EN()?1:0]}</td><td class="w">${bar(i.p,100,'#3a8f6a')}</td><td>${i.p}% ${L('des parties','of games')}</td></tr>`).join('')}</table>
   <h3>${L('Tags des cartes jouées','Tags of cards played')}</h3>
   <table class="stab"><tr><th></th><th>${L('Toutes les cartes jouées','All cards played')}</th><th>${L('Cartes jouées par les gagnants','Cards played by winners')}</th></tr>${r.fams.sort((a,b)=>b.win-a.win).map(f=>`<tr><td><span class="dot" style="background:${FAMC[f.f]}"></span> ${f.f}</td><td>${f.all}%</td><td style="color:${dcol((f.win-f.all)/100)}"><b>${f.win}%</b></td></tr>`).join('')}</table>
