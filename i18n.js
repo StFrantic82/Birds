@@ -8,7 +8,7 @@ const R=[
 [/^Lancer la partie$/,'Start game'],[/^Nombre de joueurs$/i,'Number of players'],[/^Joueurs$/i,'Players'],[/^Vitesse des IA$/i,'AI speed'],
 [/^Langue$/i,'Language'],[/^Lente$/,'Slow'],[/^Normale$/,'Normal'],[/^Rapide$/,'Fast'],[/^Éclair$/,'Instant'],[/^Humain$/,'Human'],[/^IA$/,'AI'],
 [/^Jeu en ligne entre amis : bientôt$/,'Online play with friends: coming soon'],[/^Cliquez sur un pion pour changer de couleur$/,'Click a token to change colour'],
-[/^Renato Ciervo & Andrea Robbiani · prototype jouable$/,'Renato Ciervo & Andrea Robbiani · playable prototype'],
+
 [/^Changer de couleur \((\w+)\)$/,(m,c)=>`Change colour (${({Rouge:'Red',Bleu:'Blue',Blanc:'White',Violet:'Purple'})[c]||c})`],
 [/^Aide de jeu$/,'Player aid'],[/^Chemin des Anciens$/,"Elders' Path"],[/^Nouvelle partie$/,'New game'],[/^Fin de partie$/,'Game over'],
 [/^Partie terminée$/,'Game over'],[/^(.+) réfléchit…$/,'$1 is thinking…'],[/^← Autres choix$/,'← Other choices'],[/^Annuler$/,'Cancel'],
