@@ -125,14 +125,25 @@ function open(){ let M=document.getElementById('stats'); if(!M){ M=document.crea
    <div class="ssim"><b>${L('Simuler des parties entre IA','Simulate AI games')}</b> : <select id="simN"><option>20</option><option selected>100</option><option>300</option><option>1000</option></select>
     ${L('parties à','games with')} <select id="simP"><option value="mix">2-4</option><option>2</option><option selected>3</option><option>4</option></select> ${L('joueurs','players')}
     <button id="simGo" class="ob">${L('Lancer','Run')}</button><span id="simMsg"></span>
-    <span class="sright"><button id="sExp" class="ob ghost">${L('Copier les données (JSON)','Copy data (JSON)')}</button><button id="sClr" class="ob ghost">${L('Effacer','Clear')}</button></span></div>
+    <span class="sright"><button id="sImg" class="ob ghost">🖼 ${L('Enregistrer en image','Save as image')}</button><button id="sExp" class="ob ghost">${L('Copier les données (JSON)','Copy data (JSON)')}</button><button id="sClr" class="ob ghost">${L('Effacer','Clear')}</button></span></div>
    <p class="snote">${L('Chaque partie terminée sur cet appareil est enregistrée dans ce navigateur. Les simulations utilisent les IA du prototype : elles montrent des tendances, pas le jeu de vrais joueurs.','Every game finished on this device is saved in this browser. Simulations use the prototype AIs: they show trends, not how real players play.')}</p>
    <div id="statsbody"></div></div>`;
   M.style.display='flex'; M.querySelector('.sclose').onclick=()=>{M.style.display='none';};
   M.querySelector('#simGo').onclick=()=>{ if(running){stopReq=true; return;} const b=M.querySelector('#simGo'); b.textContent=L('Arrêter','Stop');
     simulate(+M.querySelector('#simN').value,M.querySelector('#simP').value,(k,n,done)=>{M.querySelector('#simMsg').textContent=done?` ${L('Terminé','Done')} (${k})`:` ${k} / ${n}…`; if(done){b.textContent=L('Lancer','Run'); render();} else if(k%25===0) render();});};
   M.querySelector('#sClr').onclick=()=>{ const b=M.querySelector('#sClr'); if(b.dataset.c){S.clear(); b.dataset.c=''; b.textContent=L('Effacer','Clear'); render();} else {b.dataset.c='1'; b.textContent=L('Confirmer l\'effacement','Confirm clear');}};
+  M.querySelector('#sImg').onclick=()=>saveImage(M);
   M.querySelector('#sExp').onclick=async()=>{ try{await navigator.clipboard.writeText(JSON.stringify(load())); M.querySelector('#simMsg').textContent=' '+L('Données copiées','Data copied');}catch(e){M.querySelector('#simMsg').textContent=' '+L('Copie impossible ici','Copy not available here');}};
   render();}
+function loadH2C(){return window.html2canvas?Promise.resolve():new Promise((res,rej)=>{const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc);});}
+async function saveImage(M){const msg=M.querySelector('#simMsg'); msg.textContent=' '+L('Création de l\'image…','Creating image…');
+  try{ await loadH2C(); const box=M.querySelector('.sbox2'); const bar=M.querySelector('.ssim'); bar.style.visibility='hidden';
+    const cv=await html2canvas(box,{backgroundColor:'#fffaf0',scale:2,useCORS:true,windowWidth:box.scrollWidth,height:box.scrollHeight}); bar.style.visibility='';
+    const name='birds-statistiques-'+new Date().toISOString().slice(0,10)+'.png';
+    cv.toBlob(b=>{const url=URL.createObjectURL(b); let ok=false; try{const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); ok=true;}catch(e){}
+      // aperçu de secours : clic droit > Enregistrer l'image
+      const V=document.createElement('div'); V.className='imgprev'; V.innerHTML=`<div class="ipbox"><div class="iph"><b>${L('Image des statistiques','Statistics image')}</b> — ${L('si le téléchargement n\'a pas démarré : clic droit sur l\'image › « Enregistrer l\'image sous… »','if the download did not start: right-click the image › "Save image as…"')} <button class="ob">✕</button></div><img src="${url}"></div>`;
+      V.querySelector('button').onclick=()=>V.remove(); document.body.appendChild(V); msg.textContent=' '+L('Image prête','Image ready');},'image/png');
+  }catch(e){ console.error(e); M.querySelector('.ssim').style.visibility=''; msg.textContent=' '+L('Impossible de créer l\'image ici','Could not create the image here'); }}
 window.BirdsStatsUI={open};
 })();
