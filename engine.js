@@ -179,7 +179,7 @@ class Game{
     const pick=await this.ask(p,{title:`Révélez ${x} cartes : gardez-en 1`,cards:true,options:rev.map(id=>({label:this.card(id).name,value:id,card:id,score:this.cardValue(p,id)}))});
     p.hand.push(pick); rev.filter(c=>c!==pick).forEach(c=>this.discardPile.push(c)); this.log(`${p.name} révèle ${rev.length} cartes et en garde 1.`);}
   async seagull(p,n=1){for(let i=0;i<n;i++){ const up=p.seagulls.map((l,k)=>({l,k})).filter(x=>x.l<4);
-      const opts=[{label:'Gagner une Mouette (niveau 1)',value:-1,score:1.3}];
+      const opts=[{label:'Gagner une Mouette (niveau 1)',value:-1,score:1.3+this.gullGainBonus(p)}];
       up.forEach(x=>opts.push({label:`Améliorer une Mouette : niveau ${x.l} → ${x.l+1}`,value:x.k,score:[0,1.1,1.2,1.6][x.l]+(this.goal(p,'OR7')?0.8:0)+this.W(p).gull}));
       const k=opts.length>1?await this.ask(p,{title:'Mouette',options:opts}):-1;
       if(k===-1){p.seagulls.push(1); this.log(`${p.name} gagne une Mouette (niveau 1).`);}
@@ -209,8 +209,8 @@ class Game{
     if(optional){const ok=await this.ask(p,{title:title||`Défausser ${n} carte(s) ?`,options:[{label:'Oui',value:true,score:optional===true?0.5:optional},{label:'Non',value:false,score:0.6}]}); if(!ok) return false;}
     for(let i=0;i<n;i++){const c=await this.ask(p,{title:`Défaussez une carte (${i+1}/${n})`,options:p.hand.map(id=>({label:this.card(id).name,value:id,card:id,score:-this.cardValue(p,id)}))}); p.hand.splice(p.hand.indexOf(c),1); this.discardPile.push(c);}
     this.log(`${p.name} défausse ${n} carte${n>1?'s':''}.`); return true;}
-  async sacrifice(p,title,value){const opts=p.tableau.filter(e=>!e.justPlayed).map(e=>({label:this.card(e.id).name,value:{e},card:e.id,score:-2}));
-    p.seagulls.forEach((s,k)=>opts.push({label:`Mouette (niveau ${s})`,value:{gull:k},score:-0.5}));
+  async sacrifice(p,title,value){const opts=p.tableau.filter(e=>!e.justPlayed).map(e=>{const c=this.card(e.id); const tagless=!Object.keys(c.tagMap||{}).length&&!c.wild; return {label:c.name,value:{e},card:e.id,score:(tagless?-1:-2.5)-(window.COND_STARS[e.id]&&!e.starTaken?3:0)-(e.ds||0)*0.3};});
+    p.seagulls.forEach((s,k)=>opts.push({label:`Mouette (niveau ${s})`,value:{gull:k},score:-0.3-0.6*(s-1)}));
     if(!opts.length) return false;
     const ok=await this.ask(p,{title:title||'Sacrifier une de vos cartes en jeu ?',options:[{label:'Oui',value:true,score:value||0},{label:'Non',value:false,score:0.5}]}); if(!ok) return false;
     const v=await this.ask(p,{title:'Que sacrifiez-vous ?',options:opts});
@@ -412,9 +412,14 @@ class Game{
   foodNeed(p,t){let need=0; p.hand.forEach(id=>{const c=this.card(id); if(c.color==='red'&&t==='worm') need+=0.2; if(c.color==='yellow'&&t==='seed') need+=0.15; if(c.color==='green'&&t==='fruit') need+=0.15;}); return need-(p.food[t]>4?0.6:0);}
   buildScore(p,s,b){const o=this.objs[1]; const bb=(o.d.id==='C01'&&!o.claims.includes(p.i)&&!this.islandNests(s.island).some(x=>{const q=this.nestOwner[x.id]; return q&&q.owner===p.i;}))?2:0; return bb+this.buildScore0(p,s,b);}
   goal(p,id){const e=p.tableau.find(x=>x.id===id); return e&&!e.starTaken;}
+  gullGainBonus(p){ if(!this.W(p).gctx) return 0; if(!p.seagulls.length) return 0.5; let b=0;
+    if(this.redOn(p,'B01')) b+=2.5;                       // une Mouette niv. 1 compte comme carte de coût 1
+    const prod=p.nests+p.seagulls.length; if(prod<3&&p.supply>2) b+=1.6; // peu de production d'Œufs
+    const SAC=/sacrifi/i; const needSac=[...p.hand,...p.tableau.map(e=>e.id)].some(id=>{const c=this.card(id); return SAC.test([c.instant,c.brood,c.dragonscale,c.text].join(' '));});
+    if(needSac&&!p.seagulls.some(l=>l===1)) b+=1.8; return b;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
-  buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'&&p.hand.some(id=>this.card(id).type==='relic')?0.8:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5},p.aiw||window.AIW||{});}
+  buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
+  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:0.8,gctx:1},p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
