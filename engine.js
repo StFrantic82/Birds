@@ -180,7 +180,7 @@ class Game{
     p.hand.push(pick); rev.filter(c=>c!==pick).forEach(c=>this.discardPile.push(c)); this.log(`${p.name} révèle ${rev.length} cartes et en garde 1.`);}
   async seagull(p,n=1){for(let i=0;i<n;i++){ const up=p.seagulls.map((l,k)=>({l,k})).filter(x=>x.l<4);
       const opts=[{label:'Gagner une Mouette (niveau 1)',value:-1,score:1.3}];
-      up.forEach(x=>opts.push({label:`Améliorer une Mouette : niveau ${x.l} → ${x.l+1}`,value:x.k,score:[0,1.1,1.2,1.6][x.l]+(this.goal(p,'OR7')?0.8:0)}));
+      up.forEach(x=>opts.push({label:`Améliorer une Mouette : niveau ${x.l} → ${x.l+1}`,value:x.k,score:[0,1.1,1.2,1.6][x.l]+(this.goal(p,'OR7')?0.8:0)+this.W(p).gull}));
       const k=opts.length>1?await this.ask(p,{title:'Mouette',options:opts}):-1;
       if(k===-1){p.seagulls.push(1); this.log(`${p.name} gagne une Mouette (niveau 1).`);}
       else {p.seagulls[k]++; this.log(`${p.name} améliore une Mouette au niveau ${p.seagulls[k]}.`); if(p.seagulls[k]===4) await this.removeCheapest(p,null);} }}
@@ -414,7 +414,7 @@ class Game{
   goal(p,id){const e=p.tableau.find(x=>x.id===id); return e&&!e.starTaken;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
   buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'&&p.hand.some(id=>this.card(id).type==='relic')?0.8:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1},p.aiw||window.AIW||{});}
+  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5},p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
