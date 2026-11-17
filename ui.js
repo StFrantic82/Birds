@@ -137,7 +137,7 @@ function renderHand(){const H=$('#hand'); H.innerHTML=''; const p=G.players[view
 function showEnd(r){const M=$('#modal'); M.style.display='flex'; M.innerHTML=`<div class="mbox"><h2>Fin de partie</h2>${r.map((p,i)=>`<div class="rk"><b>${i+1}.</b> <span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — ${p.stars} ${STAR(16)} <small>(${p.starLog.join(', ')||'—'})</small></div>`).join('')}<button class="ob" onclick="location.reload()">Nouvelle partie</button></div>`;}
 
 // zoom sur une carte au survol
-document.addEventListener('mouseover',e=>{const c=e.target.closest('.card,.relc,.crow'); const Z=$('#zoom'); if(!c||!G){Z.style.display='none';return;} Z.innerHTML=cardHTML(c.dataset.card,'big'); Z.style.display='block';});
+document.addEventListener('mouseover',e=>{const c=e.target.closest('.card,.relc,.crow'); const Z=$('#zoom'); if(!c||!c.dataset.card){Z.style.display='none';return;} Z.innerHTML=`<div class="card img big"><img src="cards/${c.dataset.card}.jpg"></div>`; Z.style.display='block';});
 document.addEventListener('mousemove',e=>{const Z=$('#zoom'); if(Z.style.display!=='block') return; const w=240; let x=e.clientX+18, y=e.clientY+18; if(x+w>innerWidth) x=e.clientX-w-18; if(y+330>innerHeight) y=innerHeight-340; Z.style.left=x+'px'; Z.style.top=Math.max(4,y)+'px';});
 
 // écran de configuration
