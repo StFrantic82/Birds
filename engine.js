@@ -233,9 +233,11 @@ class Game{
   gatherTargets(isl){return this.islandRegions(isl).filter(r=>this.trees[r.id]&&this.freeSlot(r.id)>=0);}
   buildTargets(isl){return this.islandNests(isl).filter(s=>!this.nestOwner[s.id]&&s.adj.some(a=>this.trees[a]));}
   buildOptions(p,sid,free){const out=[]; const adj=this.chicksAdjacentNest(sid).length;
-    for(const type of ['nest','shrine','workshop']){ if(!p.left[type].length) continue; const lvl=p.left[type][0]; const c=BUILD[type][lvl];
-      const chicks=free?0:Math.max(1,c.chicks-adj); const food=free?{}:c.food; const ok=p.chicks>=chicks&&Object.keys(food).every(t=>p.food[t]>=food[t]);
-      out.push({type,lvl,chicks,food,ok});}
+    for(const type of ['nest','shrine','workshop']){ if(!p.left[type].length) continue;
+      const lvls=free?[p.left[type][0]]:p.left[type]; // construction gratuite = le moins cher ; sinon n'importe lequel
+      for(const lvl of lvls){ const c=BUILD[type][lvl];
+        const chicks=free?0:Math.max(1,c.chicks-adj); const food=free?{}:c.food; const ok=p.chicks>=chicks&&Object.keys(food).every(t=>p.food[t]>=food[t]);
+        out.push({type,lvl,chicks,food,ok});}}
     return out;}
   async doExpand(p,r){const k=this.freeSlot(r.id); this.slots[r.id][k]=p.i; p.chicks--; this.trees[r.id]=r.tree.color; this.treeSupply[r.tree.color]--;
     this.log(`${p.name} s'étend en ${ISL_FR[r.island]} et plante un arbre ${({grey:'gris',yellow:'jaune',green:'vert'})[r.tree.color]}.`);
@@ -244,9 +246,9 @@ class Game{
     const gain={worm:0,seed:0,fruit:0}; gain[f]+=2; this.treesOnIsland(r.island).forEach(o=>{if(o.id!==r.id) gain[TREE_FOOD[this.trees[o.id]]]++;});
     this.log(`${p.name} récolte en ${ISL_FR[r.island]} : ${Object.entries(gain).filter(x=>x[1]).map(([t,n])=>n+' '+FOOD_FR[t]).join(', ')}.`);
     for(const t in gain) p.food[t]+=gain[t]; this.io.render(); await this.checkSettlements();}
-  async doBuild(p,sid,type,free){const opt=this.buildOptions(p,sid,free).find(o=>o.type===type); if(!opt||!opt.ok) return false;
+  async doBuild(p,sid,type,free,lvl){const opt=this.buildOptions(p,sid,free).find(o=>o.type===type&&(lvl===undefined||o.lvl===lvl)); if(!opt||!opt.ok) return false;
     p.chicks-=opt.chicks; p.supply+=opt.chicks; for(const t in opt.food) p.food[t]-=opt.food[t];
-    p.left[type].shift(); p.built[type].push(opt.lvl); this.nestOwner[sid]={owner:p.i,type,lvl:opt.lvl}; if(type==='nest') p.nests++;
+    p.left[type].splice(p.left[type].indexOf(opt.lvl),1); p.built[type].push(opt.lvl); this.nestOwner[sid]={owner:p.i,type,lvl:opt.lvl}; if(type==='nest') p.nests++;
     const s=this.nestById[sid]; this.log(`${p.name} construit ${type==='nest'?'un':'un'} ${BUILD_FR[type]} en ${ISL_FR[s.island]}${free?' (gratuitement)':''}.`);
     this.io.render(); await this.buildingImmediate(p,type,opt.lvl); if(type==='workshop'&&this.has(p,'OR1')) await this.workshopEffect(p,opt.lvl);
     // bonus passifs des adversaires
@@ -281,10 +283,10 @@ class Game{
   boardActionOptions(p,isl,kind){const out=[];
     if((kind==='expand'||!kind)&&p.chicks>0) this.expandTargets(isl).forEach(r=>out.push({label:`S'étendre — ${ISL_FR[isl]} (arbre ${({grey:'gris',yellow:'jaune',green:'vert'})[r.tree.color]}, bonus : ${r.tree.bonus.map(b=>BON_FR[b]).join(' + ')})`,value:{kind:'expand',r},target:{kind:'region',rid:r.id},score:this.expandScore(p,r)}));
     if((kind==='gather'||!kind)&&p.chicks>0) this.gatherTargets(isl).forEach(r=>out.push({label:`Récolter — ${ISL_FR[isl]} (${this.gatherPreview(r)})`,value:{kind:'gather',r},target:{kind:'region',rid:r.id},score:this.gatherScore(p,r)}));
-    if(kind==='build'||!kind) this.buildTargets(isl).forEach(s=>this.buildOptions(p,s.id,false).filter(b=>b.ok).forEach(b=>out.push({label:`Construire ${BUILD_FR[b.type]} — ${ISL_FR[isl]}, emplacement ${this.islandNests(isl).indexOf(s)+1} (${b.chicks} poussin${b.chicks>1?'s':''}${Object.entries(b.food).map(([k,v])=>' + '+v+' '+FOOD_FR[k]).join('')})`,value:{kind:'build',s,type:b.type},target:{kind:'nest',sid:s.id},score:this.buildScore(p,s,b)})));
+    if(kind==='build'||!kind) this.buildTargets(isl).forEach(s=>this.buildOptions(p,s.id,false).filter(b=>b.ok).forEach(b=>out.push({label:`Construire ${BUILD_FR[b.type]} ${b.type==='nest'?b.lvl:b.lvl+1} — ${ISL_FR[isl]}, emplacement ${this.islandNests(isl).indexOf(s)+1} (${b.chicks} poussin${b.chicks>1?'s':''}${Object.entries(b.food).map(([k,v])=>' + '+v+' '+FOOD_FR[k]).join('')})`,value:{kind:'build',s,type:b.type,lvl:b.lvl},target:{kind:'nest',sid:s.id},score:this.buildScore(p,s,b)})));
     return out;}
   gatherPreview(r){const gain={worm:0,seed:0,fruit:0}; gain[TREE_FOOD[this.trees[r.id]]]+=2; this.treesOnIsland(r.island).forEach(o=>{if(o.id!==r.id) gain[TREE_FOOD[this.trees[o.id]]]++;}); return Object.entries(gain).filter(x=>x[1]).map(([t,n])=>'+'+n+' '+FOOD_FR[t]).join(', ');}
-  async applyBoardAction(p,o){ if(o.kind==='expand') await this.doExpand(p,o.r); else if(o.kind==='gather') await this.doGather(p,o.r); else if(o.kind==='build') await this.doBuild(p,o.s.id,o.type,false);}
+  async applyBoardAction(p,o){ if(o.kind==='expand') await this.doExpand(p,o.r); else if(o.kind==='gather') await this.doGather(p,o.r); else if(o.kind==='build') await this.doBuild(p,o.s.id,o.type,false,o.lvl);}
   async treeBonus(p,list){for(const b of list){ switch(b){
       case 'rune': await this.rune(p); break; case 'reveal3': await this.search(p,3); break; case 'reveal2': await this.search(p,2); break;
       case 'seagull': await this.seagull(p,1); break; case 'worm': await this.gainFood(p,'worm',1); break; case 'chick': await this.gainChick(p,1); break;
@@ -393,7 +395,7 @@ class Game{
   // ---------- Décisions ----------
   async ask(p,q){ q.options=q.options.filter(o=>o); if(!q.options.length) return null;
     if(p.ai){ await this.io.sleep(this.io.aiDelay||0); return this.aiPick(p,q);} return await this.io.ask(p,q);}
-  aiPick(p,q){ if(q.main) return this.aiMain(p,q); if(p.plan&&p.plan.length){const want=p.plan[0]; const o=q.options.find(o=>o.value===want||(o.value&&want&&typeof want==='object'&&o.value.kind===want.kind&&o.value.r===want.r&&o.value.s===want.s&&o.value.type===want.type)); if(o){p.plan.shift(); return o.value;}}
+  aiPick(p,q){ if(q.main) return this.aiMain(p,q); if(p.plan&&p.plan.length){const want=p.plan[0]; const o=q.options.find(o=>o.value===want||(o.value&&want&&typeof want==='object'&&o.value.kind===want.kind&&o.value.r===want.r&&o.value.s===want.s&&o.value.type===want.type&&o.value.lvl===want.lvl)); if(o){p.plan.shift(); return o.value;}}
     let best=null,bs=-1e9; q.options.forEach(o=>{const s=(o.score||0)+Math.random()*0.3; if(s>bs){bs=s;best=o;}}); return best.value;}
   // ---------- Heuristiques IA ----------
   cardValue(p,id){const c=this.card(id); const pays=this.payments(p,id,1); return 1+(pays.length?0.6:0)+(c.brood?0.5:0)+(c.cost>=4?0.3:0);}
@@ -443,8 +445,8 @@ class Game{
     const SAC=/sacrifi/i; const needSac=[...p.hand,...p.tableau.map(e=>e.id)].some(id=>{const c=this.card(id); return SAC.test([c.instant,c.brood,c.dragonscale,c.text].join(' '));});
     if(needSac&&!p.seagulls.some(l=>l===1)) b+=1.8; return b;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
-  buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1},p.aiw||window.AIW||{});}
+  buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const lvB=this.W(p).lvl?({nest:[0,0.4,1.2,1.3],shrine:[0,0.3,0.6,0.9],workshop:[0,0.2,0.6,0.7]})[b.type][b.lvl]:0; const base={nest:3.2+lvB,shrine:1.2+lvB,workshop:2.8+lvB}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
+  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1},p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}

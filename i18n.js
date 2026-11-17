@@ -49,7 +49,7 @@ const R=[
 [/^Aucune action$/,'No action'],
 [/^S'étendre — (\S+) \(arbre (\w+), bonus : (.*)\)$/,(m,i,c,b)=>`Expand — ${ISL[i]||i} (${({gris:'grey',jaune:'yellow',vert:'green'})[c]} tree, bonus: ${tr(b)})`],
 [/^Récolter — (\S+) \((.*)\)$/,(m,i,g)=>`Gather — ${ISL[i]||i} (${tr(g)})`],
-[/^Construire (Nid|Sanctuaire|Atelier) — (\S+), emplacement (\d+) \((.*)\)$/,(m,b,i,k,c)=>`Build ${tr(b)} — ${ISL[i]||i}, spot ${k} (${tr(c)})`],
+[/^Construire (Nid|Sanctuaire|Atelier)( \d)? — (\S+), emplacement (\d+) \((.*)\)$/,(m,b,n,i,k,c)=>`Build ${tr(b)}${n||''} — ${ISL[i]||i}, spot ${k} (${tr(c)})`],
 [/^Construire (Nid|Sanctuaire|Atelier) — (\S+)$/,(m,b,i)=>`Build ${tr(b)} — ${ISL[i]||i}`],
 [/^(S'étendre|Récolter|Construire) sur n'importe quelle île$/,(m,a)=>({"S'étendre":'Expand','Récolter':'Gather','Construire':'Build'})[a]+' on any island'],
 [/^(S'étendre|Récolter) — (\S+)$/,(m,a,i)=>`${a==='Récolter'?'Gather':'Expand'} — ${ISL[i]||i}`],
