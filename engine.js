@@ -86,7 +86,7 @@ class Game{
     // îles de départ
     const starts=shuffle(['marsh','jungle','desert','tundra']); // 4 tuiles de départ : Marais (A), Jungle (C), Désert (D), Toundra (F)
     this.players.forEach((p,i)=>{p.flock=ISLANDS.indexOf(starts[i]); this.placeChickStart(p.i,starts[i]);});
-    if(n===2) this.placeChickStart('N',starts[2]);
+    if(n===2){ this.placeChickStart('N','mountain'); this.placeChickStart('N','meadow'); } // 2 joueurs : Poussins neutres en Montagne et Prairie
     this.players.forEach(p=>{for(let k=0;k<5;k++) p.hand.push(this.drawFromDeck());});
     const pd=shuffle(PERSONAL.slice()); this.players.forEach(p=>{p.pOffer=[pd.pop(),pd.pop()];});
   }
