@@ -436,7 +436,7 @@ class Game{
     if(needSac&&!p.seagulls.some(l=>l===1)) b+=1.8; return b;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
   buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:-2},p.aiw||window.AIW||{});}
+  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5},p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
@@ -450,10 +450,15 @@ class Game{
         this.moveDests(p,this.card(id).cost).forEach(d=>{ this.boardActionOptions(p,ISLANDS[d],null).forEach(a=>cands.push({s:cv+a.score,plan:[k,d,a.value],v:'move'})); cands.push({s:cv-1.5,plan:[k,d,'none'],v:'move'}); });});}
     const playable=p.hand.filter(id=>this.payments(p,id,1).length);
     if(playable.length){const sc=playable.map(id=>this.playScore(p,id)).sort((a,b)=>b-a); const W=this.W(p); cands.push({s:W.play+sc[0]+(sc[1]>0?sc[1]*W.play2:0)+(p.chicks===0?1:0),plan:[],v:'play'});}
-    const canLay=Math.max(0,Math.min(p.supply,this.nestCap(p)-0));
+    const W0=this.W(p); const canLay=Math.max(0,Math.min(p.supply,this.nestCap(p)-0));
     const layN=Math.min(canLay,p.nests+p.seagulls.length);
-    const bv=p.eggs*1.4+layN*0.8+p.seagulls.filter(l=>l>=2).length*0.6+p.tableau.filter(e=>window.CARD_FX[e.id]&&window.CARD_FX[e.id].b).length*0.9+(p.hand.length?0.8:0)+(p.chicks===0?2.5:0)-(p.eggs===0&&p.chicks>2?1.5:0)-(p.broodStreak||0)*1.2;
-    const eggHold=this.redOn(p,'B05')&&p.eggs>=2&&p.chicks>0?-2.5:0; cands.push({s:bv+eggHold+this.W(p).brood,plan:[],v:'brood'});
+    const bv=p.eggs*1.4*(W0.bmode&&p.chicks>=2?0.35:1)+layN*0.8*(W0.bmode&&p.chicks>=2?0.5:1)+p.seagulls.filter(l=>l>=2).length*0.6+p.tableau.filter(e=>window.CARD_FX[e.id]&&window.CARD_FX[e.id].b).length*0.9+(p.hand.length?0.8:0)+(p.chicks===0?2.5:0)-(p.eggs===0&&p.chicks>2?1.5:0)-(p.broodStreak||0)*1.2;
+    const eggHold=this.redOn(p,'B05')&&p.eggs>=2&&p.chicks>0?-2.5:0; const W=this.W(p); let bAdj=W.brood;
+    if(W.bmode){ const steps=(p.hand.length?1:0)+p.seagulls.filter(l=>l>=2).length+p.tableau.filter(e=>/Elders/.test(this.card(e.id).brood||'')).length;
+      const starNow=p.elders>0&&p.elders+steps>=ELDERS_LEN, late=this.endTriggered||this.players.some(q=>q.stars>=5)||p.stars>=5;
+      if(p.chicks===0) bAdj+=3; else if(p.chicks===1) bAdj+=0.5; else bAdj-=W.bmode*(p.chicks>=3?W.b3:1);
+      if(starNow) bAdj+=late?6:3; }
+    cands.push({s:bv+eggHold+bAdj,plan:[],v:'brood'});
     const ds=q.options.find(o=>o.value&&o.value.ds); if(ds) return ds.value;
     cands.forEach(c=>c.s+=Math.random()*0.5); cands.sort((a,b)=>b.s-a.s); const best=cands[0]; p.broodStreak=best.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.plan.slice(); return best.v;}
 }
