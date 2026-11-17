@@ -187,7 +187,7 @@ class Game{
   async rune(p){await this.rune1(p);}
   rm(p,k){return p.runes.includes(k)?(this.has(p,'OP2')?2:1):0;}
   async rune1(p){const free=[0,1,2,3,4].filter(k=>!p.runes.includes(k)&&(k!==0||p.food.seed+p.food.fruit>0)); if(!free.length){this.log(`${p.name} n'a plus de place pour une Amulette.`);return;}
-    const k=await this.ask(p,{title:'Placez votre Amulette',options:free.map(k=>({label:RUNES[k],value:k,score:[1.5,2,1.5,2.5,0.5][k]}))});
+    const k=await this.ask(p,{title:'Placez votre Amulette',options:free.map(k=>({label:RUNES[k],value:k,score:this.amuletScore(p,k)}))});
     if(k===0){const t=p.food.seed>0&&p.food.fruit>0?await this.ask(p,{title:'Payer l\'Amulette',options:[{label:'1 graine',value:'seed',score:1},{label:'1 fruit',value:'fruit',score:1}]}):(p.food.seed>0?'seed':'fruit'); p.food[t]--;}
     p.runes.push(k); this.log(`${p.name} gagne une Amulette : ${RUNES[k]}.`);}
   async gainStar(p,why){p.stars++; p.starLog.push(why); (p.starRounds=p.starRounds||[]).push({why,round:this.round}); this.log(`★ ${p.name} gagne une Étoile (${why}) — ${p.stars}/6.`); if(p.stars>=6&&!this.endTriggered){this.endTriggered=true; this.log(`${p.name} atteint 6 Étoiles : la fin de partie est déclenchée, on termine le tour.`);}
@@ -429,6 +429,14 @@ class Game{
     // cartes en jeu qui comptent les Oiseaux 3- / 4+, les Alliés, les Reliques
     v+=Math.max(0,A.b3-B.b3)*0.25+Math.max(0,A.b4-B.b4)*0.35;
     return v;}
+  amuletScore(p,k){ if(!this.W(p).amu) return [1.5,2,1.5,2.5,0.5][k];
+    if(k===0){ let v=2.6; const t=this.tags(p); const miss=FAMS.filter(f=>t[f]<1).length-this.wild(p); if(miss===1) v+=1;      // tag joker
+      if(p.pobj&&p.pClaims<2) v+=0.8; if([...p.hand,...p.tableau.map(e=>e.id)].some(id=>/1 tag of each/.test(this.card(id).instant||''))) v+=0.6; return v; }
+    if(k===1) return 1.3+(this.endTriggered?0:0.2);                                                          // Vol +1 île
+    if(k===2) return 0.6+0.9*p.built.workshop.length+(p.left.workshop.length?0.3:0);                          // relance d'Atelier
+    if(k===3){ let v=0.4+0.5*Math.min(p.nests,3); if(this.redOn(p,'B05')) v+=1.5; if(p.left.nest.length&&p.nests<2) v-=0.3; return v; } // +1 Œuf par Nid
+    if(k===4){ let v=0.4+0.6*p.built.shrine.length+0.5*p.hand.filter(id=>this.card(id).type==='relic').length; if(this.redOn(p,'B04')) v+=1.2; return v; } // +1 place Sanctuaire
+    return 1;}
   gullGainBonus(p){ if(!this.W(p).gctx) return 0; if(!p.seagulls.length) return 0.5; let b=0;
     if(this.redOn(p,'B01')) b+=2.5;                       // une Mouette niv. 1 compte comme carte de coût 1
     const prod=p.nests+p.seagulls.length; if(prod<3&&p.supply>2) b+=1.6; // peu de production d'Œufs
@@ -436,7 +444,7 @@ class Game{
     if(needSac&&!p.seagulls.some(l=>l===1)) b+=1.8; return b;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
   buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5},p.aiw||window.AIW||{});}
+  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1},p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
