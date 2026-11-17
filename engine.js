@@ -399,11 +399,13 @@ class Game{
   cardValue(p,id){const c=this.card(id); const pays=this.payments(p,id,1); return 1+(pays.length?0.6:0)+(c.brood?0.5:0)+(c.cost>=4?0.3:0);}
   presenceScore(p,isl,gain){if(this.settled[isl]!==undefined) return 0.3*gain; const mine=this.presence(isl,p.i);
     const others=Math.max(0,...this.players.filter(q=>q!==p).map(q=>this.presence(isl,q.i)));
-    if(mine+gain>=6&&others<6) return 9; return gain*(0.7+0.15*mine-(others>mine+2?0.4:0));}
+    const W=this.W(p); if(mine+gain>=6&&others<6) return W.colDone; if(!W.pres) return gain*(0.7+0.15*mine-(others>mine+2?0.4:0)); const race=others>=mine+3?-0.5:(mine>=others?0.4:0); return gain*(0.8+W.pres*0.3*mine+race);}
   islandScore(p,isl){return this.expandTargets(isl).length*0.6+this.gatherTargets(isl).length*0.4+this.presence(isl,p.i)*0.2;}
   bonusValue(b){return ({rune:1.8,reveal3:1.6,reveal2:1.4,seagull:0.8,worm:1,chick:1.6,dragonscale:0.6,elders:1.1,grow:1.3,draw:1.2,seedOrFruit:1.1,buildAny:2,gatherAny:2,expandAny:2,ruinChick:1.5,brood:2.5,play1:1.5,removeCheapest:1.8})[b]||1;}
-  expandScore(p,r){return this.blueBonus(p,r)+1+r.tree.bonus.reduce((s,b)=>s+this.bonusValue(b),0)+this.presenceScore(p,r.island,1)-0.6;}
-  gatherScore(p,r){const bb=this.blueBonus(p,r); const n=2+this.treesOnIsland(r.island).length-1; const need=this.foodNeed(p,TREE_FOOD[this.trees[r.id]]); return bb+n*0.9+need+this.presenceScore(p,r.island,1)-0.6;}
+  expandScore(p,r){return this.blueBonus(p,r)*this.W(p).blue+1+r.tree.bonus.reduce((s,b)=>s+this.bonusValue(b),0)+this.presenceScore(p,r.island,1)-0.6;}
+  gatherUnlock(p,r){const W=this.W(p); if(!W.gp) return 0; const before=p.hand.filter(id=>this.payments(p,id,1).length).length; const g={worm:0,seed:0,fruit:0}; g[TREE_FOOD[this.trees[r.id]]]+=2; this.treesOnIsland(r.island).forEach(o=>{if(o.id!==r.id) g[TREE_FOOD[this.trees[o.id]]]++;});
+    for(const t in g) p.food[t]+=g[t]; let after=0; try{after=p.hand.filter(id=>this.payments(p,id,1).length).length;} finally {for(const t in g) p.food[t]-=g[t];} return (after-before)*W.gp;}
+  gatherScore(p,r){const bb=this.blueBonus(p,r)*this.W(p).blue+this.gatherUnlock(p,r); const n=2+this.treesOnIsland(r.island).length-1; const need=this.foodNeed(p,TREE_FOOD[this.trees[r.id]]); return bb+n*0.9+need+this.presenceScore(p,r.island,1)-0.6;}
   blueBonus(p,r){const o=this.objs[1]; if(o.claims.includes(p.i)||o.th[o.claims.length]===undefined) return 0; const id=o.d.id, tc=this.trees[r.id]||r.tree.color;
     if((id==='C02'&&tc==='green')||(id==='C03'&&tc==='yellow')||(id==='C04'&&tc==='grey')||(id==='C06'&&r.ruins.length)) return 1.4;
     if(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)<2) return 1.2; return 0;}
@@ -412,16 +414,20 @@ class Game{
   goal(p,id){const e=p.tableau.find(x=>x.id===id); return e&&!e.starTaken;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
   buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'&&p.hand.some(id=>this.card(id).type==='relic')?0.8:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  playScore(p,id,free){const c=this.card(id); const ob=this.redObj, objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; const cs=window.COND_STARS&&window.COND_STARS[id]?2.5:0; const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=(c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0);
+  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1},p.aiw||window.AIW||{});}
+  fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
+    const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
+    K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
+  playScore(p,id,free){const c=this.card(id); const ob=this.redObj; let objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; objB*=this.W(p).red; const cs=window.COND_STARS&&window.COND_STARS[id]?2.5:0; const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=(c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0);
     if(c.type!=='bird') return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB+cs+persoB+gb:-9; const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);
-    let v=gb+(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+persoB+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
+    let v=this.fxValue(p,c)+gb+(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+persoB+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
   dsScore(p,e){return 1.2;}
   aiMain(p,q){ // évalue globalement les options principales
     const cands=[]; p.plan=[];
     if(q.options.some(o=>o.value==='move'&&!o.disabled)){ this.adjacentRowSlots(p.flock).filter(k=>this.row[k]).forEach(k=>{const id=this.row[k]; const cv=this.cardValue(p,id)+0.2;
         this.moveDests(p,this.card(id).cost).forEach(d=>{ this.boardActionOptions(p,ISLANDS[d],null).forEach(a=>cands.push({s:cv+a.score,plan:[k,d,a.value],v:'move'})); cands.push({s:cv-1.5,plan:[k,d,'none'],v:'move'}); });});}
     const playable=p.hand.filter(id=>this.payments(p,id,1).length);
-    if(playable.length){const sc=playable.map(id=>this.playScore(p,id)).sort((a,b)=>b-a); cands.push({s:sc[0]+(sc[1]>0?sc[1]*0.7:0)+(p.chicks===0?1:0),plan:[],v:'play'});}
+    if(playable.length){const sc=playable.map(id=>this.playScore(p,id)).sort((a,b)=>b-a); const W=this.W(p); cands.push({s:W.play+sc[0]+(sc[1]>0?sc[1]*W.play2:0)+(p.chicks===0?1:0),plan:[],v:'play'});}
     const canLay=Math.max(0,Math.min(p.supply,this.nestCap(p)-0));
     const layN=Math.min(canLay,p.nests+p.seagulls.length);
     const bv=p.eggs*1.4+layN*0.8+p.seagulls.filter(l=>l>=2).length*0.6+p.tableau.filter(e=>window.CARD_FX[e.id]&&window.CARD_FX[e.id].b).length*0.9+(p.hand.length?0.8:0)+(p.chicks===0?2.5:0)-(p.eggs===0&&p.chicks>2?1.5:0)-(p.broodStreak||0)*1.2;
