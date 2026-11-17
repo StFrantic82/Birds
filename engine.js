@@ -190,7 +190,7 @@ class Game{
     const k=await this.ask(p,{title:'Placez votre Amulette',options:free.map(k=>({label:RUNES[k],value:k,score:[1.5,2,1.5,2.5,0.5][k]}))});
     if(k===0){const t=p.food.seed>0&&p.food.fruit>0?await this.ask(p,{title:'Payer l\'Amulette',options:[{label:'1 graine',value:'seed',score:1},{label:'1 fruit',value:'fruit',score:1}]}):(p.food.seed>0?'seed':'fruit'); p.food[t]--;}
     p.runes.push(k); this.log(`${p.name} gagne une Amulette : ${RUNES[k]}.`);}
-  async gainStar(p,why){p.stars++; p.starLog.push(why); this.log(`★ ${p.name} gagne une Étoile (${why}) — ${p.stars}/6.`); if(p.stars>=6&&!this.endTriggered){this.endTriggered=true; this.log(`${p.name} atteint 6 Étoiles : la fin de partie est déclenchée, on termine le tour.`);}
+  async gainStar(p,why){p.stars++; p.starLog.push(why); (p.starRounds=p.starRounds||[]).push({why,round:this.round}); this.log(`★ ${p.name} gagne une Étoile (${why}) — ${p.stars}/6.`); if(p.stars>=6&&!this.endTriggered){this.endTriggered=true; this.log(`${p.name} atteint 6 Étoiles : la fin de partie est déclenchée, on termine le tour.`);}
     if(this.has(p,'OB2')) await this.layEgg(p,1); if(this.has(p,'OG4')) await this.placeDSany(p,1); if(this.has(p,'ON5')) await this.draw(p,2);
     if(this.has(p,'OP4')) await this.gainAnyFood(p,1); if(this.has(p,'OR2')) await this.gainChick(p,1); if(this.has(p,'OY1')) await this.elders(p,1);}
   async elders(p,n=1){for(let i=0;i<n;i++){p.elders=(p.elders+1)%ELDERS_LEN; p.eldersTotal=(p.eldersTotal||0)+1; const b=ELDERS_BONUS[p.elders];
@@ -322,7 +322,7 @@ class Game{
       for(let i=0;i<pay.cards;i++){const d=await this.ask(p,{title:`Défaussez une carte pour payer (${i+1}/${pay.cards})`,options:p.hand.map(h=>({label:this.card(h).name,value:h,card:h,score:-this.cardValue(p,h)}))}); p.hand.splice(p.hand.indexOf(d),1); this.discardPile.push(d);}
       if(pay.crate){p.food[pay.crate]--;} if(c.type==='ally'&&!c.req.every(r=>r.f(this,p))) p.allyDiscount=Math.max(0,(p.allyDiscount||0)-1); this.log(`${p.name} joue ${c.name}${c.type==='bird'?` (${this.payLabel(pay)})`:''}.`);
     } else { p.hand.splice(p.hand.indexOf(id),1); this.log(`${p.name} joue ${c.name} gratuitement.`);}
-    const e={id,ds:0,justPlayed:true};
+    const e={id,ds:0,justPlayed:true}; (p.played=p.played||[]).push({id,round:this.round,free:!!free});
     if(c.type==='relic'){const sh=this.shrineFree(p).filter(s=>s.free>=this.relicSpace(p,c)); const l=sh.length===1?sh[0].l:await this.ask(p,{title:`Dans quel Sanctuaire ranger ${c.name} ?`,options:sh.map(s=>({label:`Sanctuaire ${s.l+1} (${s.free} place${s.free>1?'s':''} libre${s.free>1?'s':''})`,value:s.l,score:-s.free}))}); e.shrine=l;}
     p.tableau.push(e); this.io.render();
     const fx=window.CARD_FX[id]; if(fx&&fx.i) await fx.i(this,p,e); delete e.justPlayed; this.io.render(); await this.onPlayed(p,c); await this.checkCondStars(p); return true;}
@@ -379,7 +379,16 @@ class Game{
       if(this.current===0){ if(this.endTriggered){this.over=true; break;} this.round++; }
       await this.io.sleep(50);}
     this.finish();}
+  statRecord(r){const w=r[0];
+    return {v:1,t:Date.now(),n:this.players.length,rounds:this.round,sim:!!this.io.sim,red:this.objs[0].d.id,blue:this.objs[1].d.id,
+      redClaims:this.objs[0].claims.slice(),blueClaims:this.objs[1].claims.slice(),settled:Object.assign({},this.settled),
+      players:this.players.map(p=>({i:p.i,ai:p.ai,win:p===w,rank:r.indexOf(p)+1,stars:p.stars,starRounds:p.starRounds||[],
+        pobj:p.pobj&&p.pobj.id,pClaims:p.pClaims,pOffer:(p.pOffer||[]).map(o=>o.id),played:(p.played||[]).map(x=>x.id),
+        tableau:p.tableau.map(e=>e.id),built:{nest:p.built.nest.length,shrine:p.built.shrine.length,workshop:p.built.workshop.length},
+        builtLv:{nest:p.built.nest.slice(),shrine:p.built.shrine.slice(),workshop:p.built.workshop.slice()},
+        runes:p.runes.slice(),seagulls:p.seagulls.slice(),elders:p.eldersTotal||0,chicks:p.chicks,eggs:p.eggs,hand:p.hand.length}))};}
   finish(){const r=this.players.slice().sort((a,b)=>b.stars-a.stars||b.chicks-a.chicks||b.eggs-a.eggs);
+    try{ if(window.BirdsStats) window.BirdsStats.add(this.statRecord(r)); }catch(e){console.error(e);}
     this.ranking=r; this.log(`Fin de partie ! Vainqueur : ${r[0].name} avec ${r[0].stars} Étoiles.`); this.io.render(); this.io.gameOver&&this.io.gameOver(r);}
   // ---------- Décisions ----------
   async ask(p,q){ q.options=q.options.filter(o=>o); if(!q.options.length) return null;

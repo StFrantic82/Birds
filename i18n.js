@@ -10,7 +10,7 @@ const R=[
 [/^Jeu en ligne entre amis : bientôt$/,'Online play with friends: coming soon'],[/^Cliquez sur un pion pour changer de couleur$/,'Click a token to change colour'],
 
 [/^Changer de couleur \((\w+)\)$/,(m,c)=>`Change colour (${({Rouge:'Red',Bleu:'Blue',Blanc:'White',Violet:'Purple'})[c]||c})`],
-[/^Aide de jeu$/,'Player aid'],[/^Chemin des Anciens$/,"Elders' Path"],[/^Nouvelle partie$/,'New game'],[/^Fin de partie$/,'Game over'],
+[/^Aide de jeu$/,'Player aid'],[/^📊 Statistiques$/,'📊 Statistics'],[/^Chemin des Anciens$/,"Elders' Path"],[/^Nouvelle partie$/,'New game'],[/^Fin de partie$/,'Game over'],
 [/^Partie terminée$/,'Game over'],[/^(.+) réfléchit…$/,'$1 is thinking…'],[/^← Autres choix$/,'← Other choices'],[/^Annuler$/,'Cancel'],
 [/^Astuce : vous pouvez aussi cliquer directement sur les cibles en surbrillance sur le plateau\.$/,'Tip: you can also click the highlighted targets directly on the board.'],
 [/^Manche (\d+)( — dernière manche)? · Pioche (\d+)$/,(m,a,b,c)=>`Round ${a}${b?' — final round':''} · Deck ${c}`],

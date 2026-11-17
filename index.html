@@ -142,6 +142,23 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 .pbobj{position:absolute;left:15%;bottom:98.5%;width:18.3%;aspect-ratio:614/680;overflow:hidden;border-radius:10px 10px 0 0;box-shadow:0 -2px 8px #0003;z-index:0;cursor:help}
 .pbobj img{width:100%;display:block}
 .tagc img{height:15px;vertical-align:-3px}
+.statsb{margin-top:10px;border:0;background:#e7d6b4;color:#5a4a30;font:600 15px Fredoka,sans-serif;border-radius:12px;padding:9px 16px;cursor:pointer}.statsb:hover{background:#dcc9a3}
+#stats{position:fixed;inset:0;z-index:80;background:#06262ecc;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
+.sbox2{background:#fffaf0;border-radius:18px;max-width:1050px;width:100%;padding:18px 24px 30px;box-shadow:0 20px 60px #0009}
+.shead{display:flex;align-items:center;justify-content:space-between}.shead h2{margin:0;font:600 30px Fredoka,sans-serif;color:#1f6f78}
+.sclose{border:0;background:#eee3cc;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer}
+.ssim{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#f3e6cc;border-radius:12px;padding:10px 12px;margin:12px 0 4px}.ssim select{padding:4px 6px}.sright{margin-left:auto;display:flex;gap:4px}
+.snote{font-size:12px;color:#8a7a5f;margin:6px 0}
+.sfilters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;font-size:13px;color:#6b5a3e}
+.sseg button{font-size:13px;padding:5px 10px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:8px 0}
+.scard{background:#fff;border:1px solid #e3d6bf;border-radius:12px;padding:10px 12px;font-size:12px;color:#7b6a50}.scard b{display:block;font:600 28px Fredoka,sans-serif;color:#2b2a27}
+.sline{display:flex;align-items:center;gap:6px;margin-top:3px}
+#stats h3{font:600 18px Fredoka,sans-serif;color:#2b2a27;margin:22px 0 6px;border-bottom:2px solid #eadcbf;padding-bottom:4px}
+.stab{width:100%;border-collapse:collapse;font-size:13px}.stab td,.stab th{padding:5px 8px;border-bottom:1px solid #f0e6d4;text-align:left;vertical-align:middle}.stab th{font-size:11.5px;color:#9a8460;font-weight:600}
+.stab td.w{min-width:200px}.stab small{color:#9a8a6e}.stab tr.crow:hover{background:#fff3d6}
+.sbar{display:inline-block;width:120px;height:9px;background:#efe4cd;border-radius:5px;vertical-align:middle;overflow:hidden}.sbar i{display:block;height:100%;border-radius:5px}
+.sempty{padding:30px;text-align:center;color:#8a7a5f}
 #zoom{position:fixed;display:none;pointer-events:none;z-index:50;filter:drop-shadow(0 8px 18px #0005)}
 /* panneaux */
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
@@ -205,6 +222,7 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
     <div class="seg" id="spseg"><button data-v="900">Lente</button><button data-v="500" class="on">Normale</button><button data-v="150">Rapide</button><button data-v="0">Éclair</button></div>
     <select id="speed" hidden><option value="900">Lente</option><option value="500" selected>Normale</option><option value="150">Rapide</option><option value="0">Instantanée</option></select>
     <button id="go">Lancer la partie</button>
+    <button id="statsbtn" class="statsb">📊 Statistiques</button>
     <div class="soon">Jeu en ligne entre amis : bientôt</div>
   </div>
 </div>
@@ -216,7 +234,7 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
     <div id="hand" class="panel"></div>
   </div>
   <div id="right">
-    <div style="display:flex;justify-content:space-between;align-items:center"><button class="ob" id="aidebtn" style="padding:4px 10px">Aide de jeu</button><div id="round"></div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span><button class="ob" id="aidebtn" style="padding:4px 10px">Aide de jeu</button> <button class="ob" id="statsbtn2" style="padding:4px 10px">📊 Statistiques</button></span><div id="round"></div></div>
     <div id="objs" class="panel" style="font-size:12.5px"></div>
     <div id="players"></div>
     <div class="panel" id="log"></div>
@@ -230,7 +248,9 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 <script src="engine.js"></script>
 <script src="cards.js"></script>
 <script src="i18n.js"></script>
+<script src="stats.js"></script>
 <script src="ui.js"></script>
-<script>document.getElementById("aidebtn").onclick=()=>{document.getElementById("aide").style.display="flex";};</script>
+<script>document.getElementById("statsbtn").onclick=document.getElementById("statsbtn2").onclick=()=>BirdsStatsUI.open();
+document.getElementById("aidebtn").onclick=()=>{document.getElementById("aide").style.display="flex";};</script>
 </body>
 </html>
