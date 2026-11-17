@@ -138,7 +138,7 @@ const W=[[/avancer d'1 case sur le Chemin des Anciens/g,"advance 1 space on the 
  [/piocher 1 carte/g,'draw 1 card'],[/placer 1 Écaille/g,'place 1 dragonscale'],[/avancer d'1 case sur le Chemin des Anciens/g,"advance 1 space on the Elders' Path"],[/poussin sur une Ruine/g,'chick on a Ruin'],
  [/Anciens \+(\d)/g,'Elders +$1'],[/Cartes de coût/g,'Cards of cost'],[/Œufs dans vos Nids/g,'Eggs in your Nests'],[/Cartes avec capacité Écaille/g,'Cards with a dragonscale ability'],
  [/Îles avec au moins 1 de vos bâtiments/g,'Islands with at least 1 of your buildings'],[/Poussins dans des régions à arbre (vert|jaune|gris)/g,(m,c)=>`Chicks in regions with a ${({vert:'green',jaune:'yellow',gris:'grey'})[c]} tree`],
- [/Îles où vous avez au moins 2 Poussins/g,'Islands where you have at least 2 chicks'],[/Poussins dans des régions avec Ruine/g,'Chicks in regions with a Ruin'],
+ [/Îles où vous avez au moins 2 Poussins/g,'Islands where you have at least 2 chicks'],[/Régions différentes avec Ruine où vous avez un Poussin/g,'Different Ruin regions where you have a chick'],[/Poussins dans des régions avec Ruine/g,'Chicks in regions with a Ruin'],
  [/Reliques/g,'Relics'],[/Relique/g,'Relic'],[/Amulettes/g,'Amulets'],[/Amulette/g,'Amulet'],[/Mouettes/g,'Seagulls'],[/Mouette/g,'Seagull'],
  [/Sanctuaires/g,'Shrines'],[/Sanctuaire/g,'Shrine'],[/Ateliers/g,'Workshops'],[/Atelier/g,'Workshop'],[/Nids/g,'Nests'],[/\bNid\b/g,'Nest'],
  [/Poussins/g,'chicks'],[/Poussin/g,'chick'],[/Œufs/g,'eggs'],[/Œuf/g,'egg'],[/Écailles/g,'dragonscales'],[/Écaille/g,'dragonscale'],[/Étoiles/g,'Stars'],[/Étoile/g,'Star'],
