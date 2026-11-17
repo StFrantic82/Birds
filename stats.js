@@ -106,7 +106,7 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
   <h3>${L('Amulettes','Amulets')}</h3>
   <table class="stab"><tr><th></th><th>${L('Prise par','Taken by')}</th><th>${L('Victoires','Wins')}</th></tr>${r.runes.map(a=>`<tr><td>${esc(window.BirdsGame.RUNES[a.k])}</td><td class="w">${bar(a.pct,100,'#7a4fa0')} ${a.pct}%</td><td style="color:${dcol(a.wr/100-r.baseWin)}">${a.wr}%</td></tr>`).join('')}</table>
   <h3>${L('Colonies fondées','Settlements founded')}</h3>
-  <table class="stab">${r.islands.map(i=>`<tr><td>${ISL[i.k][EN()?1:0]}</td><td class="w">${bar(i.p,100,'#3a8f6a')}</td><td>${i.p}% ${L('des parties','of games')}</td></tr>`).join('')}</table>
+  <table class="stab">${r.islands.map(i=>`<tr><td><img class="islic" src="icons/isl_${i.k}.png" alt=""> ${ISL[i.k][EN()?1:0]}</td><td class="w">${bar(i.p,100,'#3a8f6a')}</td><td>${i.p}% ${L('des parties','of games')}</td></tr>`).join('')}</table>
   <h3>${L('Tags des cartes jouées','Tags of cards played')}</h3>
   <table class="stab"><tr><th></th><th>${L('Toutes les cartes jouées','All cards played')}</th><th>${L('Cartes jouées par les gagnants','Cards played by winners')}</th></tr>${r.fams.sort((a,b)=>b.win-a.win).map(f=>`<tr><td>${FAMI(f.f)} ${f.f}</td><td>${f.all}%</td><td style="color:${dcol((f.win-f.all)/100)}"><b>${f.win}%</b></td></tr>`).join('')}</table>
   <h3>${L('Cartes','Cards')}</h3>
