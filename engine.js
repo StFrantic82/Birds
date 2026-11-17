@@ -180,7 +180,7 @@ class Game{
     p.hand.push(pick); rev.filter(c=>c!==pick).forEach(c=>this.discardPile.push(c)); this.log(`${p.name} révèle ${rev.length} cartes et en garde 1.`);}
   async seagull(p,n=1){for(let i=0;i<n;i++){ const up=p.seagulls.map((l,k)=>({l,k})).filter(x=>x.l<4);
       const opts=[{label:'Gagner une Mouette (niveau 1)',value:-1,score:1.3}];
-      up.forEach(x=>opts.push({label:`Améliorer une Mouette : niveau ${x.l} → ${x.l+1}`,value:x.k,score:[0,1.1,1.2,1.6][x.l]}));
+      up.forEach(x=>opts.push({label:`Améliorer une Mouette : niveau ${x.l} → ${x.l+1}`,value:x.k,score:[0,1.1,1.2,1.6][x.l]+(this.goal(p,'OR7')?0.8:0)}));
       const k=opts.length>1?await this.ask(p,{title:'Mouette',options:opts}):-1;
       if(k===-1){p.seagulls.push(1); this.log(`${p.name} gagne une Mouette (niveau 1).`);}
       else {p.seagulls[k]++; this.log(`${p.name} améliore une Mouette au niveau ${p.seagulls[k]}.`); if(p.seagulls[k]===4) await this.removeCheapest(p,null);} }}
@@ -409,10 +409,12 @@ class Game{
     if(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)<2) return 1.2; return 0;}
   foodNeed(p,t){let need=0; p.hand.forEach(id=>{const c=this.card(id); if(c.color==='red'&&t==='worm') need+=0.2; if(c.color==='yellow'&&t==='seed') need+=0.15; if(c.color==='green'&&t==='fruit') need+=0.15;}); return need-(p.food[t]>4?0.6:0);}
   buildScore(p,s,b){const o=this.objs[1]; const bb=(o.d.id==='C01'&&!o.claims.includes(p.i)&&!this.islandNests(s.island).some(x=>{const q=this.nestOwner[x.id]; return q&&q.owner===p.i;}))?2:0; return bb+this.buildScore0(p,s,b);}
+  goal(p,id){const e=p.tableau.find(x=>x.id===id); return e&&!e.starTaken;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
-  buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'&&p.hand.some(id=>this.card(id).type==='relic')?0.8:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  playScore(p,id,free){const c=this.card(id); const ob=this.redObj, objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; if(c.type!=='bird') return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB:-9; const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);
-    let v=(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+(p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6:0)+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
+  buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'&&p.hand.some(id=>this.card(id).type==='relic')?0.8:0);const base={nest:3.2,shrine:1.2,workshop:2.8}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
+  playScore(p,id,free){const c=this.card(id); const ob=this.redObj, objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; const cs=window.COND_STARS&&window.COND_STARS[id]?2.5:0; const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=(c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0);
+    if(c.type!=='bird') return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB+cs+persoB+gb:-9; const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);
+    let v=gb+(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+persoB+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
   dsScore(p,e){return 1.2;}
   aiMain(p,q){ // évalue globalement les options principales
     const cands=[]; p.plan=[];

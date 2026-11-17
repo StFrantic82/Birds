@@ -122,7 +122,7 @@ function pboard(p){const W=el('div','pboard'); W.innerHTML='<img src="pboard.png
   let anyRel=false;
   p.built.shrine.forEach(l=>{const rel=p.tableau.filter(e=>e.shrine===l); const free=(G.shrineFree(p).find(s=>s.l===l)||{}).free;
     const z=el('div','pbrel'); z.style.left=PB.sh[l][0]+'%';
-    z.innerHTML=rel.map(e=>`<div class="relc" data-card="${e.id}" title="${esc(G.card(e.id).name)}"><img src="cards/${e.id}.jpg">${e.ds?`<div class="ds">${'<img src="icons/scale.png">'.repeat(Math.min(e.ds,4))}</div>`:''}</div>`).join('')+`<div class="relfree">Sanctuaire ${l+1} · ${free} place${free>1?'s':''} libre${free>1?'s':''}</div>`;
+    z.innerHTML=rel.map(e=>`<div class="relc" data-card="${e.id}" title="${esc(G.card(e.id).name)}"><img src="cards/${e.id}.jpg">${window.COND_STARS[e.id]&&!e.starTaken?`<span class="cstar" title="Étoile en attente : condition non remplie">${STAR(26)}</span>`:''}${e.ds?`<div class="ds">${'<img src="icons/scale.png">'.repeat(Math.min(e.ds,4))}</div>`:''}</div>`).join('')+`<div class="relfree">Sanctuaire ${l+1} · ${free} place${free>1?'s':''} libre${free>1?'s':''}</div>`;
     if(rel.length) anyRel=true; W.appendChild(z);});
   if(p.built.shrine.length) W.classList.add('hasrel');
   return W;}
