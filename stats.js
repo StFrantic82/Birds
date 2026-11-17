@@ -69,6 +69,7 @@ function compute(f){
 // ---------- affichage ----------
 const ISL={meadow:['Prairie','Meadow'],jungle:['Jungle','Jungle'],desert:['Désert','Desert'],mountain:['Montagne','Mountain'],tundra:['Toundra','Tundra'],marsh:['Marais','Marsh']};
 const FAMC={Academy:'#1f80b0',Legion:'#d23c32',Court:'#e2a800',Guild:'#4f9a3a',Circle:'#6c3a8e',Ally:'#8a6a3a',Relic:'#7a7a7a'};
+const FAMI=f=>/^(Academy|Legion|Court|Guild|Circle)$/.test(f)?`<img class="ftag" src="icons/tag_${f}.png" alt="${f}" title="${f}">`:`<span class="dot" style="background:${FAMC[f]}" title="${f}"></span>`;
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
 const bar=(v,max,col)=>`<span class="sbar"><i style="width:${Math.max(0,Math.min(100,100*v/(max||1)))}%;background:${col||'#1f8a8a'}"></i></span>`;
 const dcol=d=>d>0.04?'#2e8b3e':d<-0.04?'#c0392b':'#8a7a5f';
@@ -107,14 +108,14 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
   <h3>${L('Colonies fondées','Settlements founded')}</h3>
   <table class="stab">${r.islands.map(i=>`<tr><td>${ISL[i.k][EN()?1:0]}</td><td class="w">${bar(i.p,100,'#3a8f6a')}</td><td>${i.p}% ${L('des parties','of games')}</td></tr>`).join('')}</table>
   <h3>${L('Tags des cartes jouées','Tags of cards played')}</h3>
-  <table class="stab"><tr><th></th><th>${L('Toutes les cartes jouées','All cards played')}</th><th>${L('Cartes jouées par les gagnants','Cards played by winners')}</th></tr>${r.fams.sort((a,b)=>b.win-a.win).map(f=>`<tr><td><span class="dot" style="background:${FAMC[f.f]}"></span> ${f.f}</td><td>${f.all}%</td><td style="color:${dcol((f.win-f.all)/100)}"><b>${f.win}%</b></td></tr>`).join('')}</table>
+  <table class="stab"><tr><th></th><th>${L('Toutes les cartes jouées','All cards played')}</th><th>${L('Cartes jouées par les gagnants','Cards played by winners')}</th></tr>${r.fams.sort((a,b)=>b.win-a.win).map(f=>`<tr><td>${FAMI(f.f)} ${f.f}</td><td>${f.all}%</td><td style="color:${dcol((f.win-f.all)/100)}"><b>${f.win}%</b></td></tr>`).join('')}</table>
   <h3>${L('Cartes','Cards')}</h3>
   <div class="sfilters">${seg('ctype',[['all',L('Toutes','All')],['bird',L('Oiseaux','Birds')],['ally',L('Alliés','Allies')],['relic',L('Reliques','Relics')]])}
    <span>${L('Trier par','Sort by')} :</span>${seg('sort',[['wr',L('Victoires','Win rate')],['rate',L('Fréquence','Frequency')],['plays',L('Nb de poses','Times played')],['cost',L('Coût','Cost')]])}
    <span>${L('Min. parties','Min. games')} :</span>${seg('minG',[['1','1'],['5','5'],['20','20'],['50','50']])}</div>
   <p class="snote">${L('« Joueurs qui l\'ont posée » : part des joueurs ayant joué la carte au moins une fois. « Victoires » : taux de victoire de ces joueurs ; en vert au-dessus de la référence, en rouge en dessous. Une carte peut gagner souvent parce qu\'elle arrive tard chez un joueur déjà en tête : à lire comme une tendance.','"Players who played it": share of players who played the card at least once. "Win rate": win rate of those players; green above baseline, red below. A card may win often because it lands late with a player already ahead: read it as a trend.')}</p>
   <table class="stab cards"><tr><th>${L('Carte','Card')}</th><th>${L('Coût','Cost')}</th><th>${L('Joueurs qui l\'ont posée','Players who played it')}</th><th>${L('Victoires','Win rate')}</th><th>${L('Écart','Delta')}</th></tr>
-   ${cards.map(c=>`<tr data-card="${c.id}" class="crow"><td><span class="dot" style="background:${FAMC[c.fam]}"></span> ${esc(c.info.name)} <small>${c.id}</small></td><td>${c.info.cost}</td><td class="w">${bar(c.rate,maxRate)} ${(c.rate*100).toFixed(1)}% <small>(${c.games})</small></td><td style="color:${dcol(c.delta)}"><b>${Math.round(c.wr*100)}%</b></td><td style="color:${dcol(c.delta)}">${c.delta>0?'+':''}${Math.round(c.delta*100)}</td></tr>`).join('')}</table>`;
+   ${cards.map(c=>`<tr data-card="${c.id}" class="crow"><td>${FAMI(c.fam)} ${esc(c.info.name)} <small>${c.id}</small></td><td>${c.info.cost}</td><td class="w">${bar(c.rate,maxRate)} ${(c.rate*100).toFixed(1)}% <small>(${c.games})</small></td><td style="color:${dcol(c.delta)}"><b>${Math.round(c.wr*100)}%</b></td><td style="color:${dcol(c.delta)}">${c.delta>0?'+':''}${Math.round(c.delta*100)}</td></tr>`).join('')}</table>`;
   wire();}
 function objTable(list){return `<table class="stab"><tr><th></th><th>${L('Parties','Games')}</th><th>${L('Étoiles prises','Stars taken')}</th><th>${L('Manche moyenne','Average round')}</th><th>${L('Preneurs gagnants','Takers who won')}</th></tr>${list.map(o=>`<tr><td><b>${o.d.name}</b> <small>${esc(EN()?tr(o.d.fr):o.d.fr)}</small></td><td>${o.games}</td><td class="w">${o.games?bar(o.fill,100,'#c0392b')+' '+o.fill+'%':'—'}</td><td>${o.games?o.avgRound:'—'}</td><td>${o.games?o.claimWin+'%':'—'}</td></tr>`).join('')}</table>`;}
 const tr=s=>window.I18N?I18N.tr(s):s;
