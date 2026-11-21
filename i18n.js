@@ -12,7 +12,7 @@ const R=[
 [/^Changer de couleur \((\w+)\)$/,(m,c)=>`Change colour (${({Rouge:'Red',Bleu:'Blue',Blanc:'White',Violet:'Purple'})[c]||c})`],
 [/^Aide de jeu$/,'Player aid'],[/^Étoile en attente : condition non remplie$/,'Pending Star: condition not met yet'],[/^📊 Statistiques$/,'📊 Statistics'],[/^Chemin des Anciens$/,"Elders' Path"],[/^Nouvelle partie$/,'New game'],[/^Fin de partie$/,'Game over'],
 [/^Partie terminée$/,'Game over'],
-[/^Retour$/,'Back'],[/^Niveau des IA$/,'AI level'],[/^Classique$/,'Classic'],[/^Experte$/,'Expert'],
+[/^📤 Envoyer les stats de cette partie$/,'📤 Send this game\'s stats'],[/^📤 Stats envoyées$/,'📤 Stats sent'],[/^Envoi…$/,'Sending…'],[/^✓ Merci !$/,'✓ Thank you!'],[/^Envoi refusé : votre accès à l'appli ne le permet pas\.$/,'Sending refused: your access to the app does not allow it.'],[/^Retour$/,'Back'],[/^Niveau des IA$/,'AI level'],[/^Classique$/,'Classic'],[/^Experte$/,'Expert'],
 [/^Mode de jeu$/,'Game mode'],[/^Sur cet appareil$/,'On this device'],[/^🌐 En ligne$/,'🌐 Online'],[/^Vérification du mode en ligne…$/,'Checking online mode…'],[/^Créer une partie$/,'Create a game'],[/^Rejoindre$/,'Join'],
 [/^Votre nom$/,'Your name'],[/^Code de la partie$/,'Game code'],[/^Rejoindre la partie$/,'Join the game'],[/^Créer la partie en ligne$/,'Create online game'],[/^Vous \(hôte\)$/,'You (host)'],[/^En ligne$/,'Online'],
 [/^Donnez ce code à vos amis : ils le saisissent dans « En ligne → Rejoindre »\.$/,'Give this code to your friends: they enter it under “Online → Join”.'],[/^Vous êtes dans la salle d'attente\.$/,"You're in the waiting room."],

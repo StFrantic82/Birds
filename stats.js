@@ -2,13 +2,51 @@
 (function(){
 'use strict';
 const KEY='birds_stats_v1', MAX=5000;
-const EN=()=>window.I18N&&I18N.lang==='en';
-const L=(fr,en)=>EN()?en:fr;
+const LG=()=>window.I18N?I18N.lang:'fr', EN=()=>LG()==='en';
+const IT={'Cartes jouées':'Carte giocate','Mouettes':'Gabbiani','Niveau total des Mouettes':'Livello totale dei Gabbiani','Amulettes':'Amuleti','Cases du Chemin des Anciens':'Caselle del Sentiero degli Antichi','Étoiles':'Stelle',
+ 'Parties':'Partite','Toutes':'Tutte','Avec humains':'Con umani','Simulations IA':'Simulazioni IA','Reçues des joueurs':'Ricevute dai giocatori','Joueurs':'Giocatori','Tous':'Tutti',
+ 'Aucune partie enregistrée pour ces filtres. Jouez une partie ou lancez des simulations ci-dessus.':'Nessuna partita registrata per questi filtri. Gioca una partita o avvia delle simulazioni qui sopra.',
+ 'Colonies':'Colonie','Objectifs personnels':'Obiettivi personali','Objectifs rouges':'Obiettivi rossi','Objectifs bleus':'Obiettivi blu','Chemin des Anciens':'Sentiero degli Antichi','Cartes (Reliques, Alliés…)':'Carte (Reliquie, Alleati…)',
+ 'parties':'partite','manches en moyenne':'round in media','taux de victoire de référence (1 / nb joueurs)':'percentuale di vittoria di riferimento (1 / n. giocatori)','Victoires par place':'Vittorie per posto','er':'º',
+ "D'où viennent les Étoiles":'Da dove vengono le Stelle','Choisi quand proposé':'Scelto quando proposto','1re Étoile (5)':'1ª Stella (5)','2e Étoile (9)':'2ª Stella (9)','Victoires':'Vittorie','Bâtiments':'Edifici',
+ 'Moyenne construite':'Media costruita','Gagnants':'Vincitori','Perdants':'Perdenti','Niv. 1 / 2 / 3 / 4 construits':'Liv. 1 / 2 / 3 / 4 costruiti','Nids':'Nidi','Sanctuaires':'Santuari','Ateliers':'Laboratori',
+ '(hors Nid de départ)':'(escluso il Nido iniziale)','Gagnants vs perdants':'Vincitori vs perdenti','Prise par':'Preso da','Colonies fondées':'Colonie fondate','des parties':'delle partite',
+ 'Tags des cartes jouées':'Tag delle carte giocate','Toutes les cartes jouées':'Tutte le carte giocate','Cartes jouées par les gagnants':'Carte giocate dai vincitori','Cartes':'Carte','Oiseaux':'Uccelli','Alliés':'Alleati','Reliques':'Reliquie',
+ 'Trier par':'Ordina per','Fréquence':'Frequenza','Nb de poses':'N. di giocate','Coût':'Costo','Min. parties':'Min. partite',
+ "« Joueurs qui l'ont posée » : part des joueurs ayant joué la carte au moins une fois. « Victoires » : taux de victoire de ces joueurs ; en vert au-dessus de la référence, en rouge en dessous. Une carte peut gagner souvent parce qu'elle arrive tard chez un joueur déjà en tête : à lire comme une tendance.":"«Giocatori che l'hanno giocata»: quota di giocatori che hanno giocato la carta almeno una volta. «Vittorie»: percentuale di vittoria di questi giocatori; in verde sopra il riferimento, in rosso sotto. Una carta può vincere spesso perché arriva tardi a un giocatore già in testa: da leggere come una tendenza.",
+ 'Carte':'Carta',"Joueurs qui l'ont posée":"Giocatori che l'hanno giocata",'Écart':'Scarto','Étoiles prises':'Stelle prese','Manche moyenne':'Round medio','Preneurs gagnants':'Chi la prende e vince',
+ 'Statistiques':'Statistiche','Fermer':'Chiudi','Simuler des parties entre IA':'Simula partite tra IA','parties à':'partite a','joueurs':'giocatori','Lancer':'Avvia','Enregistrer en image':'Salva come immagine',
+ 'Copier les données (JSON)':'Copia i dati (JSON)','Effacer':'Cancella',
+ 'Chaque partie terminée sur cet appareil est enregistrée dans ce navigateur. Les simulations utilisent les IA du prototype : elles montrent des tendances, pas le jeu de vrais joueurs.':'Ogni partita terminata su questo dispositivo viene salvata in questo browser. Le simulazioni usano le IA del prototipo: mostrano tendenze, non il gioco di giocatori reali.',
+ 'Arrêter':'Ferma','Terminé':'Finito',"Confirmer l'effacement":'Conferma la cancellazione','Données copiées':'Dati copiati','Copie impossible ici':'Copia impossibile qui',
+ 'Parties envoyées par les joueurs':'Partite inviate dai giocatori','chargement…':'caricamento…','partie(s)':'partita/e','Filtre « Reçues des joueurs » ci-dessous.':'Filtro «Ricevute dai giocatori» qui sotto.',
+ "aucune pour l'instant.":'ancora nessuna.',"impossible de les lire pour l'instant.":'impossibile leggerle per ora.',"Envoyer mes parties à l'auteur":"Invia le mie partite all'autore",'Votre nom':'Il tuo nome','Tout est envoyé':'Tutto inviato','Envoi…':'Invio…',
+ "Envoi refusé : votre accès à l'appli ne le permet pas. Utilisez « Copier les données (JSON) ».":"Invio rifiutato: il tuo accesso all'app non lo permette. Usa «Copia i dati (JSON)».",
+ "Création de l'image…":"Creazione dell'immagine…",'Image des statistiques':'Immagine delle statistiche',"si le téléchargement n'a pas démarré : clic droit sur l'image › « Enregistrer l'image sous… »":"se il download non è partito: clic destro sull'immagine › «Salva immagine con nome…»",
+ 'Image prête':'Immagine pronta',"Impossible de créer l'image ici":"Impossibile creare l'immagine qui",
+ 'Résumé par tag':'Riepilogo per tag','Sans tag':'Senza tag','Cartes du tag':'Carte del tag','Poses':'Giocate','Écart moyen des cartes':'Scarto medio delle carte','Joueurs qui en ont posé':'Giocatori che ne hanno giocate',
+ "« Écart moyen des cartes » : moyenne des écarts de victoire des cartes de ce tag, pondérée par le nombre de parties où chaque carte a été posée. « Sans tag » : Alliés et Reliques sans tag.":"«Scarto medio delle carte»: media degli scarti di vittoria delle carte di questo tag, ponderata per il numero di partite in cui ogni carta è stata giocata. «Senza tag»: Alleati e Reliquie senza tag."};
+const L=(fr,en)=>LG()==='en'?en:LG()==='it'?(IT[fr]!==undefined?IT[fr]:fr):fr;
+const L3=(fr,en,it)=>LG()==='en'?en:LG()==='it'?it:fr;
 let mem=null;
 function load(){ if(mem) return mem; try{mem=JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){mem=[];} return mem;}
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(mem.slice(-MAX)));}catch(e){ try{mem=mem.slice(-Math.floor(MAX/2)); localStorage.setItem(KEY,JSON.stringify(mem));}catch(e2){} } }
-const S={add(rec){load().push(rec); if(mem.length>MAX) mem=mem.slice(-MAX); if(!S.batch) save();}, all:()=>load(), clear(){mem=[]; save();}};
+const newId=()=>'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const S={add(rec){ if(!rec.id) rec.id=newId(); load().push(rec); if(mem.length>MAX) mem=mem.slice(-MAX); if(!S.batch) save();}, all:()=>load(), clear(){mem=[]; save();}};
 window.BirdsStats=S;
+// ---------- partage : envoyer ses parties à l'auteur (base de l'artefact) ----------
+const SENT='birds_sent_v1';
+function sentSet(){ try{return new Set(JSON.parse(localStorage.getItem(SENT)||'[]'));}catch(e){return new Set();} }
+function markSent(ids){ const s=sentSet(); ids.forEach(i=>s.add(i)); try{localStorage.setItem(SENT,JSON.stringify([...s].slice(-20000)));}catch(e){} }
+function ensureIds(){ let ch=false; load().forEach(g=>{ if(!g.id){g.id=newId(); ch=true;} }); if(ch) save(); }
+S.net=()=>window.BirdsNet&&window.BirdsNet.db?window.BirdsNet:null;
+S.unsent=()=>{ ensureIds(); const s=sentSet(); return load().filter(g=>!g.sim&&!s.has(g.id)); };
+S.isSent=id=>sentSet().has(id);
+S.send=async(recs,from)=>{ const N=S.net(); if(!N) throw new Error('offline'); let n=0;
+  for(const rec of recs){ if(!rec||rec.sim) continue; if(!rec.id){rec.id=newId(); save();} await N.db.doc('sharedstats/'+rec.id).set({from:String(from||'').slice(0,30),t:Date.now(),rec}); n++; markSent([rec.id]); }
+  return n; };
+let recv=null;
+S.fetchShared=async()=>{ const N=S.net(); if(!N) return null; const sn=await N.db.collection('sharedstats').limit(1000).get(); recv=sn.docs.map(d=>{const x=d.data()||{}; return Object.assign({},x.rec,{shared:true,from:x.from||''});}).filter(r=>r&&r.players); return recv; };
 
 // ---------- simulations ----------
 let running=false, stopReq=false;
@@ -25,7 +63,8 @@ function cardInfo(id){const c=window.BIRDS.find(x=>x.id===id)||window.ALLIES.fin
 function cardType(id){return /^A\d/.test(id)?'ally':/^O/.test(id)?'relic':'bird';}
 function famOf(id){const c=window.BIRDS.find(x=>x.id===id); return c?c.family:(cardType(id)==='ally'?'Ally':'Relic');}
 function compute(f){
-  let G=load().filter(g=>(f.src==='all'||(f.src==='sim'?g.sim:!g.sim))&&(f.n==='all'||g.n===+f.n));
+  const own=load(), ids=new Set(own.map(g=>g.id)); const base=f.src==='shared'?(recv||[]):f.src==='all'?own.concat((recv||[]).filter(g=>!ids.has(g.id))):own;
+  let G=base.filter(g=>(f.src==='all'||f.src==='shared'||(f.src==='sim'?g.sim:!g.sim))&&(f.n==='all'||g.n===+f.n));
   const res={games:G.length}; if(!G.length) return res;
   const P=[]; G.forEach(g=>g.players.forEach(p=>P.push(Object.assign({g},p))));
   res.players=P.length; res.baseWin=P.filter(p=>p.win).length/P.length;
@@ -42,6 +81,11 @@ function compute(f){
   const fam={}; P.forEach(p=>(p.played||[]).forEach(id=>{const f=famOf(id); const o=fam[f]||(fam[f]={f,all:0,win:0}); o.all++; if(p.win) o.win++;}));
   const totAll=Object.values(fam).reduce((a,o)=>a+o.all,0), totWin=Object.values(fam).reduce((a,o)=>a+o.win,0);
   res.fams=Object.values(fam).map(o=>({f:o.f,all:pct(o.all,totAll),win:pct(o.win,totWin)}));
+  // résumé par tag : moyenne des écarts des cartes du tag (pondérée par le nb de parties où la carte a été posée)
+  const tagsOf=id=>{const c=cardInfo(id); if(cardType(id)==='bird') return c.family?[c.family]:[]; return Object.keys(c.tagMap||{}).filter(k=>c.tagMap[k]>0);};
+  res.tags=['Academy','Legion','Circle','Court','Guild','none'].map(t=>{ const cs=res.cards.filter(c=>{const ts=tagsOf(c.id); return t==='none'?(!ts.length&&!(cardInfo(c.id).wild>0)):ts.includes(t);});
+      const g=cs.reduce((a,c)=>a+c.games,0); const pl=P.filter(p=>(p.played||[]).some(id=>{const ts=tagsOf(id); return t==='none'?(!ts.length&&!(cardInfo(id).wild>0)):ts.includes(t);}));
+      return {t,cards:cs.length,plays:cs.reduce((a,c)=>a+c.plays,0),delta:g?cs.reduce((a,c)=>a+c.delta*c.games,0)/g:0,players:pct(pl.length,P.length),pdelta:pl.length?pl.filter(p=>p.win).length/pl.length-res.baseWin:0};});
   // objectifs
   const obj=(key,claimsKey,list)=>list.map(d=>{const x=G.filter(g=>g[key]===d.id); if(!x.length) return {d,games:0};
       const slots=x.reduce((a,g)=>a+g[claimsKey].length,0), tot=x.reduce((a,g)=>a+(g.n===2?2:g.n),0);
@@ -67,7 +111,7 @@ function compute(f){
   return res;}
 
 // ---------- affichage ----------
-const ISL={meadow:['Prairie','Meadow'],jungle:['Jungle','Jungle'],desert:['Désert','Desert'],mountain:['Montagne','Mountain'],tundra:['Toundra','Tundra'],marsh:['Marais','Marsh']};
+const ISL={meadow:['Prairie','Meadow','Prateria'],jungle:['Jungle','Jungle','Giungla'],desert:['Désert','Desert','Deserto'],mountain:['Montagne','Mountain','Montagna'],tundra:['Toundra','Tundra','Tundra'],marsh:['Marais','Marsh','Palude']};
 const FAMC={Academy:'#1f80b0',Legion:'#d23c32',Court:'#e2a800',Guild:'#4f9a3a',Circle:'#6c3a8e',Ally:'#8a6a3a',Relic:'#7a7a7a'};
 const FAMI=f=>/^(Academy|Legion|Court|Guild|Circle)$/.test(f)?`<img class="ftag" src="icons/tag_${f}.png" alt="${f}" title="${f}">`:`<span class="dot" style="background:${FAMC[f]}" title="${f}"></span>`;
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
@@ -76,7 +120,7 @@ const dcol=d=>d>0.04?'#2e8b3e':d<-0.04?'#c0392b':'#8a7a5f';
 let filt={src:'all',n:'all',ctype:'all',sort:'wr',minG:5};
 function render(){ const B=document.getElementById('statsbody'); const r=compute(filt);
   const hdr=`<div class="sfilters">
-    <span>${L('Parties','Games')} :</span>${seg('src',[['all',L('Toutes','All')],['human',L('Avec humains','With humans')],['sim',L('Simulations IA','AI simulations')]])}
+    <span>${L('Parties','Games')} :</span>${seg('src',[['all',L('Toutes','All')],['human',L('Avec humains','With humans')],['sim',L('Simulations IA','AI simulations')]].concat(recv&&recv.length?[['shared',L('Reçues des joueurs','Sent by players')+' ('+recv.length+')']]:[]))}
     <span>${L('Joueurs','Players')} :</span>${seg('n',[['all',L('Tous','All')],['2','2'],['3','3'],['4','4']])}</div>`;
   if(!r.games){B.innerHTML=hdr+`<div class="sempty">${L('Aucune partie enregistrée pour ces filtres. Jouez une partie ou lancez des simulations ci-dessus.','No game recorded for these filters. Play a game or run simulations above.')}</div>`; wire(); return;}
   const starL={settlement:L('Colonies','Settlements'),perso:L('Objectifs personnels','Personal objectives'),red:L('Objectifs rouges','Red objectives'),blue:L('Objectifs bleus','Blue objectives'),elders:L('Chemin des Anciens',"Elders' Path"),cards:L('Cartes (Reliques, Alliés…)','Cards (Relics, Allies…)')};
@@ -106,9 +150,13 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
   <h3>${L('Amulettes','Amulets')}</h3>
   <table class="stab"><tr><th></th><th>${L('Prise par','Taken by')}</th><th>${L('Victoires','Wins')}</th></tr>${r.runes.map(a=>`<tr><td>${esc(window.BirdsGame.RUNES[a.k])}</td><td class="w">${bar(a.pct,100,'#7a4fa0')} ${a.pct}%</td><td style="color:${dcol(a.wr/100-r.baseWin)}">${a.wr}%</td></tr>`).join('')}</table>
   <h3>${L('Colonies fondées','Settlements founded')}</h3>
-  <table class="stab">${r.islands.map(i=>`<tr><td><img class="islic" src="icons/isl_${i.k}.png" alt=""> ${ISL[i.k][EN()?1:0]}</td><td class="w">${bar(i.p,100,'#3a8f6a')}</td><td>${i.p}% ${L('des parties','of games')}</td></tr>`).join('')}</table>
+  <table class="stab">${r.islands.map(i=>`<tr><td><img class="islic" src="icons/isl_${i.k}.png" alt=""> ${ISL[i.k][LG()==='en'?1:LG()==='it'?2:0]}</td><td class="w">${bar(i.p,100,'#3a8f6a')}</td><td>${i.p}% ${L('des parties','of games')}</td></tr>`).join('')}</table>
   <h3>${L('Tags des cartes jouées','Tags of cards played')}</h3>
   <table class="stab"><tr><th></th><th>${L('Toutes les cartes jouées','All cards played')}</th><th>${L('Cartes jouées par les gagnants','Cards played by winners')}</th></tr>${r.fams.sort((a,b)=>b.win-a.win).map(f=>`<tr><td>${FAMI(f.f)} ${f.f}</td><td>${f.all}%</td><td style="color:${dcol((f.win-f.all)/100)}"><b>${f.win}%</b></td></tr>`).join('')}</table>
+  <h3>${L('Résumé par tag','Summary by tag')}</h3>
+  <table class="stab"><tr><th></th><th>${L('Cartes du tag','Cards with the tag')}</th><th>${L('Poses','Plays')}</th><th>${L('Joueurs qui en ont posé','Players who played some')}</th><th>${L('Écart moyen des cartes','Average card delta')}</th></tr>
+   ${r.tags.map(t=>`<tr><td>${t.t==='none'?`<span class="notag">∅</span> ${L('Sans tag','No tag')}`:`<img class="ftag big" src="icons/tag_${t.t}.png" alt="${t.t}" title="${t.t}">`}</td><td>${t.cards}</td><td>${t.plays}</td><td>${t.players}% <small style="color:${dcol(t.pdelta)}">(${t.pdelta>=0?'+':''}${Math.round(t.pdelta*100)} pts)</small></td><td style="color:${dcol(t.delta)}"><b>${t.delta>=0?'+':''}${(t.delta*100).toFixed(1)} pts</b></td></tr>`).join('')}</table>
+  <p class="snote">${L("« Écart moyen des cartes » : moyenne des écarts de victoire des cartes de ce tag, pondérée par le nombre de parties où chaque carte a été posée. « Sans tag » : Alliés et Reliques sans tag.","“Average card delta”: average win-rate delta of the cards with this tag, weighted by the number of games each card was played in. “No tag”: Allies and Relics without a tag.")}</p>
   <h3>${L('Cartes','Cards')}</h3>
   <div class="sfilters">${seg('ctype',[['all',L('Toutes','All')],['bird',L('Oiseaux','Birds')],['ally',L('Alliés','Allies')],['relic',L('Reliques','Relics')]])}
    <span>${L('Trier par','Sort by')} :</span>${seg('sort',[['wr',L('Victoires','Win rate')],['rate',L('Fréquence','Frequency')],['plays',L('Nb de poses','Times played')],['cost',L('Coût','Cost')]])}
@@ -128,6 +176,7 @@ function open(){ let M=document.getElementById('stats'); if(!M){ M=document.crea
     <button id="simGo" class="ob">${L('Lancer','Run')}</button><span id="simMsg"></span>
     <span class="sright"><button id="sImg" class="ob ghost">🖼 ${L('Enregistrer en image','Save as image')}</button><button id="sExp" class="ob ghost">${L('Copier les données (JSON)','Copy data (JSON)')}</button><button id="sClr" class="ob ghost">${L('Effacer','Clear')}</button></span></div>
    <p class="snote">${L('Chaque partie terminée sur cet appareil est enregistrée dans ce navigateur. Les simulations utilisent les IA du prototype : elles montrent des tendances, pas le jeu de vrais joueurs.','Every game finished on this device is saved in this browser. Simulations use the prototype AIs: they show trends, not how real players play.')}</p>
+   <div id="sshare" class="ssim" hidden></div>
    <div id="statsbody"></div></div>`;
   M.style.display='flex'; M.querySelector('.sclose').onclick=()=>{M.style.display='none';};
   M.querySelector('#simGo').onclick=()=>{ if(running){stopReq=true; return;} const b=M.querySelector('#simGo'); b.textContent=L('Arrêter','Stop');
@@ -135,7 +184,20 @@ function open(){ let M=document.getElementById('stats'); if(!M){ M=document.crea
   M.querySelector('#sClr').onclick=()=>{ const b=M.querySelector('#sClr'); if(b.dataset.c){S.clear(); b.dataset.c=''; b.textContent=L('Effacer','Clear'); render();} else {b.dataset.c='1'; b.textContent=L('Confirmer l\'effacement','Confirm clear');}};
   M.querySelector('#sImg').onclick=()=>saveImage(M);
   M.querySelector('#sExp').onclick=async()=>{ try{await navigator.clipboard.writeText(JSON.stringify(load())); M.querySelector('#simMsg').textContent=' '+L('Données copiées','Data copied');}catch(e){M.querySelector('#simMsg').textContent=' '+L('Copie impossible ici','Copy not available here');}};
-  render();}
+  shareBar(M); render();}
+async function shareBar(M){ const B=M.querySelector('#sshare'); const N=S.net(); if(!N){ B.hidden=true; return; }
+  let owner=false; try{ owner=N.user?await N.user.isOwner():false; }catch(e){}
+  if(owner){ B.hidden=false; B.innerHTML=`<b>📥 ${L('Parties envoyées par les joueurs','Games sent by players')}</b> : <span id="srecv">${L('chargement…','loading…')}</span>`;
+    try{ const r=await S.fetchShared(); const who=new Set(r.map(x=>x.from).filter(Boolean)); M.querySelector('#srecv').textContent=r.length?`${r.length} ${L('partie(s)','game(s)')}${who.size?` — ${[...who].join(', ')}`:''}. ${L('Filtre « Reçues des joueurs » ci-dessous.','Use the “Sent by players” filter below.')}`:L('aucune pour l\'instant.','none yet.'); render(); }
+    catch(e){ M.querySelector('#srecv').textContent=L('impossible de les lire pour l\'instant.','could not be read right now.'); }
+    return; }
+  const u=S.unsent(); let nm=''; try{nm=localStorage.getItem('birds_from')||'';}catch(e){}
+  B.hidden=false; B.innerHTML=`<b>📤 ${L('Envoyer mes parties à l\'auteur','Send my games to the author')}</b> : <input id="sfrom" class="sfrom" maxlength="30" placeholder="${L('Votre nom','Your name')}"> <button id="ssend" class="ob" ${u.length?'':'disabled'}>${u.length?L3(`Envoyer ${u.length} partie(s)`,`Send ${u.length} game(s)`,`Invia ${u.length} partita/e`):L('Tout est envoyé','All sent')}</button><span id="ssmsg"></span>`;
+  const inp=M.querySelector('#sfrom'); inp.value=nm;
+  M.querySelector('#ssend').onclick=async()=>{ const b=M.querySelector('#ssend'), msg=M.querySelector('#ssmsg'); b.disabled=true; try{localStorage.setItem('birds_from',inp.value.trim());}catch(e){}
+    msg.textContent=' '+L('Envoi…','Sending…');
+    try{ const n=await S.send(S.unsent(),inp.value.trim()); msg.textContent=' ✓ '+L3(`${n} partie(s) envoyée(s). Merci !`,`${n} game(s) sent. Thank you!`,`${n} partita/e inviata/e. Grazie!`); b.textContent=L('Tout est envoyé','All sent'); }
+    catch(e){ console.warn(e); b.disabled=false; msg.textContent=' '+L('Envoi refusé : votre accès à l\'appli ne le permet pas. Utilisez « Copier les données (JSON) ».','Sending refused: your access to the app does not allow it. Use “Copy data (JSON)”.'); } };}
 function loadH2C(){return window.html2canvas?Promise.resolve():new Promise((res,rej)=>{const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc);});}
 async function saveImage(M){const msg=M.querySelector('#simMsg'); msg.textContent=' '+L('Création de l\'image…','Creating image…');
   try{ await loadH2C(); const box=M.querySelector('.sbox2'); const bar=M.querySelector('.ssim'); bar.style.visibility='hidden';

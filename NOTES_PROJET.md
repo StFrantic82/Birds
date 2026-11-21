@@ -52,6 +52,8 @@ Italien : Poussin / Pulcino, Œuf / Uovo, Nid / Nido, Sanctuaire / Santuario, At
 - **Ergonomie** : zone d'action et main toujours visibles en bas de l'écran ; onglets par joueur (cartes en jeu, Mouettes en cartes, plateau joueur) ; choix des cartes directement dans la main ; icônes des bâtiments à la couleur du joueur ; Poussins du plateau perso en grille ; bouton Accueil (double clic).
 - **Annuler** : « ↶ Annuler mon dernier choix » (Ctrl+Z) jusqu'au début de son tour ; le tour se termine par « Finir le tour » (Entrée). Fonctionne par instantané de l'état + rejeu des choix (`Game.takeTurnUndoable`).
 - **Écailles** : utilisables avant l'action, entre deux cartes jouées et en fin de tour.
+- **Statistiques partagées** (artefact claude.ai) : les autres joueurs peuvent envoyer leurs parties (bouton en fin de partie, ou « Envoyer mes parties à l'auteur » dans Statistiques) ; elles arrivent dans la base (`sharedstats/<id de partie>`) et le propriétaire les voit avec le filtre « Reçues des joueurs ». En ligne, chaque invité reçoit aussi l'enregistrement de la partie.
+- **Statistiques** : résumé par tag (icônes) = moyenne des écarts de victoire des cartes du tag, pondérée par le nombre de parties ; ligne « Sans tag » (Alliés et Reliques sans tag). Page des statistiques en FR / EN / IT.
 - Plateau avec pions en bois, ombre sur les îles hors de portée du Vol, présence par île, parchemin avec les tuiles et les Étoiles.
 - Plateau joueur complet : bâtiments, Œufs dans les Nids, Poussins, Amulettes, Étoiles, Reliques glissées sous les Sanctuaires, objectif personnel glissé au-dessus.
 - Boutons d'action avec icônes, sous le Chemin des Anciens. Aide de jeu.

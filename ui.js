@@ -31,7 +31,7 @@ const io={
   render:()=>render(),
   ask:(p,q)=>{ if(!p.ai&&U.queue&&U.queue.length){const a=U.queue.shift(); U.hist.push(a); return Promise.resolve(a.c?null:q.options[a.i].value);}
     return new Promise((res,rej)=>{pending={p,q,res,rej}; if(p.remote) NET.qid++; else viewer=p.i; filterTarget=null; render(); if(p.remote) netPublish(true);});},
-  gameOver:r=>{ if(NET.role==='host'){NET.status='over'; NET.ranking=r.map(p=>({name:p.name,color:p.color,stars:p.stars,starLog:p.starLog})); netPublish(true);} showEnd(r);},
+  gameOver:r=>{ if(NET.role==='host'){NET.status='over'; NET.rec=window.BirdsStats?window.BirdsStats.all().slice(-1)[0]:null; NET.ranking=r.map(p=>({name:p.name,color:p.color,stars:p.stars,starLog:p.starLog})); netPublish(true);} showEnd(r);},
   // annulation (voir Game.takeTurnUndoable)
   undoable:true,
   beginTurn:(replay,first)=>{ if(first){U.log=$('#log').innerHTML; return;} U.hist=[]; U.queue=replay.slice(); U.active=true;},
@@ -175,7 +175,13 @@ function renderHand(){renderMyHand(); const H=$('#hand'); H.innerHTML=''; const 
   sec.appendChild(tr); H.appendChild(sec);
   const ps=el('div','psec pboardsec'); ps.innerHTML=`<h4>Plateau joueur${p.built.shrine.length?` <small>Sanctuaires : ${p.built.shrine.map(l=>{const f=G.shrineFree(p).find(s=>s.l===l); return 'S'+(l+1)+' ('+f.free+' libre'+(f.free>1?'s':'')+')';}).join(', ')}</small>`:''}</h4>`; ps.appendChild(pboard(p)); H.appendChild(ps);
   }
-function showEnd(r){const M=$('#modal'); M.style.display='flex'; M.innerHTML=`<div class="mbox"><h2>Fin de partie</h2>${r.map((p,i)=>`<div class="rk"><b>${i+1}.</b> <span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — ${p.stars} ${STAR(16)} <small>(${p.starLog.join(', ')||'—'})</small></div>`).join('')}<button class="ob" onclick="location.reload()">Nouvelle partie</button></div>`;}
+function showEnd(r){const M=$('#modal'); M.style.display='flex'; M.innerHTML=`<div class="mbox"><h2>Fin de partie</h2>${r.map((p,i)=>`<div class="rk"><b>${i+1}.</b> <span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — ${p.stars} ${STAR(16)} <small>(${p.starLog.join(', ')||'—'})</small></div>`).join('')}<button class="ob" onclick="location.reload()">Nouvelle partie</button></div>`; endShare();}
+function endShare(){ const S=window.BirdsStats, M=$('#modal .mbox'); if(!S||!S.net()||!M) return; const rec=(NET.role==='guest'&&NET.rec)?NET.rec:S.all().slice(-1)[0]; if(!rec||rec.sim) return;
+  const owner=NET.isOwner; if(owner) return;
+  const box=el('div','eshare'); const done=S.isSent(rec.id); box.innerHTML=`<button class="ob" ${done?'disabled':''}>📤 ${done?'Stats envoyées':'Envoyer les stats de cette partie'}</button><span></span>`; M.insertBefore(box,M.querySelector('button.ob'));
+  const b=box.querySelector('button'), msg=box.querySelector('span');
+  b.onclick=async()=>{ b.disabled=true; msg.textContent=' Envoi…'; let from=''; try{from=localStorage.getItem('birds_from')||'';}catch(e){} if(!from&&G) from=G.players.filter(p=>mine(p)).map(p=>p.name).join(', ');
+    try{ await S.send([rec],from); b.textContent='📤 Stats envoyées'; msg.textContent=' ✓ Merci !'; }catch(e){ b.disabled=false; msg.textContent=' Envoi refusé : votre accès à l\'appli ne le permet pas.'; } };}
 
 document.addEventListener('keydown',e=>{ if(!pending||!mine(pending.p)||/INPUT|TEXTAREA|SELECT/.test((e.target||{}).tagName||'')) return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault(); undo();}
@@ -189,7 +195,7 @@ const CODE_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function netSnap(){const sn=G.snapshot(); sn.objs=sn.objs.map(o=>Object.assign({},o,{d:o.d.id})); delete sn.redObj; delete sn.redThresholds; delete sn.redClaims; return JSON.stringify(sn);}
 function serQ(q){return {title:q.title,main:!!q.main,cards:!!q.cards,cancel:!!q.cancel,personal:!!q.personal,endTurn:!!q.endTurn,
   options:q.options.map(o=>({label:o.label||'',card:o.card||null,target:o.target||null,disabled:!!o.disabled,why:o.why||'',h:(o.card&&o.value===o.card)?1:0,pv:q.personal&&o.value?{id:o.value.id,name:o.value.name,tags:o.value.tags}:null}))};}
-function netDoc(){const d={v:1,host:NET.uid,status:NET.status,seats:NET.seats,t:Date.now(),pend:null,ranking:NET.ranking||null};
+function netDoc(){const d={v:1,host:NET.uid,status:NET.status,seats:NET.seats,t:Date.now(),pend:null,ranking:NET.ranking||null,rec:NET.status==='over'&&NET.rec?NET.rec:null};
   if(G){d.state=netSnap(); if(pending&&pending.p.remote) d.pend={seat:pending.p.i,qid:NET.qid,q:serQ(pending.q),undo:hostCanUndo()};}
   return d;}
 async function netWrite(){ if(!NET.gref) return; if(NET.writing){NET.dirty=true; return;} NET.writing=true;
@@ -238,6 +244,7 @@ function guestApply(d){ NET.seats=d.seats||[]; NET.status=d.status; NET.seat=NET
   const pd=d.pend; if(pd&&pd.seat===NET.seat){ const q=Object.assign({},pd.q,{undo:!!pd.undo,options:pd.q.options.map((o,i)=>Object.assign({},o,{value:i}))});
       if(lastQid!==pd.qid){filterTarget=null; viewer=NET.seat;} lastQid=pd.qid; pending={p:G.players[NET.seat],q,qid:pd.qid}; }
   else pending=null;
+  if(d.status==='over'&&d.rec&&window.BirdsStats){ NET.rec=d.rec; if(!window.BirdsStats.all().some(g=>g.id===d.rec.id)) window.BirdsStats.add(Object.assign({},d.rec,{online:true})); }
   render(); if(d.status==='over'&&d.ranking&&$('#modal').style.display!=='flex') showEnd(d.ranking);}
 // --- salle d'attente
 function setStatus(m){const S=$('#netstatus'); if(S){S.textContent=m; S.hidden=!m;} if(G&&m){io.log('⚠ '+m);}}
@@ -254,6 +261,8 @@ async function netInit(){ const box=$('#onlnote'); if(!window.claude||!window.cl
   // identifiant de joueur propre à cet appareil (gardé dans le navigateur)
   try{ NET.uid=localStorage.getItem('birds_pid'); if(!NET.uid){ NET.uid='p'+Math.random().toString(36).slice(2,12)+Date.now().toString(36); localStorage.setItem('birds_pid',NET.uid);} }catch(e){ NET.uid=NET.uid||('p'+Math.random().toString(36).slice(2,12)); }
   if(!NET.db){ if(box) box.textContent='Mode en ligne indisponible : connectez-vous à votre compte Claude pour jouer en ligne.'; return;}
+  try{ NET.isOwner=NET.user?await NET.user.isOwner():false; }catch(e){ NET.isOwner=false; }
+  window.BirdsNet={db:NET.db,user:NET.user};
   if(NET.canWrite===false){ if(box) box.textContent='Votre accès à l\'appli est en lecture seule : demandez au propriétaire de vous la partager en Contributeur (ou Éditeur) pour jouer en ligne.'; return;}
   if(box) box.textContent=''; $('#modeseg').querySelector('[data-v="online"]').disabled=false;
   try{const c=localStorage.getItem('birds_code'); if(c) $('#jcode').value=c;}catch(e){}}
