@@ -16,7 +16,7 @@ const BUILD={
   workshop:[{chicks:3,food:{}},{chicks:3,food:{fruit:1}},{chicks:3,food:{fruit:2}},{chicks:3,food:{fruit:3}}]
 };
 const BUILD_FR={nest:'Nid',shrine:'Sanctuaire',workshop:'Atelier'};
-const RUNES=['Tag supplémentaire au choix (coût : 1 graine ou 1 fruit)','Le Vol peut avancer d\'1 île de plus','Couvée : relancer l\'effet d\'un Atelier construit','Vos Nids ont +1 capacité','Vos Sanctuaires ont +1 capacité'];
+const RUNES=['Tag supplémentaire au choix (coût : 1 graine ou 1 fruit)','La Nuée peut avancer d\'1 île de plus','Couvée : relancer l\'effet d\'un Atelier construit','Vos Nids ont +1 capacité','Vos Sanctuaires ont +1 capacité'];
 // Chemin des Anciens : piste infinie de 12 cases (la case 12 = case de départ), bonus regagnés à chaque tour
 const ELDERS_LEN=12;
 const ELDERS_BONUS={3:'anyFood',5:'seagull',7:'rune',9:'chickOr2ds',0:'star'};
@@ -57,6 +57,9 @@ const CHICKS_TOTAL=25;
 const TREES_TOTAL={grey:14,yellow:8,green:8};
 
 function rnd(n){return Math.floor(Math.random()*n);}
+// Poids de l'IA : réglage d'origine, et réglage appris par auto-apprentissage (parties IA contre IA)
+const AIW_CLASSIC={play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1,tempo:1};
+const AIW_TRAINED={"play":0,"play2":0.7,"fx":-0.224,"pres":1.5,"colDone":11,"gp":0.935,"blue":2.145,"red":0.641,"gull":2.399,"shr":1.167,"gctx":1,"brood":-0.277,"bmode":2.047,"b3":1.5,"amu":0.464,"lvl":1,"tempo":1.211};
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 function clone(o){return JSON.parse(JSON.stringify(o));}
 
@@ -279,7 +282,7 @@ class Game{
     const s=await this.ask(p,{title:`Où construire ${BUILD_FR[type]} (gratuit) ?`,options:t.map(s=>({label:'Emplacement',value:s,target:{kind:'nest',sid:s.id},score:this.presenceScore(p,isl,2)}))});
     await this.doBuild(p,s.id,type,true);}
   async moveFlockAny(p){const opts=ISLANDS.map((isl,k)=>({label:ISL_FR[isl],value:k,target:{kind:'flock',k},score:this.islandScore(p,isl)})).filter(o=>!this.islandFull(ISLANDS[o.value]));
-    const k=await this.ask(p,{title:'Déplacez votre Vol sur n\'importe quelle île',options:opts}); p.flock=k; this.log(`${p.name} déplace son Vol en ${ISL_FR[ISLANDS[k]]}.`);}
+    const k=await this.ask(p,{title:'Déplacez votre Nuée sur n\'importe quelle île',options:opts}); p.flock=k; this.log(`${p.name} déplace sa Nuée en ${ISL_FR[ISLANDS[k]]}.`);}
   boardActionOptions(p,isl,kind){const out=[];
     if((kind==='expand'||!kind)&&p.chicks>0) this.expandTargets(isl).forEach(r=>out.push({label:`S'étendre — ${ISL_FR[isl]} (arbre ${({grey:'gris',yellow:'jaune',green:'vert'})[r.tree.color]}, bonus : ${r.tree.bonus.map(b=>BON_FR[b]).join(' + ')})`,value:{kind:'expand',r},target:{kind:'region',rid:r.id},score:this.expandScore(p,r)}));
     if((kind==='gather'||!kind)&&p.chicks>0) this.gatherTargets(isl).forEach(r=>out.push({label:`Récolter — ${ISL_FR[isl]} (${this.gatherPreview(r)})`,value:{kind:'gather',r},target:{kind:'region',rid:r.id},score:this.gatherScore(p,r)}));
@@ -340,6 +343,26 @@ class Game{
   // ---------- Capacité Écaille ----------
   dsReady(p){ if((p.dsUsed||0)>=1+(this.has(p,'OG8')?1:0)) return []; return p.tableau.filter(e=>{const fx=window.CARD_FX[e.id]; return fx&&fx.d&&e.ds>=fx.dc&&(!fx.dok||fx.dok(this,p));});}
   async useDS(p,e){const fx=window.CARD_FX[e.id]; e.ds-=fx.dc; p.dsUsed=(p.dsUsed||0)+1; this.log(`${p.name} active la capacité Écaille de ${this.card(e.id).name}.`); await fx.d(this,p,e); this.io.render();}
+  // Entre deux cartes jouées : capacités Écaille et actions annexes
+  async midPlay(p,k,N){ for(;;){ const r=this.dsReady(p), x=this.extras(p); if(!r.length&&!x.length) return true;
+      const can=p.hand.some(id=>this.payments(p,id,1).length);
+      const ch=await this.ask(p,{title:`Entre deux cartes (${k}/${N} jouée${k>1?'s':''})`,options:[{label:can?`Jouer la carte suivante (${k+1}/${N})`:'Continuer (aucune carte payable)',value:'next',score:0},{label:'Arrêter de jouer des cartes',value:'stop',score:0},...r.map(e=>({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:0})),...x]});
+      if(ch==='next') return true; if(ch==='stop'||!ch) return false; if(ch.x) await this.doExtra(p,ch.x); else await this.useDS(p,ch.ds); }}
+  // ---------- Annulation : instantané de l'état au début du tour ----------
+  static deepClone(v,memo){ if(v===null||typeof v!=='object') return v; if(memo.has(v)) return memo.get(v);
+    if(Array.isArray(v)){const a=[]; memo.set(v,a); v.forEach((x,i)=>a[i]=Game.deepClone(x,memo)); return a;}
+    if(Object.getPrototypeOf(v)!==Object.prototype) return v;
+    if(Object.values(v).some(x=>typeof x==='function')) return v; // données statiques (objectifs…) : par référence
+    const o={}; memo.set(v,o); for(const k in v) o[k]=Game.deepClone(v[k],memo); return o;}
+  snapshot(){const keep=new Set(['io','B','regions','nestById','cardById']); const src={}; for(const k of Object.keys(this)) if(!keep.has(k)) src[k]=this[k]; return Game.deepClone(src,new Map());}
+  restore(snap){const keep=new Set(['io','B','regions','nestById','cardById']); for(const k of Object.keys(this)) if(!keep.has(k)&&!(k in snap)) delete this[k]; Object.assign(this,Game.deepClone(snap,new Map()));}
+  async takeTurnUndoable(){const p=this.players[this.current]; if(p.ai||!this.io.undoable) return this.takeTurn();
+    const snap=this.snapshot(); const seed=(Math.random()*4294967296)>>>0; const orig=Math.random; let replay=[];
+    const rng=()=>{let a=seed; return ()=>{a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296;};};
+    this.io.beginTurn&&this.io.beginTurn(null,true);
+    for(;;){ Math.random=rng(); this.io.beginTurn&&this.io.beginTurn(replay,false);
+      try{ await this.takeTurn(); Math.random=orig; this.io.endTurn&&this.io.endTurn(); return; }
+      catch(err){ Math.random=orig; if(!err||!err.undo) throw err; replay=err.replay; this.restore(snap); this.io.undone&&this.io.undone(); }}}
   // ---------- Tour ----------
   adjacentRowSlots(k){return [(k+5)%6,k];}
   moveDests(p,cost){const out=[]; let pos=p.flock, steps=0; const max=cost+this.rm(p,1)+(this.has(p,'ON8')?1:0); let guard=0;
@@ -347,36 +370,36 @@ class Game{
   async takeTurn(){const p=this.players[this.current]; p.dsUsed=0; p.crateUsed=false; this.log(`— Tour de ${p.name} —`); this.io.render();
     let done=false;
     while(!done){ const opts=[];
-      opts.push({label:'Déplacer le Vol puis agir',value:'move',score:0,disabled:p.chicks<=0,why:p.chicks<=0?'Vous n\'avez plus de Poussin disponible':''});
+      opts.push({label:'Déplacer la Nuée puis agir',value:'move',score:0,disabled:p.chicks<=0,why:p.chicks<=0?'Vous n\'avez plus de Poussin disponible':''});
       {const can=p.hand.some(id=>this.payments(p,id,1).length); opts.push({label:'Jouer jusqu\'à '+(2+(this.has(p,'OY4')?1:0))+' cartes',value:'play',score:0,disabled:!can,why:can?'':(p.hand.length?'Aucune carte de votre main n\'est payable pour l\'instant':'Votre main est vide')});}
       opts.push({label:'Couvée',value:'brood',score:0});
       this.dsReady(p).forEach(e=>opts.push({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:0})); this.extras(p).forEach(o=>opts.push(o));
       const ch=await this.ask(p,{title:'Votre tour : que faites-vous ?',main:true,options:opts});
       if(ch&&ch.ds){await this.useDS(p,ch.ds); continue;} if(ch&&ch.x){await this.doExtra(p,ch.x); continue;}
       if(ch==='move'){ const ok=await this.turnMove(p); if(ok===false) continue; }
-      else if(ch==='play'){ const N=2+(this.has(p,'OY4')?1:0); for(let k=0;k<N;k++){ if(k>0&&!p.hand.some(id=>this.payments(p,id,1).length)) break; const ok=await this.playOne(p,{title:`Jouer une carte (${k+1}/${N})`}); if(!ok) break; } }
+      else if(ch==='play'){ const N=2+(this.has(p,'OY4')?1:0); for(let k=0;k<N;k++){ if(k>0&&!p.ai&&!(await this.midPlay(p,k,N))) break; if(k>0&&!p.hand.some(id=>this.payments(p,id,1).length)) break; const ok=await this.playOne(p,{title:`Jouer une carte (${k+1}/${N})`}); if(!ok) break; } }
       else if(ch==='brood') await this.brood(p);
       done=true;}
     // capacité Écaille après l'action
-    while(this.dsReady(p).length||this.extras(p).length){const r=this.dsReady(p); const ch=await this.ask(p,{title:'Autre chose avant de finir ?',options:[{label:'Finir le tour',value:null,score:0.3},...r.map(e=>({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:this.dsScore(p,e)})),...this.extras(p)]}); if(!ch) break; if(ch.x) await this.doExtra(p,ch.x); else await this.useDS(p,ch.ds);}
+    while(this.dsReady(p).length||this.extras(p).length||(!p.ai&&this.io.undoable)){const r=this.dsReady(p); const more=r.length||this.extras(p).length; const ch=await this.ask(p,{title:more?'Autre chose avant de finir ?':'Fin de votre tour',endTurn:true,options:[{label:'Finir le tour',value:null,score:0.3},...r.map(e=>({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:this.dsScore(p,e)})),...this.extras(p)]}); if(!ch) break; if(ch.x) await this.doExtra(p,ch.x); else await this.useDS(p,ch.ds);}
     await this.checkCondStars(p);
     await this.checkSettlements(); p.plan=[];
     this.io.render();}
   async turnMove(p){const slots=this.adjacentRowSlots(p.flock).filter(k=>this.row[k]);
     if(!slots.length) return false;
-    const k=await this.ask(p,{title:'Choisissez une carte adjacente à votre Vol',cancel:true,options:slots.map(k=>({label:this.card(this.row[k]).name+' (déplacement '+this.card(this.row[k]).cost+')',value:k,card:this.row[k],target:{kind:'row',k},score:0}))});
+    const k=await this.ask(p,{title:'Choisissez une carte adjacente à votre Nuée',cancel:true,options:slots.map(k=>({label:this.card(this.row[k]).name+' (déplacement '+this.card(this.row[k]).cost+')',value:k,card:this.row[k],target:{kind:'row',k},score:0}))});
     if(k===undefined||k===null) return false;
     const id=this.row[k]; const dests=this.moveDests(p,this.card(id).cost);
-    const d=await this.ask(p,{title:'Où va votre Vol ?',cancel:true,options:dests.map(x=>({label:ISL_FR[ISLANDS[x]],value:x,target:{kind:'flock',k:x},score:0}))});
+    const d=await this.ask(p,{title:'Où va votre Nuée ?',cancel:true,options:dests.map(x=>({label:ISL_FR[ISLANDS[x]],value:x,target:{kind:'flock',k:x},score:0}))});
     if(d===undefined||d===null) return false;
     const acts=this.boardActionOptions(p,ISLANDS[d],null);
     const a=await this.ask(p,{title:`Action en ${ISL_FR[ISLANDS[d]]} : cliquez une région (S'étendre / Récolter) ou un emplacement (Construire)`,cancel:true,options:[...acts,{label:'Aucune action',value:'none',score:-5}]});
     if(a===undefined||a===null) return false;
-    p.hand.push(id); this.row[k]=null; p.flock=d; this.log(`${p.name} prend ${this.card(id).name} et déplace son Vol en ${ISL_FR[ISLANDS[d]]}.`); this.io.render();
+    p.hand.push(id); this.row[k]=null; p.flock=d; this.log(`${p.name} prend ${this.card(id).name} et déplace sa Nuée en ${ISL_FR[ISLANDS[d]]}.`); this.io.render();
     if(a!=='none') await this.applyBoardAction(p,a);
     this.row[k]=this.drawFromDeck(); this.io.render(); return true;}
   async run(){ for(const p of this.players) await this.choosePersonal(p);
-    while(!this.over){ await this.takeTurn();
+    while(!this.over){ await this.takeTurnUndoable();
       this.current=(this.current+1)%this.players.length;
       if(this.current===0){ if(this.endTriggered){this.over=true; break;} this.round++; }
       await this.io.sleep(50);}
@@ -394,7 +417,8 @@ class Game{
     this.ranking=r; this.log(`Fin de partie ! Vainqueur : ${r[0].name} avec ${r[0].stars} Étoiles.`); this.io.render(); this.io.gameOver&&this.io.gameOver(r);}
   // ---------- Décisions ----------
   async ask(p,q){ q.options=q.options.filter(o=>o); if(!q.options.length) return null;
-    if(p.ai){ await this.io.sleep(this.io.aiDelay||0); return this.aiPick(p,q);} return await this.io.ask(p,q);}
+    if(p.ai){ const t0=Date.now(); if(q.main&&this.io.lookahead&&!this.io.rollout&&(!this.io.lookahead.seats||this.io.lookahead.seats.includes(p.i))){ const v=await this.aiMainLookahead(p,q); if(v!==undefined){ const left=(this.io.aiDelay||0)-(Date.now()-t0); if(left>0) await this.io.sleep(left); return v;} }
+      await this.io.sleep(this.io.aiDelay||0); return this.aiPick(p,q);} return await this.io.ask(p,q);}
   aiPick(p,q){ if(q.main) return this.aiMain(p,q); if(p.plan&&p.plan.length){const want=p.plan[0]; const o=q.options.find(o=>o.value===want||(o.value&&want&&typeof want==='object'&&o.value.kind===want.kind&&o.value.r===want.r&&o.value.s===want.s&&o.value.type===want.type&&o.value.lvl===want.lvl)); if(o){p.plan.shift(); return o.value;}}
     let best=null,bs=-1e9; q.options.forEach(o=>{const s=(o.score||0)+Math.random()*0.3; if(s>bs){bs=s;best=o;}}); return best.value;}
   // ---------- Heuristiques IA ----------
@@ -439,7 +463,7 @@ class Game{
   amuletScore(p,k){ if(!this.W(p).amu) return [1.5,2,1.5,2.5,0.5][k];
     if(k===0){ let v=2.6; const t=this.tags(p); const miss=FAMS.filter(f=>t[f]<1).length-this.wild(p); if(miss===1) v+=1;      // tag joker
       if(p.pobj&&p.pClaims<2) v+=0.8; if([...p.hand,...p.tableau.map(e=>e.id)].some(id=>/1 tag of each/.test(this.card(id).instant||''))) v+=0.6; return v; }
-    if(k===1) return 1.3+(this.endTriggered?0:0.2);                                                          // Vol +1 île
+    if(k===1) return 1.3+(this.endTriggered?0:0.2);                                                          // Nuée +1 île
     if(k===2) return 0.6+0.9*p.built.workshop.length+(p.left.workshop.length?0.3:0);                          // relance d'Atelier
     if(k===3){ let v=0.4+0.5*Math.min(p.nests,3); if(this.redOn(p,'B05')) v+=1.5; if(p.left.nest.length&&p.nests<2) v-=0.3; return v; } // +1 Œuf par Nid
     if(k===4){ let v=0.4+0.6*p.built.shrine.length+0.5*p.hand.filter(id=>this.card(id).type==='relic').length; if(this.redOn(p,'B04')) v+=1.2; return v; } // +1 place Sanctuaire
@@ -451,7 +475,7 @@ class Game{
     if(needSac&&!p.seagulls.some(l=>l===1)) b+=1.8; return b;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
   buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const lvB=this.W(p).lvl?({nest:[0,0.4,1.2,1.3],shrine:[0,0.3,0.6,0.9],workshop:[0,0.2,0.6,0.7]})[b.type][b.lvl]:0; const relNeed=b.type==='shrine'?(this.redOn(p,'B04')?1:0)+p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length*0.5:0; const lvB2=lvB+relNeed*0.6*b.lvl; const base={nest:3.2+lvB,shrine:1.2+lvB2,workshop:2.8+lvB}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
-  W(p){return Object.assign({play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1,tempo:1},p.aiw||window.AIW||{});}
+  W(p){return Object.assign({},AIW_CLASSIC,AIW_TRAINED,p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
@@ -461,7 +485,29 @@ class Game{
       if(p.pobj&&p.pClaims<2){const add2=(c.tagMap[p.pobj.tags[0]]||0)+(c.tagMap[p.pobj.tags[1]]||0); if(add2&&this.persoValue(p)+add2>=PERSO_TH[p.pClaims]) tempoB+=7;} tempoB*=W1.tempo;}
     let v=tempoB+this.fxValue(p,c)+gb+(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+persoB+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
   dsScore(p,e){return 1.2;}
-  aiMain(p,q){ // évalue globalement les options principales
+  // ---------- IA : anticipation par simulations (Monte-Carlo) ----------
+  async aiMainLookahead(p,q){ const L=this.io.lookahead; const K=L.k||6, R=L.r||3;
+    const all=this.aiMain(p,q,true); if(!all) return undefined; // capacité Écaille prioritaire : comportement habituel
+    const seen=new Set(), cands=[]; all.slice().sort((a,b)=>b.s-a.s).forEach(c=>{const key=c.v+':'+JSON.stringify(c.plan); if(!seen.has(key)){seen.add(key); cands.push(c);}});
+    const pick=[]; for(const c of cands){ if(pick.length>=K) break; pick.push(c);} ['play','brood','move'].forEach(v=>{ if(!pick.some(c=>c.v===v)){const c=cands.find(c=>c.v===v); if(c) pick.push(c);} });
+    if(pick.length<=1) return undefined;
+    const snap=this.snapshot(); let best=null, bs=-1e9;
+    for(const c of pick){ let tot=0; for(let r=0;r<R;r++){ tot+=await this.rollout(snap,p.i,c); if(L.yield) await new Promise(res=>setTimeout(res,0)); }
+      const sc=tot/R+c.s*0.02; if(sc>bs){bs=sc; best=c;} }
+    p.broodStreak=best.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.plan.slice(); return best.v;}
+  async rollout(snap,mi,cand){ const rio={aiDelay:0,sim:true,rollout:true,sleep:()=>Promise.resolve(),log(){},render(){},ask(){throw new Error('rollout');},gameOver(){}};
+    const g=Object.create(Game.prototype); g.io=rio; g.B=this.B; g.regions=this.regions; g.nestById=this.nestById; g.cardById=this.cardById; g.restore(snap);
+    g.players.forEach(x=>{x.ai=true; delete x.remote;});
+    // les cartes cachées (mains adverses, pioche) sont redistribuées au hasard
+    const pool=g.deck.slice(); g.players.forEach(x=>{ if(x.i!==mi) pool.push(...x.hand);}); shuffle(pool);
+    g.players.forEach(x=>{ if(x.i!==mi){ const n=x.hand.length; x.hand=pool.splice(0,n);} }); g.deck=pool;
+    g.players[mi].forced=cand; const r0=g.round, n=g.players.length; let guard=0;
+    try{ while(!g.over&&guard++<400){ await g.takeTurn(); g.current=(g.current+1)%n; if(g.current===0){ if(g.endTriggered){g.over=true; break;} g.round++; if(g.round-r0>40) break; } } }catch(e){ return 0; }
+    const me=g.players[mi], opp=Math.max(...g.players.filter(x=>x.i!==mi).map(x=>x.stars));
+    const win=me.stars>opp||(me.stars===opp&&g.players.filter(x=>x.i!==mi).every(x=>me.chicks>x.chicks||(me.chicks===x.chicks&&me.eggs>=x.eggs)));
+    return (win?4:0)+(me.stars-opp)-(win?0.12*(g.round-r0):0);}
+  aiMain(p,q,all){ // évalue globalement les options principales
+    if(p.forced&&!all){const f=p.forced; p.forced=null; p.broodStreak=f.v==='brood'?(p.broodStreak||0)+1:0; p.plan=f.plan.slice(); return f.v;}
     const cands=[]; p.plan=[];
     if(q.options.some(o=>o.value==='move'&&!o.disabled)){ this.adjacentRowSlots(p.flock).filter(k=>this.row[k]).forEach(k=>{const id=this.row[k]; const cv=this.cardValue(p,id)+0.2;
         this.moveDests(p,this.card(id).cost).forEach(d=>{ this.boardActionOptions(p,ISLANDS[d],null).forEach(a=>cands.push({s:cv+a.score,plan:[k,d,a.value],v:'move'})); cands.push({s:cv-1.5,plan:[k,d,'none'],v:'move'}); });});}
@@ -476,8 +522,9 @@ class Game{
       if(p.chicks===0) bAdj+=3; else if(p.chicks===1) bAdj+=0.5; else bAdj-=W.bmode*(p.chicks>=3?W.b3:1);
       if(starNow) bAdj+=late?6:3; }
     cands.push({s:bv+eggHold+bAdj,plan:[],v:'brood'});
-    const ds=q.options.find(o=>o.value&&o.value.ds); if(ds) return ds.value;
+    const ds=q.options.find(o=>o.value&&o.value.ds); if(ds) return all?null:ds.value;
+    if(all) return cands;
     cands.forEach(c=>c.s+=Math.random()*0.5); cands.sort((a,b)=>b.s-a.s); const best=cands[0]; p.broodStreak=best.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.plan.slice(); return best.v;}
 }
-window.BirdsGame={Game,PERSONAL,PERSO_TH,RED_OBJ,BLUE_OBJ,ISLANDS,ISL_FR,FOOD_FR,BUILD,BUILD_FR,RUNES,ELDERS_LEN,ELDERS_BONUS,ELDERS_FR,COLORS,FAM,FAMS,TREE_FOOD,NEUTRAL};
+window.BirdsGame={Game,AIW_CLASSIC,AIW_TRAINED,PERSONAL,PERSO_TH,RED_OBJ,BLUE_OBJ,ISLANDS,ISL_FR,FOOD_FR,BUILD,BUILD_FR,RUNES,ELDERS_LEN,ELDERS_BONUS,ELDERS_FR,COLORS,FAM,FAMS,TREE_FOOD,NEUTRAL};
 })();

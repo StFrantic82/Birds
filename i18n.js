@@ -11,7 +11,26 @@ const R=[
 
 [/^Changer de couleur \((\w+)\)$/,(m,c)=>`Change colour (${({Rouge:'Red',Bleu:'Blue',Blanc:'White',Violet:'Purple'})[c]||c})`],
 [/^Aide de jeu$/,'Player aid'],[/^Étoile en attente : condition non remplie$/,'Pending Star: condition not met yet'],[/^📊 Statistiques$/,'📊 Statistics'],[/^Chemin des Anciens$/,"Elders' Path"],[/^Nouvelle partie$/,'New game'],[/^Fin de partie$/,'Game over'],
-[/^Partie terminée$/,'Game over'],[/^(.+) réfléchit…$/,'$1 is thinking…'],[/^← Autres choix$/,'← Other choices'],[/^Annuler$/,'Cancel'],
+[/^Partie terminée$/,'Game over'],
+[/^Retour$/,'Back'],[/^Niveau des IA$/,'AI level'],[/^Classique$/,'Classic'],[/^Experte$/,'Expert'],
+[/^Mode de jeu$/,'Game mode'],[/^Sur cet appareil$/,'On this device'],[/^🌐 En ligne$/,'🌐 Online'],[/^Vérification du mode en ligne…$/,'Checking online mode…'],[/^Créer une partie$/,'Create a game'],[/^Rejoindre$/,'Join'],
+[/^Votre nom$/,'Your name'],[/^Code de la partie$/,'Game code'],[/^Rejoindre la partie$/,'Join the game'],[/^Créer la partie en ligne$/,'Create online game'],[/^Vous \(hôte\)$/,'You (host)'],[/^En ligne$/,'Online'],
+[/^Donnez ce code à vos amis : ils le saisissent dans « En ligne → Rejoindre »\.$/,'Give this code to your friends: they enter it under “Online → Join”.'],[/^Vous êtes dans la salle d'attente\.$/,"You're in the waiting room."],
+[/^hôte$/,'host'],[/^vous$/,'you'],[/^en ligne$/,'online'],[/^en attente…$/,'waiting…'],[/^Place libre$/,'Free seat'],[/^Hôte$/,'Host'],[/^En attente de (\d+) joueurs?…$/,(m,n)=>`Waiting for ${n} player${n>1?'s':''}…`],
+[/^En attente du lancement par l'hôte…$/,'Waiting for the host to start…'],[/^Demande envoyée, en attente d'une place…$/,'Request sent, waiting for a seat…'],
+[/^Partie introuvable\. Vérifiez le code\.$/,'Game not found. Check the code.'],[/^Cette partie a déjà commencé\.$/,'This game has already started.'],[/^Cette partie est complète\.$/,'This game is full.'],[/^Le code fait 4 caractères\.$/,'The code is 4 characters long.'],
+[/^Connexion perdue avec la partie en ligne\.$/,'Connection to the online game was lost.'],[/^La partie ne répond pas encore…$/,'The game is not responding yet…'],
+[/^Mode en ligne indisponible ici : ouvrez l'appli sur claude\.ai, connecté à votre compte\.$/,'Online mode unavailable here: open the app on claude.ai, signed in to your account.'],
+[/^Mode en ligne indisponible : connectez-vous à votre compte Claude pour jouer en ligne\.$/,'Online mode unavailable: sign in to your Claude account to play online.'],
+[/^Votre accès à l'appli est en lecture seule : demandez au propriétaire de vous la partager en Contributeur \(ou Éditeur\) pour jouer en ligne\.$/,'Your access to the app is read-only: ask the owner to share it with you as Contributor (or Editor) to play online.'],
+[/^Impossible de rejoindre : votre accès à l'appli ne permet pas de jouer \(il faut être Contributeur ou Éditeur\)\.$/,'Cannot join: your access to the app does not allow playing (Contributor or Editor needed).'],
+[/^Objectif rouge$/,'Red objective'],[/^Objectif bleu$/,'Blue objective'],[/^cliquez une carte$/,'click a card'],[/^👉 Cliquez directement sur une carte en surbrillance dans votre main\.$/,'👉 Click a highlighted card in your hand.'],[/^Choisir (.+)$/,'Choose $1'],[/^🏠 Accueil$/,'🏠 Home'],[/^Quitter \? ✓$/,'Quit? ✓'],[/^Statistiques$/,'Statistics'],[/^Retour à l'accueil$/,'Back to home screen'],[/^↶ Annuler mon dernier choix$/,'↶ Undo my last choice'],[/^Revenir au choix précédent \(Ctrl\+Z\)$/,'Go back to the previous choice (Ctrl+Z)'],[/^Fin de votre tour$/,'End of your turn'],
+[/^Entre deux cartes \((\d+)\/(\d+) jouées?\)$/,'Between two cards ($1/$2 played)'],[/^Jouer la carte suivante \((\d+)\/(\d+)\)$/,'Play the next card ($1/$2)'],[/^Arrêter de jouer des cartes$/,'Stop playing cards'],[/^Continuer \(aucune carte payable\)$/,'Continue (no affordable card)'],
+[/^Cartes en jeu$/,'Cards in play'],[/^Plateau joueur$/,'Player board'],[/^Main$/,'Hand'],[/^survol = zoom$/,'hover = zoom'],[/^Aucune carte en main$/,'No cards in hand'],[/^Aucune carte en jeu pour l'instant\.$/,'No cards in play yet.'],
+[/^(\d+) cartes?( · cachée)?$/,(m,n,h)=>`${n} card${n>1?'s':''}${h?' · hidden':''}`],[/^Voir le plateau de (.+)$/,'Show $1’s board'],[/^Joue en ce moment$/,'Playing now'],
+[/^Compte comme Oiseau de coût (\d)$/,'Counts as a cost-$1 Bird'],[/^Couvée : pondre 1 Œuf$/,'Brood: lay 1 egg'],[/^Couvée : \+1 Anciens \(niv\. 2\+\)$/,'Brood: Elders +1 (lvl 2+)'],[/^Joker de tag \(niv\. 3\+\)$/,'Wild tag (lvl 3+)'],
+[/^Mouette de niveau (\d) — améliorable jusqu'au niveau 4$/,'Level $1 Seagull — can be upgraded up to level 4'],
+[/^(.+) réfléchit…$/,'$1 is thinking…'],[/^← Autres choix$/,'← Other choices'],[/^Annuler$/,'Cancel'],
 [/^Astuce : vous pouvez aussi cliquer directement sur les cibles en surbrillance sur le plateau\.$/,'Tip: you can also click the highlighted targets directly on the board.'],
 [/^Manche (\d+)( — dernière manche)? · Pioche (\d+)$/,(m,a,b,c)=>`Round ${a}${b?' — final round':''} · Deck ${c}`],
 [/^(.+) — main \((\d+)\)( : cachée)?$/,(m,a,b,c)=>`${a} — hand (${b})${c?' : hidden':''}`],
@@ -31,20 +50,20 @@ const R=[
 [/^Nids :$/,'Nests:'],[/^Nid de départ$/,'Starting nest'],[/^Nid construit$/,'Built nest'],
 [/^Présence \(6 = Colonie\)$/,'Presence (6 = Settlement)'],[/^Étoile de Colonie \((.+)\) : 6 de présence$/,(m,i)=>`Settlement star (${ISL[i]||i}): 6 presence`],
 [/^Colonie de (.+)$/,"$1's settlement"],[/^Étoile prise par (.+)$/,'Star taken by $1'],[/^Seuil (\d+)$/,'Threshold $1'],
-[/^(.+) : hors de portée de votre Vol ce tour-ci$/,(m,i)=>`${ISL[i]||i}: out of your Flock's reach this turn`],
-[/^Vers$/,'Worms'],[/^Réserve$/,'Supply'],[/^Œufs \/ capacité des Nids$/,'Eggs / nest capacity'],[/^Instantanée$/,'Instant'],[/^Choisissez une carte adjacente à votre Vol$/,'Choose a card next to your Flock'],[/^Graines$/,'Seeds'],[/^Fruits$/,'Fruits'],[/^Œuf$/,'Egg'],[/^Mouettes \(niveaux : (.*)\)$/,'Seagulls (levels: $1)'],
+[/^(.+) : hors de portée de votre Nuée ce tour-ci$/,(m,i)=>`${ISL[i]||i}: out of your Flock's reach this turn`],
+[/^Vers$/,'Worms'],[/^Réserve$/,'Supply'],[/^Œufs \/ capacité des Nids$/,'Eggs / nest capacity'],[/^Instantanée$/,'Instant'],[/^Choisissez une carte adjacente à votre Nuée$/,'Choose a card next to your Flock'],[/^Graines$/,'Seeds'],[/^Fruits$/,'Fruits'],[/^Œuf$/,'Egg'],[/^Mouettes \(niveaux : (.*)\)$/,'Seagulls (levels: $1)'],
 [/^Amulettes : (.*)$/,(m,a)=>'Amulets: '+tr(a==='aucune'?'none':a)],[/^Chemin des Anciens : case (\d+)( \(tour (\d+)\))?$/,(m,a,b,c)=>`Elders' Path: space ${a}${b?` (lap ${c})`:''}`],
 [/^(\d+) Étoile\(s\)$/,'$1 Star(s)'],[/^(\d+) Écailles? de dragon$/,'$1 dragonscale(s)'],
 [/^Arbre \((\w+)\)$/,'Tree ($1)'],
 [/^Emplacement d'arbre (\w+) — bonus : (.*)$/,(m,c,b)=>`${({grey:'Grey',yellow:'Yellow',green:'Green'})[c]||c} tree slot — bonus: ${tr(b)}`],
-[/^Vol de (.+)$/,"$1's Flock"],
+[/^Nuée de (.+)$/,"$1's Flock"],
 // ---------- actions ----------
-[/^Déplacer le Vol puis agir$/,'Move Flock then act'],[/^Jouer jusqu'à (\d) cartes$/,'Play up to $1 cards'],[/^Couvée$/,'Brood'],
+[/^Déplacer la Nuée puis agir$/,'Move Flock then act'],[/^Jouer jusqu'à (\d) cartes$/,'Play up to $1 cards'],[/^Couvée$/,'Brood'],
 [/^Vous n'avez plus de Poussin disponible$/,'You have no chick available'],[/^Aucune carte de votre main n'est payable pour l'instant$/,'No card in your hand is affordable right now'],
 [/^Votre main est vide$/,'Your hand is empty'],[/^Capacité Écaille : (.+)$/,'Dragonscale ability: $1'],
 [/^Autre chose avant de finir \?$/,'Anything else before ending?'],[/^Finir le tour$/,'End turn'],
-[/^Choisissez une carte adjacente à votre Vol$/,'Choose a card next to your Flock'],[/^(.+) \(déplacement (\d+)\)$/,'$1 (move $2)'],
-[/^Où va votre Vol \?$/,'Where does your Flock go?'],
+[/^Choisissez une carte adjacente à votre Nuée$/,'Choose a card next to your Flock'],[/^(.+) \(déplacement (\d+)\)$/,'$1 (move $2)'],
+[/^Où va votre Nuée \?$/,'Where does your Flock go?'],
 [/^Action en (.+) : cliquez une région \(S'étendre \/ Récolter\) ou un emplacement \(Construire\)$/,(m,i)=>`Action in ${ISL[i]||i}: click a region (Expand / Gather) or a building spot (Build)`],
 [/^Aucune action$/,'No action'],
 [/^S'étendre — (\S+) \(arbre (\w+), bonus : (.*)\)$/,(m,i,c,b)=>`Expand — ${ISL[i]||i} (${({gris:'grey',jaune:'yellow',vert:'green'})[c]} tree, bonus: ${tr(b)})`],
@@ -73,7 +92,7 @@ const R=[
 [/^Déclencher quel Atelier \?$/,'Trigger which Workshop?'],[/^Atelier (\d) : (.+)$/,(m,k,e)=>`Workshop ${k}: ${tr(e)}`],
 [/^Placez un Poussin de votre réserve sur une Ruine$/,'Place a chick from your supply on a Ruin'],[/^Ruine — (\S+)$/,(m,i)=>`Ruin — ${ISL[i]||i}`],
 [/^Où construire (.+) \(gratuit\) \?$/,(m,b)=>`Where to build ${tr(b)} (free)?`],[/^Emplacement$/,'Spot'],
-[/^Déplacez votre Vol sur n'importe quelle île$/,'Move your Flock to any island'],
+[/^Déplacez votre Nuée sur n'importe quelle île$/,'Move your Flock to any island'],
 [/^Construire gratuitement :$/,'Build for free:'],
 [/^Limite de main : défaussez jusqu'à (\d+) cartes$/,'Hand limit: discard down to $1 cards'],
 [/^Atelier : défausser 1 carte pour avancer d'1 case sur le Chemin des Anciens \(et déclencher vos Ateliers\) \?$/,"Workshop: discard 1 card to advance 1 space on the Elders' Path (and trigger your Workshops)?"],
@@ -114,12 +133,12 @@ const R=[
 [/^(.+) place un Poussin sur une Ruine en (\S+)\.$/,(m,p,i)=>`${p} places a chick on a Ruin in ${ISL[i]||i}.`],
 [/^(.+) n'a pas de Poussin disponible\.$/,'$1 has no chick available.'],[/^Aucune cible possible\.$/,'No valid target.'],
 [/^Construction gratuite impossible ici\.$/,'Free build not possible here.'],
-[/^(.+) déplace son Vol en (\S+)\.$/,(m,p,i)=>`${p} moves their Flock to ${ISL[i]||i}.`],
+[/^(.+) déplace sa Nuée en (\S+)\.$/,(m,p,i)=>`${p} moves their Flock to ${ISL[i]||i}.`],
 [/^(.+) n'a aucune carte jouable\.$/,'$1 has no playable card.'],
 [/^(.+) joue (.+) gratuitement\.$/,'$1 plays $2 for free.'],[/^(.+) joue (.+) \((.+)\)\.$/,(m,p,c,x)=>`${p} plays ${c} (${tr(x)}).`],[/^(.+) joue (.+)\.$/,'$1 plays $2.'],
 [/^(.+) fait une Couvée\.$/,'$1 broods.'],[/^Couvée — Mouette niveau (\d)$/,'Brood — Seagull level $1'],[/^Couvée — (.+)$/,'Brood — $1'],
 [/^(.+) active la capacité Écaille de (.+)\.$/,"$1 uses $2's dragonscale ability."],
-[/^(.+) prend (.+) et déplace son Vol en (\S+)\.$/,(m,p,c,i)=>`${p} takes ${c} and moves their Flock to ${ISL[i]||i}.`],
+[/^(.+) prend (.+) et déplace sa Nuée en (\S+)\.$/,(m,p,c,i)=>`${p} takes ${c} and moves their Flock to ${ISL[i]||i}.`],
 [/^Fin de partie ! Vainqueur : (.+) avec (\d) Étoiles\.$/,'Game over! Winner: $1 with $2 Stars.'],
 [/^La défausse est remélangée dans la pioche\.$/,'The discard pile is shuffled into the deck.'],
 [/^(.+) choisit l'objectif personnel (.+) \((.+)\)\.$/,'$1 chooses the personal objective $2 ($3).'],
@@ -130,7 +149,7 @@ const R=[
 // mots isolés (après les phrases)
 const W=[[/avancer d'1 case sur le Chemin des Anciens/g,"advance 1 space on the Elders' Path"],[/construire gratuitement votre (Nid|Sanctuaire|Atelier) le moins cher ici/g,(m,b)=>`build your cheapest ${({Nid:'Nest',Sanctuaire:'Shrine',Atelier:'Workshop'})[b]} here for free`],[/construire gratuitement ici/g,'build here for free'],[/récolter sur n'importe quelle île/g,'gather on any island'],[/s'étendre sur n'importe quelle île/g,'expand on any island'],[/retirer votre Nid \/ Atelier \/ Sanctuaire le moins cher/g,'remove your cheapest Nest / Workshop / Shrine'],[/gagner une Amulette/g,'gain an Amulet'],[/jouer 1 Oiseau gratuitement/g,'play 1 Bird for free'],[/avancer de 2 sur le Chemin des Anciens/g,"advance 2 on the Elders' Path"],[/piocher 1 carte par Nid/g,'draw 1 card per Nest'],[/un Poussin sur une Ruine/g,'a chick on a Ruin'],[/révéler 3 deux fois/g,'reveal 3 twice'],[/pour piocher (\d)/g,'to draw $1'],[/jouer 1 carte/g,'play 1 card'],[/(\d) nourriture au choix/g,'$1 food of your choice'],[/gagner (\d+) Poussin\(s\)/g,'gain $1 chick(s)'],[/Révéler (\d)/g,'Reveal $1'],[/Éclore 1 Œuf/g,'Hatch 1 egg'],[/Graine ou fruit/g,'Seed or fruit'],[/S'étendre \(toute île\)/g,'Expand (any island)'],[/Récolter \(toute île\)/g,'Gather (any island)'],[/Construire \(toute île\)/g,'Build (any island)'],[/Retirer bâtiment/g,'Remove building'],[/Jouer 1 carte/g,'Play 1 card'],[/Piocher 1/g,'Draw 1'],[/Chemin des Anciens/g,"Elders' Path"],[/Objectif personnel/g,'Personal objective'],[/Objectif rouge/g,'Red objective'],[/Objectif bleu/g,'Blue objective'],
  [/Colonie/g,'Settlement'],[/Tag supplémentaire au choix \(coût : 1 graine ou 1 fruit\)/g,'Extra tag of your choice (cost: 1 seed or 1 fruit)'],
- [/Le Vol peut avancer d'1 île de plus/g,'The Flock may move 1 more island'],[/Couvée : relancer l'effet d'un Atelier construit/g,'Brood: re-trigger a built Workshop'],
+ [/La Nuée peut avancer d'1 île de plus/g,'The Flock may move 1 more island'],[/Couvée : relancer l'effet d'un Atelier construit/g,'Brood: re-trigger a built Workshop'],
  [/Vos Nids ont \+1 capacité/g,'Your Nests have +1 capacity'],[/Vos Sanctuaires ont \+1 capacité/g,'Your Shrines have +1 capacity'],
  [/1 nourriture au choix/g,'1 food of your choice'],[/gagner ou améliorer une Mouette/g,'gain or upgrade a Seagull'],[/1 Poussin ou jusqu'à 2 Écailles/g,'1 chick or up to 2 dragonscales'],
  [/révéler (\d) cartes/g,'reveal $1 cards'],[/éclore 1 Œuf/g,'hatch 1 egg'],[/graine ou fruit/g,'seed or fruit'],[/construire sur toute île/g,'build on any island'],[/récolter sur toute île/g,'gather on any island'],
@@ -141,24 +160,25 @@ const W=[[/avancer d'1 case sur le Chemin des Anciens/g,"advance 1 space on the 
  [/Îles où vous avez au moins 2 Poussins/g,'Islands where you have at least 2 chicks'],[/Régions différentes avec Ruine où vous avez un Poussin/g,'Different Ruin regions where you have a chick'],[/Poussins dans des régions avec Ruine/g,'Chicks in regions with a Ruin'],
  [/Reliques/g,'Relics'],[/Relique/g,'Relic'],[/Amulettes/g,'Amulets'],[/Amulette/g,'Amulet'],[/Mouettes/g,'Seagulls'],[/Mouette/g,'Seagull'],
  [/Sanctuaires/g,'Shrines'],[/Sanctuaire/g,'Shrine'],[/Ateliers/g,'Workshops'],[/Atelier/g,'Workshop'],[/Nids/g,'Nests'],[/\bNid\b/g,'Nest'],
- [/Poussins/g,'chicks'],[/Poussin/g,'chick'],[/Œufs/g,'eggs'],[/Œuf/g,'egg'],[/Écailles/g,'dragonscales'],[/Écaille/g,'dragonscale'],[/Étoiles/g,'Stars'],[/Étoile/g,'Star'],
+ [/[Pp]oussins/g,'chicks'],[/[Pp]oussin/g,'chick'],[/Œufs/g,'eggs'],[/Œuf/g,'egg'],[/Écailles/g,'dragonscales'],[/Écaille/g,'dragonscale'],[/Étoiles/g,'Stars'],[/Étoile/g,'Star'],
  [/Alliés/g,'Allies'],[/Allié/g,'Ally'],[/Oiseaux/g,'Birds'],[/Oiseau/g,'Bird'],[/\bcartes défaussées\b/g,'discarded cards'],[/\bcarte défaussée\b/g,'discarded card'],[/\bcartes\b/g,'cards'],[/\bcarte\b/g,'card'],
  [/\bvers\b/g,'worms'],[/\bver\b/g,'worm'],[/\bgraines\b/g,'seeds'],[/\bgraine\b/g,'seed'],[/\bfruits\b/g,'fruits'],[/\bnourriture\b/g,'food'],
  [/\bProfil\b/g,'Profile'],[/ et /g,' and '],[/\baucune\b/g,'none'],[/\bniveau\b/g,'level'],[/\bmanche\b/g,'round'],
  [/\bIA\b/g,'AI'],[/\bBât\. /g,'Bld. '],[/Prairie|Désert|Montagne|Toundra|Marais/g,m=>ISL[m]],[/\bVous\b/g,'You'],
 ];
 const cache=new Map();
-function tr(s){ if(LANG!=='en'||!s||!/[A-Za-zÀ-ÿ]/.test(s)) return s; if(cache.has(s)) return cache.get(s);
-  let out=s, t=s.trim(), done=false;
-  for(const [re,rep] of R){ if(re.test(t)){ out=s.replace(t,t.replace(re,rep)); done=true; break; } }
-  for(const [re,rep] of W) out=out.replace(re,rep);
+function tables(){ return LANG==='it'&&window.I18N_IT?window.I18N_IT:{R,W}; }
+function tr(s){ if(LANG==='fr'||!s||!/[A-Za-zÀ-ÿ]/.test(s)) return s; if(cache.has(s)) return cache.get(s);
+  const T=tables(); let out=s, t=s.trim(), done=false;
+  for(const [re,rep] of T.R){ if(re.test(t)){ out=s.replace(t,t.replace(re,rep)); done=true; break; } }
+  for(const [re,rep] of T.W) out=out.replace(re,rep);
   cache.set(s,out); return out;}
-function trDOM(root){ if(LANG!=='en') return; root=root||document.body;
+function trDOM(root){ if(LANG==='fr') return; root=root||document.body;
   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT); const nodes=[]; while(w.nextNode()) nodes.push(w.currentNode);
   nodes.forEach(n=>{ if(n.parentNode&&/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)) return; const v=n.nodeValue; const t=tr(v); if(t!==v) n.nodeValue=t; });
-  root.querySelectorAll&&root.querySelectorAll('[title],input[value]').forEach(e=>{ if(e.title){const t=tr(e.title); if(t!==e.title) e.title=t;} });}
+  root.querySelectorAll&&root.querySelectorAll('[title],input[placeholder]').forEach(e=>{ if(e.title){const t=tr(e.title); if(t!==e.title) e.title=t;} if(e.placeholder){const t=tr(e.placeholder); if(t!==e.placeholder) e.placeholder=t;} });}
 let pending=false;
-const obs=new MutationObserver(()=>{ if(LANG!=='en'||pending) return; pending=true; requestAnimationFrame(()=>{pending=false; obs.disconnect(); trDOM(document.body); obs.observe(document.body,{childList:true,subtree:true,characterData:true});}); });
+const obs=new MutationObserver(()=>{ if(LANG==='fr'||pending) return; pending=true; requestAnimationFrame(()=>{pending=false; obs.disconnect(); trDOM(document.body); obs.observe(document.body,{childList:true,subtree:true,characterData:true});}); });
 window.I18N={get lang(){return LANG;},set(l){LANG=l; cache.clear(); try{localStorage.setItem('birds_lang',l);}catch(e){} document.documentElement.lang=l;},tr,trDOM,
-  start(){ document.documentElement.lang=LANG; if(LANG==='en') trDOM(document.body); obs.observe(document.body,{childList:true,subtree:true,characterData:true}); }};
+  start(){ document.documentElement.lang=LANG; if(LANG!=='fr') trDOM(document.body); obs.observe(document.body,{childList:true,subtree:true,characterData:true}); }};
 })();

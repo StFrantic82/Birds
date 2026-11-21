@@ -48,7 +48,8 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 .note{font-size:12px;color:var(--muted);margin-top:16px;border-top:1px dashed var(--line);padding-top:12px}
 /* game */
 #game{display:none;height:100vh;gap:10px;padding:10px}
-#left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;overflow:auto}
+#left{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;min-height:0}
+#lscroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;border-radius:12px}
 #right{width:360px;flex:none;display:flex;flex-direction:column;gap:8px;min-height:0}
 #boardwrap{position:relative;width:100%;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px #0002;flex:none}
 #boardimg{width:100%;display:block}
@@ -121,6 +122,7 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 .mvic{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 40% 35%,color-mix(in srgb,var(--c) 70%,white),var(--c) 70%);box-shadow:0 3px 0 color-mix(in srgb,var(--c) 60%,black)}
 .mvic img{width:62%!important;height:auto!important}
 .obi{height:20px;vertical-align:-5px;margin-right:5px}
+.bico{display:inline-block;width:22px;height:22px;vertical-align:-6px;margin-right:7px;box-shadow:0 2px 0 var(--cd),0 3px 3px #0005}
 .pboard{position:relative;max-width:900px;margin:6px 0 4px}
 .pbimg{width:100%;display:block}
 .pbt{position:absolute;transform:translate(-50%,-50%)}
@@ -141,6 +143,7 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 .pboard.hasobj{margin-top:20%}
 .pbobj{position:absolute;left:15%;bottom:98.5%;width:18.3%;aspect-ratio:614/680;overflow:hidden;border-radius:10px 10px 0 0;box-shadow:0 -2px 8px #0003;z-index:0;cursor:help}
 .pbobj img{width:100%;display:block}
+.ptag{height:16px;vertical-align:-4px;margin:0 1px}
 .tagc img{height:15px;vertical-align:-3px}
 .statsb{margin-top:10px;border:0;background:#e7d6b4;color:#5a4a30;font:600 15px Fredoka,sans-serif;border-radius:12px;padding:9px 16px;cursor:pointer}.statsb:hover{background:#dcc9a3}
 #stats{position:fixed;inset:0;z-index:80;background:#06262ecc;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
@@ -165,6 +168,59 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 .ftag{height:17px;vertical-align:-4px}
 .islic{height:22px;vertical-align:-6px;margin-right:4px}
 #zoom{position:fixed;display:none;pointer-events:none;z-index:120;filter:drop-shadow(0 8px 18px #0005)}
+/* dock d'actions (toujours visible) */
+#dock{position:relative;z-index:25;display:flex;gap:8px;align-items:stretch;flex:none}
+#dock #prompt{flex:1;min-width:0;max-height:42vh;overflow:auto;box-shadow:0 -4px 14px -6px #0003}
+#prompt .card.mid{width:104px}
+#topbtns{display:flex;gap:4px;white-space:nowrap;flex:none}#round{line-height:1.2;margin-left:6px}
+.objrow{display:flex;gap:8px;align-items:flex-start}.objimg{width:96px;flex:none;border-radius:5px;border:2px solid;margin-top:2px}
+#homebtn.warn{background:#ffe1d6;border-color:#d9744f;color:#8a2f12}
+#prompt .qt{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ob.undo{margin-left:auto;font-size:12.5px;padding:5px 10px;background:#fff3d6;border-color:#e0b65c;color:#7a5410}.ob.undo:hover{background:#ffe7b0}
+#prompt .opts.main{display:flex;flex-wrap:wrap;gap:6px}
+#prompt .actb{flex-direction:row;padding:4px 12px 4px 5px;gap:7px;font-size:13px;border-radius:11px;border-width:1.5px}#prompt .actb:hover{box-shadow:0 2px 0 #e0c793}
+#prompt .actb img{width:28px;height:28px}#prompt .actb img.dsic{width:22px;height:auto}#prompt .mvic{width:28px;height:28px;box-shadow:0 2px 0 color-mix(in srgb,var(--c) 60%,black)}
+#prompt .actb small{font-size:10px;max-width:150px;text-align:left;line-height:1.15}
+#myhand{flex:none;width:clamp(240px,36%,470px);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 8px;display:flex;flex-direction:column;min-height:0}
+#myhand:empty{display:none}
+#myhand .mh{font:600 13px Fredoka,Inter,sans-serif;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+#myhand .mh small{font:400 11px Inter,sans-serif;color:var(--muted);margin-left:auto}
+#myhand .cards{display:flex;gap:5px;overflow-x:auto;padding-bottom:3px}
+#myhand .card{flex:1 1 0;max-width:76px;min-width:46px}
+#myhand.picking{border:2px solid #f2a33a;box-shadow:0 0 0 3px #f2a33a33}
+#myhand.picking .mh small{color:#b86a0c;font-weight:600}
+#myhand .card.pick{cursor:pointer;outline:3px solid #f2a33a;outline-offset:-1px;transform:translateY(-2px);transition:transform .12s}#myhand .card.pick:hover{transform:translateY(-6px)}
+#myhand .card.nopick{opacity:.35;filter:grayscale(.7)}
+.pickhint{font-size:13px;color:#8a560c;background:#fff3d6;border-radius:8px;padding:6px 10px;margin:0 0 8px}
+#myhand .empty{font-size:12px;color:var(--muted);padding:8px 0}
+/* zone des joueurs : onglets */
+.ptabs{display:flex;gap:2px;border-bottom:2px solid var(--line);margin:-4px -4px 10px;padding:0 4px;overflow-x:auto}
+.ptab{border:0;background:transparent;padding:7px 12px 6px;border-radius:10px 10px 0 0;font:600 14px Fredoka,Inter,sans-serif;cursor:pointer;color:var(--muted);display:flex;gap:6px;align-items:center;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.ptab:hover{background:#fff6e4;color:var(--ink)}
+.ptab.on{color:var(--ink);border-bottom-color:var(--c);background:#fff}
+.ptab .dot{background:var(--c)}.ptab .tn{font:400 11px Inter,sans-serif;color:var(--muted)}
+.ptab.turn::after{content:"";width:7px;height:7px;border-radius:50%;background:#f2a33a;box-shadow:0 0 0 2px #f2a33a55}
+.psec{margin:4px 0 12px}
+.psec>h4{margin:0 0 6px;font:600 12px Fredoka,Inter,sans-serif;text-transform:uppercase;letter-spacing:1px;color:#9a8460;display:flex;gap:8px;align-items:baseline}
+.psec>h4 small{font:400 11.5px Inter,sans-serif;text-transform:none;letter-spacing:0;color:var(--muted)}
+.tcards{display:flex;flex-wrap:wrap;gap:8px}
+.tcards .card.mid{width:112px}
+.pnone{font-size:12px;color:var(--muted);padding:4px 0}
+/* en ligne */
+[hidden]{display:none!important}
+#modeseg button:disabled{opacity:.45;cursor:not-allowed}
+.jin{display:block;width:100%;max-width:300px;margin:0 auto;font:600 17px Fredoka,Inter,sans-serif;text-align:center;border-radius:12px;padding:10px;border:2px solid #dcc9a3}
+.jcode{letter-spacing:8px;text-transform:uppercase;font-size:26px}
+.lgo{display:block;width:100%;margin:18px 0 0;border:0;border-radius:16px;padding:14px;font:600 20px Fredoka,sans-serif;color:#fff;cursor:pointer;background:linear-gradient(#2aa6a6,#1f8a8a);box-shadow:0 5px 0 #13605f}
+.lgo:disabled{background:#c9bba0;box-shadow:0 5px 0 #a8987a;cursor:default}
+#lobby{margin-top:14px}
+.lcode{background:#fff;border-radius:14px;padding:10px;box-shadow:0 2px 0 #dcc9a3}.lcode span{display:block;font:600 12px Fredoka;text-transform:uppercase;letter-spacing:1.5px;color:#9a8460}
+.lcode b{display:block;font:600 44px/1.1 Fredoka,sans-serif;letter-spacing:10px;color:#1f6f78;user-select:all}.lcode small{color:#8a7a5f}
+.lseats{margin-top:10px;display:flex;flex-direction:column;gap:6px}.lseat{display:flex;gap:8px;align-items:center;background:#fff;border-radius:10px;padding:7px 10px;font:600 15px Fredoka,Inter,sans-serif}.lseat small{margin-left:auto;font:400 12px Inter,sans-serif;color:#8a7a5f}
+.lwait{margin-top:14px;color:#6b5a3e}
+.nstat{margin-top:10px;background:#ffe9e0;color:#8a2f12;border-radius:10px;padding:8px 10px;font-size:13px}
+.seat .htag{font:600 12px Fredoka,Inter,sans-serif;color:#6b5a3e;background:#e7d6b4;border-radius:10px;padding:6px 10px;white-space:nowrap}
+small.onl{color:#1f8a8a;font-weight:600}
 /* panneaux */
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
 #players{display:flex;flex-direction:column;gap:6px}
@@ -204,7 +260,7 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 #modal{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;z-index:60}
 .mbox{background:var(--panel);border-radius:16px;padding:24px 30px;min-width:340px}
 .rk{margin:8px 0;font-size:15px}
-@media (max-width:1000px){#game{flex-direction:column;height:auto}#right{width:auto}}
+@media (max-width:1000px){#game{flex-direction:column;height:auto}#right{width:auto}#lscroll{overflow:visible}#dock{flex-direction:column;position:sticky;bottom:0;background:var(--bg);padding-top:6px}#myhand{width:auto}}
 </style>
 </head>
 <body>
@@ -216,30 +272,41 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
   <div class="sbox">
     <h1>Birds</h1>
     <p class="sub">Renato Ciervo &amp; Andrea Robbiani</p>
-    <div class="seg" id="langseg" style="margin-bottom:4px"><button data-v="fr">🇫🇷 Français</button><button data-v="en">🇬🇧 English</button></div>
+    <div class="seg" id="langseg" style="margin-bottom:4px"><button data-v="fr">🇫🇷 Français</button><button data-v="en">🇬🇧 English</button><button data-v="it">🇮🇹 Italiano</button></div>
+    <div class="sect">Mode de jeu</div>
+    <div class="seg" id="modeseg"><button data-v="local" class="on">Sur cet appareil</button><button data-v="online" disabled>🌐 En ligne</button></div>
+    <div id="onlnote" class="soon">Vérification du mode en ligne…</div>
+    <div id="onlpick" hidden><div class="seg" id="onlseg" style="margin-top:10px"><button data-v="create" class="on">Créer une partie</button><button data-v="join">Rejoindre</button></div></div>
+    <div id="onljoin" hidden>
+      <div class="sect">Votre nom</div><input id="jname" class="jin" maxlength="16" placeholder="Votre nom">
+      <div class="sect">Code de la partie</div><input id="jcode" class="jin jcode" maxlength="4" placeholder="ABCD" autocomplete="off">
+      <button id="jgo" class="lgo">Rejoindre la partie</button>
+    </div>
+    <div id="lobby" hidden></div>
+    <div id="netstatus" class="nstat" hidden></div>
+    <div id="cfg">
     <div class="sect">Nombre de joueurs</div>
-    <div class="seg" id="npseg"><button data-v="2">2</button><button data-v="3" class="on">3</button><button data-v="4">4</button></div>
-    <select id="np" hidden><option>2</option><option selected>3</option><option>4</option></select>
+    <div class="seg" id="npseg"><button data-v="2" class="on">2</button><button data-v="3">3</button><button data-v="4">4</button></div>
+    <select id="np" hidden><option selected>2</option><option>3</option><option>4</option></select>
     <div class="sect">Joueurs</div>
     <div id="seats"></div>
     <div class="colhint">Cliquez sur un pion pour changer de couleur</div>
-    <div class="sect">Vitesse des IA</div>
-    <div class="seg" id="spseg"><button data-v="900">Lente</button><button data-v="500" class="on">Normale</button><button data-v="150">Rapide</button><button data-v="0">Éclair</button></div>
-    <select id="speed" hidden><option value="900">Lente</option><option value="500" selected>Normale</option><option value="150">Rapide</option><option value="0">Instantanée</option></select>
+    </div>
     <button id="go">Lancer la partie</button>
     <button id="statsbtn" class="statsb">📊 Statistiques</button>
-    <div class="soon">Jeu en ligne entre amis : bientôt</div>
   </div>
 </div>
 <div id="game">
   <div id="left">
-    <div id="boardwrap"><img id="boardimg" alt="Plateau de Birds"><div id="overlay"></div></div>
-    <div id="elders" class="panel"></div>
-    <div id="prompt"></div>
-    <div id="hand" class="panel"></div>
+    <div id="lscroll">
+      <div id="boardwrap"><img id="boardimg" alt="Plateau de Birds"><div id="overlay"></div></div>
+      <div id="elders" class="panel"></div>
+      <div id="hand" class="panel"></div>
+    </div>
+    <div id="dock"><div id="prompt"></div><div id="myhand"></div></div>
   </div>
   <div id="right">
-    <div style="display:flex;justify-content:space-between;align-items:center"><span><button class="ob" id="aidebtn" style="padding:4px 10px">Aide de jeu</button> <button class="ob" id="statsbtn2" style="padding:4px 10px">📊 Statistiques</button></span><div id="round"></div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span id="topbtns"><button class="ob" id="homebtn" style="padding:4px 10px" title="Retour à l'accueil">🏠 Accueil</button> <button class="ob" id="aidebtn" style="padding:4px 10px">Aide de jeu</button> <button class="ob" id="statsbtn2" style="padding:4px 9px" title="Statistiques">📊</button></span><div id="round"></div></div>
     <div id="objs" class="panel" style="font-size:12.5px"></div>
     <div id="players"></div>
     <div class="panel" id="log"></div>
@@ -248,14 +315,17 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 <div id="zoom"></div>
 <div id="modal"></div>
 <div id="aide" style="position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:70;cursor:pointer" onclick="this.style.display='none'"><img src="aide.jpg" alt="Aide de jeu" style="max-height:92vh;max-width:92vw;border-radius:12px"></div>
-<script src="data.js?v=1794910165"></script>
-<script src="content.js?v=1794910165"></script>
-<script src="engine.js?v=1794910165"></script>
-<script src="cards.js?v=1794910165"></script>
-<script src="i18n.js?v=1794910165"></script>
-<script src="stats.js?v=1794910165"></script>
-<script src="ui.js?v=1794910165"></script>
+<script src="data.js?v=1795263000"></script>
+<script src="content.js?v=1795263000"></script>
+<script src="engine.js?v=1795263000"></script>
+<script src="cards.js?v=1795263000"></script>
+<script src="i18n_it.js?v=1795263000"></script>
+<script src="i18n.js?v=1795263000"></script>
+<script src="stats.js?v=1795263000"></script>
+<script src="ui.js?v=1795263000"></script>
 <script>document.getElementById("statsbtn").onclick=document.getElementById("statsbtn2").onclick=()=>BirdsStatsUI.open();
+{const h=document.getElementById("homebtn"); let armed=null;
+ h.onclick=()=>{ if(armed){location.reload(); return;} armed=setTimeout(()=>{armed=null; h.textContent=h.dataset.t; h.title=""; h.classList.remove("warn");},3000); h.dataset.t=h.textContent; const lg=window.I18N?I18N.lang:"fr"; h.textContent="Quitter ? ✓"; h.title=({en:"Click again to quit the game and go back home",it:"Clicca di nuovo per uscire dalla partita e tornare alla home"})[lg]||"Cliquez encore pour quitter la partie et revenir à l'accueil"; h.classList.add("warn");};}
 document.getElementById("aidebtn").onclick=()=>{document.getElementById("aide").style.display="flex";};</script>
 </body>
 </html>

@@ -20,12 +20,14 @@
 | `engine.js` | Règles, objectifs, IA (réglages dans `W(p)`), enregistrement des statistiques |
 | `ui.js` | Affichage : plateau, plateau joueur, actions, accueil |
 | `stats.js` | Onglet Statistiques (localStorage), simulations IA, export JSON et image |
-| `i18n.js` | Traduction FR → EN appliquée à l'affichage |
-| `cards/`, `obj/`, `perso/`, `icons/` | Images des 160 cartes, tuiles d'objectifs, objectifs personnels, icônes et pions |
+| `i18n.js` | Traduction FR → EN appliquée à l'affichage, et moteur de traduction commun |
+| `i18n_it.js` | Traduction FR → IT (mêmes motifs que l'anglais) |
+| `cards/`, `obj/`, `perso/`, `icons/` | Images des 160 cartes (+ `S1`–`S4` : Mouettes niveaux 1 à 4), tuiles d'objectifs, objectifs personnels, icônes et pions |
 
-## Vocabulaire (FR / EN)
+## Vocabulaire (FR / EN / IT)
 
-Vol / Flock, Couvée / Brood, S'étendre / Expand, Récolter / Gather, Construire / Build, Nid / Nest, Sanctuaire / Shrine (ancien nom : House), Atelier / Workshop (ancien nom : Outpost), Chemin des Anciens / Elders' Path, **Amulette / Amulet** (jetons, ancien nom : Rune), **Relique / Relic** (cartes rangées dans les Sanctuaires), Écaille de dragon / Dragonscale, Colonie / **Settlement**, Ruine = Lac (Lake), Discover = Expand.
+**Nuée / Flock / Stormo** (ancien nom FR : Vol), Couvée / Brood, S'étendre / Expand, Récolter / Gather, Construire / Build, Nid / Nest, Sanctuaire / Shrine (ancien nom : House), Atelier / Workshop (ancien nom : Outpost), Chemin des Anciens / Elders' Path, **Amulette / Amulet** (jetons, ancien nom : Rune), **Relique / Relic** (cartes rangées dans les Sanctuaires), Écaille de dragon / Dragonscale, Colonie / **Settlement**, Ruine = Lac (Lake), Discover = Expand.
+Italien : Poussin / Pulcino, Œuf / Uovo, Nid / Nido, Sanctuaire / Santuario, Atelier / Laboratorio, Chemin des Anciens / Sentiero degli Antichi, Couvée / Covata, Mouette / Gabbiano, Écaille / Scaglia, Colonie / Colonia.
 
 ## Règles validées avec l'autrice
 
@@ -45,13 +47,20 @@ Vol / Flock, Couvée / Brood, S'étendre / Expand, Récolter / Gather, Construir
 
 ## Ce que fait l'application
 
-- 2 à 4 joueurs humains ou IA sur le même écran, choix de la couleur (rouge, bleu, blanc, violet), FR / EN, vitesse des IA.
+- 2 à 4 joueurs humains ou IA sur le même écran (2 joueurs par défaut), choix de la couleur (rouge, bleu, blanc, violet), FR / EN / IT. IA toujours au niveau le plus fort et sans temps d'attente.
+- **Jeu en ligne** (uniquement dans l'artefact sur claude.ai, pas sur GitHub Pages) : l'hôte crée une partie et obtient un code de 4 caractères, les amis rejoignent avec ce code ; places vides complétables par des IA. L'appareil de l'hôte fait tourner le moteur et les IA ; l'état est partagé par la base de l'artefact (`games/<code>`, `joins/<id>`, `acts/<id>`). Les amis doivent avoir l'artefact partagé en Contributeur ou Éditeur. Si l'hôte ferme la page, la partie s'arrête.
+- **Ergonomie** : zone d'action et main toujours visibles en bas de l'écran ; onglets par joueur (cartes en jeu, Mouettes en cartes, plateau joueur) ; choix des cartes directement dans la main ; icônes des bâtiments à la couleur du joueur ; Poussins du plateau perso en grille ; bouton Accueil (double clic).
+- **Annuler** : « ↶ Annuler mon dernier choix » (Ctrl+Z) jusqu'au début de son tour ; le tour se termine par « Finir le tour » (Entrée). Fonctionne par instantané de l'état + rejeu des choix (`Game.takeTurnUndoable`).
+- **Écailles** : utilisables avant l'action, entre deux cartes jouées et en fin de tour.
 - Plateau avec pions en bois, ombre sur les îles hors de portée du Vol, présence par île, parchemin avec les tuiles et les Étoiles.
 - Plateau joueur complet : bâtiments, Œufs dans les Nids, Poussins, Amulettes, Étoiles, Reliques glissées sous les Sanctuaires, objectif personnel glissé au-dessus.
 - Boutons d'action avec icônes, sous le Chemin des Anciens. Aide de jeu.
 - **Statistiques** : parties enregistrées dans le navigateur, simulations IA, Étoiles par source, objectifs, bâtiments, Amulettes, Colonies, cartes (taux de victoire, aperçu au survol), export JSON et image.
 
-## IA (réglages dans `engine.js`, fonction `W(p)`)
+## IA (réglages dans `engine.js` : `AIW_CLASSIC`, `AIW_TRAINED`, fonction `W(p)`)
+
+Depuis novembre 2026 : poids appris par auto-apprentissage (parties IA contre IA, `AIW_TRAINED`) + **anticipation** : avant chaque action principale, elle simule 3 fins de partie pour ses 6 meilleurs choix (mains adverses et pioche redistribuées au hasard) et garde le plus gagnant (`aiMainLookahead`, `rollout`). Résultat à 2 joueurs : 6 Étoiles vers la manche 21,7 (contre 26 avant), 85 % de victoires contre l'ancienne IA, environ 0,25 s de réflexion par tour.
+
 
 Vise les Colonies, récolte ce qui débloque les cartes de sa main, saisit les Étoiles immédiates (« tempo »), couve surtout sans Poussins (double Couvée en fin de partie si elle rapporte une Étoile). Elle choisit ses Amulettes selon le contexte (joker en priorité) et ses Mouettes aussi (améliorer par défaut, gagner selon les objectifs, les Œufs ou les sacrifices). Elle sacrifie l'élément qui lui coûte le moins, construit de grands Sanctuaires quand les Reliques comptent, et poursuit ses objectifs (personnel, rouge, bleu, Reliques à Étoile).
 Durée moyenne entre IA : environ 23 manches à 2 joueurs, 21,3 à 3, 20,8 à 4. Les parties humaines durent environ 20 manches.
@@ -61,10 +70,11 @@ Durée moyenne entre IA : environ 23 manches à 2 joueurs, 21,3 à 3, 20,8 à 4.
 1. **Ressources de départ des objectifs personnels** : la Mouette de départ vaut à elle seule environ 12 à 15 points de victoire (Magpies 44 %, Swans 42 %, Storks 26 %). La meilleure variante testée, sans Mouette et avec 1 ver + 1 nourriture par famille (graine pour l'Academy et la Court, ver pour la Legion et le Circle, fruit pour la Guild), ramène les victoires entre 29 et 37 %. **À faire** : proposer et simuler une variante qui garde des cases du Chemin des Anciens au départ (demande de l'autrice). Rien n'est encore appliqué dans le jeu.
 2. **Experienced Watchers** : trop facile (toutes les Étoiles prises, vers la manche 10). Seuils suggérés : 7 / 8 / 8 / 9 en 3-4 joueurs, environ 6 / 7 à 2 joueurs. Non appliqué.
 3. **Prairie** : île la moins colonisée (grande île, pas une île de départ, bonus peu attractifs).
-4. **Jeu en ligne entre amis** : pas encore fait. GitHub Pages n'héberge que des fichiers, il faudra un service de synchronisation.
+4. **Jeu en ligne entre amis** : fait dans l'artefact claude.ai (voir plus haut). Sur GitHub Pages, le mode en ligne s'affiche comme indisponible.
 5. **Choix des cartes par l'IA** : c'est son point faible.
-6. **Icône officielle « Déplacer le Vol »** : en attente, le pion Vol sert à la place.
+6. **Icône officielle « Déplacer la Nuée »** : en attente, le pion Nuée sert à la place.
+7. **Tutoriel** : prévu (partie guidée avec bulles, FR / EN / IT), pas encore fait.
 
 ## Méthode de travail
 
-À chaque changement : tests (simulations Node, partie en cliquant au hasard dans le navigateur, scan de la version anglaise), puis envoi sur GitHub et mise à jour de l'artefact.
+À chaque changement : tests (simulations Node, partie en cliquant au hasard dans le navigateur, scan des versions anglaise et italienne), puis **les deux en même temps** : publication de l'artefact **et** commit + push sur `main` de ce dépôt, avec les mêmes fichiers. Ne jamais publier l'un sans l'autre.
