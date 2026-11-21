@@ -47,7 +47,8 @@ function answer(v){ if(NET.role==='guest'){ netAct(v===null||v===undefined?{c:1}
 
 function start(opts,before){ $('#setup').style.display='none'; $('#game').style.display='flex'; $('#log').innerHTML='';
   G=new BG.Game(opts,io); io.aiDelay=aiSpeed;
-  io.lookahead={k:6,r:3,yield:true}; // IA la plus forte : poids appris + anticipation par simulations $('#boardimg').src=G.boardKey==='p2'?'board2p.jpg':'board34p.jpg'; if(before) before(G);
+  io.lookahead={k:6,r:3,yield:true}; // IA la plus forte : poids appris + anticipation par simulations
+  $('#boardimg').src=G.boardKey==='p2'?'board2p.jpg':'board34p.jpg'; if(before) before(G);
   viewer=G.players.findIndex(p=>mine(p)); if(viewer<0) viewer=0; lastHuman=null; render(); G.run();}
 
 function targetKey(t){return t?`${t.kind}:${t.rid??''}:${t.sid??''}:${t.k??''}`:'';}
