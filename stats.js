@@ -113,7 +113,7 @@ function compute(f){
   const PA=P.filter(p=>p.acts), WA=PA.filter(p=>p.win), LA=PA.filter(p=>!p.win);
   const am=(arr,k)=>arr.length?arr.reduce((a,p)=>a+(p.acts[k]||0),0)/arr.length:null;
   res.actsN=PA.length; res.actsG=new Set(PA.map(p=>p.g)).size;
-  res.acts=['turns','move','expand','gather','build','none','play','cards','brood','ds'].map(k=>{const all=am(PA,k), t=am(PA,'turns'); return {k,all,win:am(WA,k),lose:am(LA,k),share:t&&['move','play','brood'].includes(k)?Math.round(100*all/t):null};});
+  res.acts=['turns','move','expand','gather','build','play','cards','brood','ds'].map(k=>{const all=am(PA,k), t=am(PA,'turns'); return {k,all,win:am(WA,k),lose:am(LA,k),share:t&&['move','play','brood'].includes(k)?Math.round(100*all/t):null};});
   const isl={}; G.forEach(g=>Object.keys(g.settled).forEach(k=>isl[k]=(isl[k]||0)+1)); res.islands=Object.entries(isl).map(([k,v])=>({k,p:pct(v,G.length)})).sort((a,b)=>b.p-a.p);
   return res;}
 
