@@ -268,7 +268,7 @@ function open(){ let M=document.getElementById('stats'); if(!M){ M=document.crea
    <div class="ssim"><b>${L('Simuler des parties entre IA','Simulate AI games')}</b> : <select id="simN"><option>20</option><option selected>100</option><option>300</option><option>1000</option></select>
     ${L('parties à','games with')} <select id="simP"><option value="mix">2-4</option><option>2</option><option selected>3</option><option>4</option></select> ${L('joueurs','players')}
     <button id="simGo" class="ob">${L('Lancer','Run')}</button><span id="simMsg"></span>
-    <span class="sright"><button id="sImg" class="ob ghost">🖼 ${L('Enregistrer en image','Save as image')}</button><button id="sExp" class="ob ghost">${L('Copier les données (JSON)','Copy data (JSON)')}</button><button id="sClr" class="ob ghost">${L('Effacer','Clear')}</button></span></div>
+    <span class="sright"><button id="sPdf" class="ob ghost">📄 ${L3('Enregistrer en PDF','Save as PDF','Salva in PDF')}</button><button id="sImg" class="ob ghost">🖼 ${L('Enregistrer en image','Save as image')}</button><button id="sExp" class="ob ghost">${L('Copier les données (JSON)','Copy data (JSON)')}</button><button id="sClr" class="ob ghost">${L('Effacer','Clear')}</button></span></div>
    <p class="snote">${L('Chaque partie terminée sur cet appareil est enregistrée dans ce navigateur. Les simulations utilisent les IA du prototype : elles montrent des tendances, pas le jeu de vrais joueurs.','Every game finished on this device is saved in this browser. Simulations use the prototype AIs: they show trends, not how real players play.')}</p>
    <div id="sshare" class="ssim" hidden></div>
    <div id="strain" class="ssim strain"></div>
@@ -278,6 +278,7 @@ function open(){ let M=document.getElementById('stats'); if(!M){ M=document.crea
     simulate(+M.querySelector('#simN').value,M.querySelector('#simP').value,(k,n,done)=>{M.querySelector('#simMsg').textContent=done?` ${L('Terminé','Done')} (${k})`:` ${k} / ${n}…`; if(done){b.textContent=L('Lancer','Run'); render();} else if(k%25===0) render();});};
   M.querySelector('#sClr').onclick=()=>{ const b=M.querySelector('#sClr'); if(b.dataset.c){S.clear(); b.dataset.c=''; b.textContent=L('Effacer','Clear'); render();} else {b.dataset.c='1'; b.textContent=L('Confirmer l\'effacement','Confirm clear');}};
   M.querySelector('#sImg').onclick=()=>saveImage(M);
+  M.querySelector('#sPdf').onclick=()=>savePdf(M);
   M.querySelector('#sExp').onclick=async()=>{ try{await navigator.clipboard.writeText(JSON.stringify(load())); M.querySelector('#simMsg').textContent=' '+L('Données copiées','Data copied');}catch(e){M.querySelector('#simMsg').textContent=' '+L('Copie impossible ici','Copy not available here');}};
   shareBar(M); trainBar(M); render();}
 
@@ -337,5 +338,40 @@ async function saveImage(M){const msg=M.querySelector('#simMsg'); msg.textConten
       const V=document.createElement('div'); V.className='imgprev'; V.innerHTML=`<div class="ipbox"><div class="iph"><b>${L('Image des statistiques','Statistics image')}</b> — ${L('si le téléchargement n\'a pas démarré : clic droit sur l\'image › « Enregistrer l\'image sous… »','if the download did not start: right-click the image › "Save image as…"')} <button class="ob">✕</button></div><img src="${url}"></div>`;
       V.querySelector('button').onclick=()=>V.remove(); document.body.appendChild(V); msg.textContent=' '+L('Image prête','Image ready');},'image/png');
   }catch(e){ console.error(e); M.querySelector('.ssim').style.visibility=''; msg.textContent=' '+L('Impossible de créer l\'image ici','Could not create the image here'); }}
+// ---------- export PDF (pages A4, images JPEG ; coupures entre les lignes et les sections) ----------
+function pdfBytes(pages,footer){ // pages : [{jpg:Uint8Array,w,h,hpt}] ; largeur 595 pt (A4)
+  const enc=s=>new TextEncoder().encode(s); const parts=[]; let pos=0; const off=[]; const put=x=>{const b=typeof x==='string'?enc(x):x; parts.push(b); pos+=b.length;};
+  const obj=(n,body)=>{ off[n]=pos; put(n+' 0 obj\n'); body.forEach(put); put('\nendobj\n'); };
+  put('%PDF-1.4\n%\xE2\xE3\n'); const N=pages.length, kids=[]; for(let i=0;i<N;i++) kids.push((4+3*i)+' 0 R');
+  obj(1,['<< /Type /Catalog /Pages 2 0 R >>']); obj(2,[`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${N} >>`]); obj(3,['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']);
+  pages.forEach((p,i)=>{ const n=4+3*i, W=595, H=842, M=24, iw=W-2*M, ih=p.hpt;
+    const txt=(footer+' - '+(i+1)+'/'+N).replace(/[^\x20-\x7e]/g,'').replace(/[()\\]/g,'');
+    const cs=`q ${iw.toFixed(2)} 0 0 ${ih.toFixed(2)} ${M} ${(H-M-ih).toFixed(2)} cm /Im0 Do Q BT /F1 8 Tf 0.45 0.4 0.3 rg ${M} 12 Td (${txt}) Tj ET`;
+    obj(n,[`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${n+2} 0 R >> /Font << /F1 3 0 R >> >> /Contents ${n+1} 0 R >>`]);
+    obj(n+1,[`<< /Length ${cs.length} >>\nstream\n`,cs,'\nendstream']);
+    obj(n+2,[`<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`,p.jpg,'\nendstream']); });
+  const x=pos; let xr=`xref\n0 ${4+3*N}\n0000000000 65535 f \n`; for(let i=1;i<4+3*N;i++) xr+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+  put(xr+`trailer\n<< /Size ${4+3*N} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`);
+  const out=new Uint8Array(pos); let k=0; parts.forEach(b=>{out.set(b,k); k+=b.length;}); return out; }
+async function savePdf(M){const msg=M.querySelector('#simMsg'); msg.textContent=' '+L3('Création du PDF…','Creating PDF…','Creazione del PDF…');
+  const bar=M.querySelector('.ssim');
+  try{ await loadH2C(); const box=M.querySelector('.sbox2'); bar.style.visibility='hidden';
+    const cv=await html2canvas(box,{backgroundColor:'#fffaf0',scale:2,useCORS:true,windowWidth:box.scrollWidth,height:box.scrollHeight}); bar.style.visibility='';
+    const k=cv.width/box.getBoundingClientRect().width, top0=box.getBoundingClientRect().top-box.scrollTop*0;
+    // positions où l'on peut couper : début de section, de ligne de tableau, de carte de chiffres, de paragraphe
+    const cuts=[...box.querySelectorAll('h3,h4,tr,.sgrid,.scard,p,.hist,.tlog,.strain,table')].map(e=>Math.round((e.getBoundingClientRect().top-top0)*k)).filter(y=>y>0&&y<cv.height).sort((a,b)=>a-b);
+    const pageH=Math.floor(cv.width*(842-24-30)/(595-48)); const pages=[]; let y=0;
+    while(y<cv.height-4){ let end=Math.min(cv.height,y+pageH); if(end<cv.height){ const c=cuts.filter(v=>v>y+pageH*0.45&&v<=end).pop(); if(c) end=c; }
+      const pc=document.createElement('canvas'); pc.width=cv.width; pc.height=end-y; const ctx=pc.getContext('2d'); ctx.fillStyle='#fffaf0'; ctx.fillRect(0,0,pc.width,pc.height); ctx.drawImage(cv,0,y,cv.width,end-y,0,0,cv.width,end-y);
+      const bin=atob(pc.toDataURL('image/jpeg',0.88).split(',')[1]); const jpg=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) jpg[i]=bin.charCodeAt(i);
+      pages.push({jpg,w:pc.width,h:pc.height,hpt:(end-y)*(595-48)/cv.width}); y=end; }
+    const day=new Date().toISOString().slice(0,10);
+    const bytes=pdfBytes(pages,'Birds - '+L3('Statistiques','Statistics','Statistiche')+' - '+day);
+    const name='birds-'+L3('statistiques','statistics','statistiche')+'-'+day+'.pdf';
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+    try{const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();}catch(e){}
+    const V=document.createElement('div'); V.className='imgprev'; V.innerHTML=`<div class="ipbox"><div class="iph"><b>PDF</b> — ${L3(`${pages.length} page(s). Si le téléchargement n'a pas démarré :`,`${pages.length} page(s). If the download did not start:`,`${pages.length} pagina/e. Se il download non è partito:`)} <a href="${url}" download="${name}" target="_blank" rel="noopener">${L3('télécharger le PDF','download the PDF','scarica il PDF')}</a> <button class="ob">✕</button></div></div>`;
+    V.querySelector('button').onclick=()=>V.remove(); document.body.appendChild(V); msg.textContent=' '+L3('PDF prêt','PDF ready','PDF pronto');
+  }catch(e){ console.error(e); bar.style.visibility=''; msg.textContent=' '+L3('Impossible de créer le PDF ici','Could not create the PDF here','Impossibile creare il PDF qui'); }}
 window.BirdsStatsUI={open};
 })();
