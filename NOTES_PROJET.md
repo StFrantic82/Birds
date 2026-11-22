@@ -123,4 +123,4 @@ Le challenger est adopté s'il gagne nettement plus que sa part attendue (> atte
 Mesure (IA rapide, 2 j) : étoiles de cartes 0,14 → 0,23 par joueur ; en duel contre l'ancienne IA 52,1 % (2 000 parties, 2 j), 34,6 % à 3 j. Restent difficiles : Master's Diploma (4 Nids), Alliance Charter (4 Alliés), Command Insignia (Mouettes niveau total 6), Soul Reliquary (rarement payable).
 
 ### Statistiques : bouton « Enregistrer en PDF »
-`savePdf` : capture html2canvas de la page de stats (comme l'image), découpée en pages A4 aux débuts de sections / lignes de tableau, chaque page en JPEG dans un PDF écrit à la main (`pdfBytes`, sans bibliothèque PDF), pied de page « Birds - Statistiques - date - n/N ». Téléchargement direct + lien de secours.
+`buildStatsPdf` lit la page de stats affichée (#statsbody : h3/h4/p/tableaux/cartes de chiffres/histogramme) et écrit un PDF texte A4 à la main (Helvetica WinAnsi, barres et histogramme en rectangles, en-têtes de tableau répétés, pied de page « Birds - Statistiques - date » + n/N). Aucune bibliothèque externe (la 1re version via html2canvas échouait sur claude.ai). Téléchargement direct + lien de secours.

@@ -328,50 +328,87 @@ async function shareBar(M){ const B=M.querySelector('#sshare'); const N=S.net();
     msg.textContent=' '+L('Envoi…','Sending…');
     try{ const n=await S.send(S.unsent(),inp.value.trim()); msg.textContent=' ✓ '+L3(`${n} partie(s) envoyée(s). Merci !`,`${n} game(s) sent. Thank you!`,`${n} partita/e inviata/e. Grazie!`); b.textContent=L('Tout est envoyé','All sent'); }
     catch(e){ console.warn(e); b.disabled=false; msg.textContent=' '+L('Envoi refusé : votre accès à l\'appli ne le permet pas. Utilisez « Copier les données (JSON) ».','Sending refused: your access to the app does not allow it. Use “Copy data (JSON)”.'); } };}
+const capScale=el=>Math.max(0.3,Math.min(2,30000/Math.max(1,el.scrollHeight),Math.sqrt(1.6e8/Math.max(1,el.scrollWidth*el.scrollHeight))));
 function loadH2C(){return window.html2canvas?Promise.resolve():new Promise((res,rej)=>{const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc);});}
 async function saveImage(M){const msg=M.querySelector('#simMsg'); msg.textContent=' '+L('Création de l\'image…','Creating image…');
   try{ await loadH2C(); const box=M.querySelector('.sbox2'); const bar=M.querySelector('.ssim'); bar.style.visibility='hidden';
-    const cv=await html2canvas(box,{backgroundColor:'#fffaf0',scale:2,useCORS:true,windowWidth:box.scrollWidth,height:box.scrollHeight}); bar.style.visibility='';
+    const cv=await html2canvas(box,{backgroundColor:'#fffaf0',scale:capScale(box),useCORS:true,windowWidth:box.scrollWidth,height:box.scrollHeight}); bar.style.visibility='';
     const name='birds-statistiques-'+new Date().toISOString().slice(0,10)+'.png';
     cv.toBlob(b=>{const url=URL.createObjectURL(b); let ok=false; try{const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); ok=true;}catch(e){}
       // aperçu de secours : clic droit > Enregistrer l'image
       const V=document.createElement('div'); V.className='imgprev'; V.innerHTML=`<div class="ipbox"><div class="iph"><b>${L('Image des statistiques','Statistics image')}</b> — ${L('si le téléchargement n\'a pas démarré : clic droit sur l\'image › « Enregistrer l\'image sous… »','if the download did not start: right-click the image › "Save image as…"')} <button class="ob">✕</button></div><img src="${url}"></div>`;
       V.querySelector('button').onclick=()=>V.remove(); document.body.appendChild(V); msg.textContent=' '+L('Image prête','Image ready');},'image/png');
   }catch(e){ console.error(e); M.querySelector('.ssim').style.visibility=''; msg.textContent=' '+L('Impossible de créer l\'image ici','Could not create the image here'); }}
-// ---------- export PDF (pages A4, images JPEG ; coupures entre les lignes et les sections) ----------
-function pdfBytes(pages,footer){ // pages : [{jpg:Uint8Array,w,h,hpt}] ; largeur 595 pt (A4)
-  const enc=s=>new TextEncoder().encode(s); const parts=[]; let pos=0; const off=[]; const put=x=>{const b=typeof x==='string'?enc(x):x; parts.push(b); pos+=b.length;};
-  const obj=(n,body)=>{ off[n]=pos; put(n+' 0 obj\n'); body.forEach(put); put('\nendobj\n'); };
-  put('%PDF-1.4\n%\xE2\xE3\n'); const N=pages.length, kids=[]; for(let i=0;i<N;i++) kids.push((4+3*i)+' 0 R');
-  obj(1,['<< /Type /Catalog /Pages 2 0 R >>']); obj(2,[`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${N} >>`]); obj(3,['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']);
-  pages.forEach((p,i)=>{ const n=4+3*i, W=595, H=842, M=24, iw=W-2*M, ih=p.hpt;
-    const txt=(footer+' - '+(i+1)+'/'+N).replace(/[^\x20-\x7e]/g,'').replace(/[()\\]/g,'');
-    const cs=`q ${iw.toFixed(2)} 0 0 ${ih.toFixed(2)} ${M} ${(H-M-ih).toFixed(2)} cm /Im0 Do Q BT /F1 8 Tf 0.45 0.4 0.3 rg ${M} 12 Td (${txt}) Tj ET`;
-    obj(n,[`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${n+2} 0 R >> /Font << /F1 3 0 R >> >> /Contents ${n+1} 0 R >>`]);
-    obj(n+1,[`<< /Length ${cs.length} >>\nstream\n`,cs,'\nendstream']);
-    obj(n+2,[`<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.jpg.length} >>\nstream\n`,p.jpg,'\nendstream']); });
-  const x=pos; let xr=`xref\n0 ${4+3*N}\n0000000000 65535 f \n`; for(let i=1;i<4+3*N;i++) xr+=String(off[i]).padStart(10,'0')+' 00000 n \n';
-  put(xr+`trailer\n<< /Size ${4+3*N} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`);
-  const out=new Uint8Array(pos); let k=0; parts.forEach(b=>{out.set(b,k); k+=b.length;}); return out; }
-async function savePdf(M){const msg=M.querySelector('#simMsg'); msg.textContent=' '+L3('Création du PDF…','Creating PDF…','Creazione del PDF…');
-  const bar=M.querySelector('.ssim');
-  try{ await loadH2C(); const box=M.querySelector('.sbox2'); bar.style.visibility='hidden';
-    const cv=await html2canvas(box,{backgroundColor:'#fffaf0',scale:2,useCORS:true,windowWidth:box.scrollWidth,height:box.scrollHeight}); bar.style.visibility='';
-    const k=cv.width/box.getBoundingClientRect().width, top0=box.getBoundingClientRect().top-box.scrollTop*0;
-    // positions où l'on peut couper : début de section, de ligne de tableau, de carte de chiffres, de paragraphe
-    const cuts=[...box.querySelectorAll('h3,h4,tr,.sgrid,.scard,p,.hist,.tlog,.strain,table')].map(e=>Math.round((e.getBoundingClientRect().top-top0)*k)).filter(y=>y>0&&y<cv.height).sort((a,b)=>a-b);
-    const pageH=Math.floor(cv.width*(842-24-30)/(595-48)); const pages=[]; let y=0;
-    while(y<cv.height-4){ let end=Math.min(cv.height,y+pageH); if(end<cv.height){ const c=cuts.filter(v=>v>y+pageH*0.45&&v<=end).pop(); if(c) end=c; }
-      const pc=document.createElement('canvas'); pc.width=cv.width; pc.height=end-y; const ctx=pc.getContext('2d'); ctx.fillStyle='#fffaf0'; ctx.fillRect(0,0,pc.width,pc.height); ctx.drawImage(cv,0,y,cv.width,end-y,0,0,cv.width,end-y);
-      const bin=atob(pc.toDataURL('image/jpeg',0.88).split(',')[1]); const jpg=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) jpg[i]=bin.charCodeAt(i);
-      pages.push({jpg,w:pc.width,h:pc.height,hpt:(end-y)*(595-48)/cv.width}); y=end; }
-    const day=new Date().toISOString().slice(0,10);
-    const bytes=pdfBytes(pages,'Birds - '+L3('Statistiques','Statistics','Statistiche')+' - '+day);
-    const name='birds-'+L3('statistiques','statistics','statistiche')+'-'+day+'.pdf';
+// ---------- export PDF : PDF texte (tableaux, barres, histogramme) construit depuis la page, sans bibliothèque ----------
+const PDFW=595,PDFH=842,PM=36;
+const WIN={'€':128,'‚':130,'„':132,'…':133,'‰':137,'‘':145,'’':146,'“':147,'”':148,'•':149,'–':150,'—':151,'™':153,'œ':156,'Œ':140};
+const ASC={'→':'->','↳':'>','≥':'>=','≤':'<=','−':'-','★':'*','∅':'0','✓':'v','✕':'x','×':'x',' ':' ',' ':' ','🏆':'','📄':'','🖼':''};
+function wtxt(str){ let o=''; for(const ch of String(str)){ if(ASC[ch]!==undefined){o+=ASC[ch]; continue;} const c=ch.codePointAt(0); if(WIN[ch]) o+=String.fromCharCode(WIN[ch]); else if(c<256) o+=ch; else o+='?'; } return o; }
+const pesc=s=>s.replace(/[\\()]/g,m=>'\\'+m);
+let MC=null; function tw(t,size,bold){ if(!MC) MC=document.createElement('canvas').getContext('2d'); MC.font=(bold?'bold ':'')+size+'px Helvetica, Arial, sans-serif'; return MC.measureText(t).width; }
+function rgb(css,def){ const m=String(css||'').match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/); return m?[+m[1]/255,+m[2]/255,+m[3]/255]:(def||[0.23,0.18,0.12]); }
+function nodeText(n){ let t=''; n.childNodes.forEach(c=>{ if(c.nodeType===3) t+=c.textContent; else if(c.nodeType===1){ if(c.tagName==='IMG') t+=c.alt?c.alt+' ':''; else if(c.classList.contains('sbar')) t+=''; else if(c.tagName==='BR') t+=' '; else t+=(/^(DIV|P|TD|TH|LI)$/.test(c.tagName)?' ':'')+nodeText(c)+(/^(DIV|P|TD|TH|LI)$/.test(c.tagName)?' ':''); } }); return t.replace(/\s+/g,' ').trim(); }
+function wrap(t,size,bold,w){ const words=t.split(' '); const L=[]; let cur=''; words.forEach(x=>{ const tt=cur?cur+' '+x:x; if(tw(tt,size,bold)<=w||!cur) cur=tt; else { L.push(cur); cur=x; } }); if(cur) L.push(cur); return L.length?L:['']; }
+function PdfDoc(){ const pages=[]; let ops=null, y=0; const D={
+  page(){ ops=[]; pages.push(ops); y=PDFH-PM; },
+  need(h){ if(!ops||y-h<PM+14) D.page(); },
+  get y(){return y;}, set y(v){y=v;},
+  text(x,yy,t,size,bold,col){ ops.push(`BT /${bold?'F2':'F1'} ${size} Tf ${(col||[0.23,0.18,0.12]).map(v=>v.toFixed(3)).join(' ')} rg ${x.toFixed(1)} ${yy.toFixed(1)} Td (${pesc(wtxt(t))}) Tj ET`); },
+  rect(x,yy,w,h,col){ ops.push(`${col.map(v=>v.toFixed(3)).join(' ')} rg ${x.toFixed(1)} ${yy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re f`); },
+  line(x1,y1,x2,y2,col){ ops.push(`${col.map(v=>v.toFixed(3)).join(' ')} RG 0.5 w ${x1.toFixed(1)} ${y1.toFixed(1)} m ${x2.toFixed(1)} ${y2.toFixed(1)} l S`); },
+  bytes(footer){ const N=pages.length, parts=[]; let pos=0; const off=[]; const put=s=>{ const b=new Uint8Array(s.length); for(let i=0;i<s.length;i++) b[i]=s.charCodeAt(i)&255; parts.push(b); pos+=b.length; };
+    const obj=(n,body)=>{ off[n]=pos; put(n+' 0 obj\n'+body+'\nendobj\n'); };
+    put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'); const kids=[]; for(let i=0;i<N;i++) kids.push((5+2*i)+' 0 R');
+    obj(1,'<< /Type /Catalog /Pages 2 0 R >>'); obj(2,`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${N} >>`);
+    obj(3,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'); obj(4,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    pages.forEach((o,i)=>{ const n=5+2*i; const f=`BT /F1 7.5 Tf 0.5 0.45 0.35 rg ${PM} 18 Td (${pesc(wtxt(footer))}) Tj ET BT /F1 7.5 Tf 0.5 0.45 0.35 rg ${PDFW-PM-20} 18 Td (${i+1}/${N}) Tj ET`;
+      const cs=o.concat([f]).join('\n'); obj(n,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDFW} ${PDFH}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${n+1} 0 R >>`);
+      obj(n+1,`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`); });
+    const x=pos; let xr=`xref\n0 ${5+2*N}\n0000000000 65535 f \n`; for(let i=1;i<5+2*N;i++) xr+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+    put(xr+`trailer\n<< /Size ${5+2*N} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`);
+    const out=new Uint8Array(pos); let k=0; parts.forEach(b=>{out.set(b,k); k+=b.length;}); return out; } }; return D; }
+const INKC=[0.23,0.18,0.12], MUTEC=[0.48,0.42,0.31], LINEC=[0.9,0.85,0.75], HEADC=[0.965,0.933,0.867];
+function pdfPara(D,t,size,bold,col,before,after){ const W=PDFW-2*PM; const L=wrap(t,size,bold,W); const lh=size*1.3; D.need(before+lh*Math.min(L.length,3)); D.y-=before; L.forEach(l=>{ D.need(lh); D.y-=lh; D.text(PM,D.y+size*0.25,l,size,bold,col); }); D.y-=after; }
+function pdfTable(D,tb){ const rows=[...tb.rows].map(tr=>[...tr.cells].map(td=>{ const bar=td.querySelector('.sbar i'); return {t:nodeText(td),th:td.tagName==='TH',bold:td.tagName==='TH'||!!td.querySelector('b')||getComputedStyle(td).fontWeight>=600,col:rgb(getComputedStyle(td).color),bar:bar?{p:parseFloat(bar.style.width)||0,c:rgb(getComputedStyle(bar).backgroundColor,[0.3,0.5,0.7])}:null,sub:td.innerHTML.indexOf('↳')>=0}; }));
+  if(!rows.length) return; const nc=Math.max(...rows.map(r=>r.length)); const W=PDFW-2*PM, fs=7.6, pad=4, BW=46;
+  const nat=Array(nc).fill(14); rows.forEach(r=>r.forEach((c,i)=>{ nat[i]=Math.max(nat[i],Math.min(220,tw(c.t,c.th?6.8:fs,c.bold))+2*pad+(c.bar?BW+4:0)); }));
+  const tot=nat.reduce((a,b)=>a+b,0); const cw=nat.map(v=>v*Math.min(1.25,W/tot)); const sum=cw.reduce((a,b)=>a+b,0); if(sum>W) cw.forEach((v,i)=>cw[i]=v*W/sum);
+  const head=rows[0].every(c=>c.th)?rows[0]:null;
+  const drawRow=(r)=>{ const lines=r.map((c,i)=>wrap(c.t,c.th?6.8:fs,c.bold,Math.max(10,cw[i]-2*pad-(c.bar?BW+4:0)))); const h=Math.max(...lines.map(l=>l.length))*(fs*1.25)+5;
+    D.need(h); const top=D.y; if(r[0]&&r[0].th) D.rect(PM,top-h,cw.reduce((a,b)=>a+b,0),h,HEADC); let x=PM;
+    r.forEach((c,i)=>{ let tx=x+pad; if(c.bar){ D.rect(tx,top-h/2-2.5,BW,5,[0.94,0.89,0.8]); D.rect(tx,top-h/2-2.5,BW*Math.max(0,Math.min(100,c.bar.p))/100,5,c.bar.c); tx+=BW+4; }
+      lines[i].forEach((l,k)=>D.text(tx,top-(k+1)*fs*1.25+0.5,l,c.th?6.8:fs,c.bold,c.th?MUTEC:c.col)); x+=cw[i]; });
+    D.y=top-h; D.line(PM,D.y,PM+cw.reduce((a,b)=>a+b,0),D.y,LINEC); };
+  D.need(40); rows.forEach((r,k)=>{ if(k>0&&head&&D.y-(fs*1.25+5)<PM+14){ D.page(); drawRow(head); } drawRow(r); }); D.y-=6; }
+function pdfCards(D,g){ const cards=[...g.querySelectorAll('.scard')]; if(!cards.length) return; const W=PDFW-2*PM, gap=6, n=Math.min(4,cards.length), w=(W-gap*(n-1))/n;
+  for(let i=0;i<cards.length;i+=n){ const row=cards.slice(i,i+n); const blocks=row.map(c=>{ const b=c.querySelector(':scope > b'); const big=b?nodeText(b):''; const rest=nodeText(c).replace(big,'').trim(); return {big,lines:wrap(rest,7,false,w-10)}; });
+    const h=Math.max(...blocks.map(b=>(b.big?20:0)+b.lines.length*9))+10; D.need(h+4); const top=D.y;
+    blocks.forEach((b,k)=>{ const x=PM+k*(w+gap); D.rect(x,top-h,w,h,[1,0.985,0.95]); D.line(x,top-h,x+w,top-h,LINEC); let yy=top-6; if(b.big){ D.text(x+5,yy-14,b.big,15,true,INKC); yy-=20; } b.lines.forEach(l=>{ D.text(x+5,yy-8,l,7,false,MUTEC); yy-=9; }); });
+    D.y=top-h-6; } }
+function pdfHist(D,hs){ const cols=[...hs.querySelectorAll('.hcol')]; if(!cols.length) return; const W=PDFW-2*PM, H=90, cw=W/cols.length; D.need(H+24); const base=D.y-H-4;
+  cols.forEach((c,k)=>{ const i=c.querySelector('i'); const p=parseFloat(i&&i.style.height)||0; const col=rgb(getComputedStyle(i).backgroundColor,[0.3,0.5,0.7]); const x=PM+k*cw;
+    if(p>0) D.rect(x+1,base,cw-2,H*p/100,col); const lab=nodeText(c.querySelector('b')||c); const pc=nodeText(c.querySelector('span')||c); if(pc) D.text(x+cw/2-tw(pc,6,false)/2,base+H*p/100+2,pc,6,false,MUTEC); D.text(x+cw/2-tw(lab,7,false)/2,base-9,lab,7,false,INKC); });
+  D.line(PM,base,PM+W,base,LINEC); D.y=base-16; }
+function buildStatsPdf(M){ const D=PdfDoc(); D.page(); const body=M.querySelector('#statsbody');
+  pdfPara(D,'Birds — '+L3('Statistiques','Statistics','Statistiche'),18,true,INKC,0,2);
+  const f=[...body.querySelectorAll(':scope > .sfilters')].slice(0,1).map(fl=>{ const out=[]; let lab=''; fl.childNodes.forEach(n=>{ if(n.nodeType===1&&n.tagName==='SPAN'&&!n.classList.contains('sseg')) lab=nodeText(n); else if(n.nodeType===1&&n.classList.contains('sseg')){ const on=n.querySelector('button.on'); if(on) out.push(lab+' '+nodeText(on)); } }); return out.join('   ·   '); })[0]||'';
+  pdfPara(D,new Date().toLocaleDateString()+(f?'   ·   '+f:''),8.5,false,MUTEC,2,10);
+  const sel='h3,h4,p,table,.sgrid,.hist,.sfilters,.sempty'; const els=[...body.querySelectorAll(sel)].filter(e=>!e.parentElement.closest(sel));
+  els.forEach((e,k)=>{ if(k===0&&e.classList.contains('sfilters')) return;
+    if(e.tagName==='H3'){ D.need(60); pdfPara(D,nodeText(e),12.5,true,[0.35,0.27,0.13],10,3); D.line(PM,D.y+1,PDFW-PM,D.y+1,LINEC); D.y-=4; }
+    else if(e.tagName==='H4') pdfPara(D,nodeText(e),9.5,true,INKC,6,3);
+    else if(e.tagName==='P'||e.classList.contains('sempty')) pdfPara(D,nodeText(e),7.6,false,MUTEC,0,6);
+    else if(e.tagName==='TABLE') pdfTable(D,e);
+    else if(e.classList.contains('sgrid')) pdfCards(D,e);
+    else if(e.classList.contains('hist')) pdfHist(D,e);
+    else if(e.classList.contains('sfilters')){ const on=[...e.querySelectorAll('button.on')].map(nodeText).join(' · '); if(on) pdfPara(D,on,7.6,false,MUTEC,0,4); } });
+  return D.bytes('Birds - '+L3('Statistiques','Statistics','Statistiche')+' - '+new Date().toISOString().slice(0,10)); }
+async function savePdf(M){const msg=M.querySelector('#simMsg');
+  try{ const bytes=buildStatsPdf(M); const day=new Date().toISOString().slice(0,10); const name='birds-'+L3('statistiques','statistics','statistiche')+'-'+day+'.pdf';
     const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
     try{const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();}catch(e){}
-    const V=document.createElement('div'); V.className='imgprev'; V.innerHTML=`<div class="ipbox"><div class="iph"><b>PDF</b> — ${L3(`${pages.length} page(s). Si le téléchargement n'a pas démarré :`,`${pages.length} page(s). If the download did not start:`,`${pages.length} pagina/e. Se il download non è partito:`)} <a href="${url}" download="${name}" target="_blank" rel="noopener">${L3('télécharger le PDF','download the PDF','scarica il PDF')}</a> <button class="ob">✕</button></div></div>`;
+    const V=document.createElement('div'); V.className='imgprev'; V.innerHTML=`<div class="ipbox"><div class="iph"><b>PDF</b> — ${L3("Si le téléchargement n'a pas démarré :","If the download did not start:","Se il download non è partito:")} <a href="${url}" download="${name}" target="_blank" rel="noopener">${L3('télécharger le PDF','download the PDF','scarica il PDF')}</a> <button class="ob">✕</button></div></div>`;
     V.querySelector('button').onclick=()=>V.remove(); document.body.appendChild(V); msg.textContent=' '+L3('PDF prêt','PDF ready','PDF pronto');
-  }catch(e){ console.error(e); bar.style.visibility=''; msg.textContent=' '+L3('Impossible de créer le PDF ici','Could not create the PDF here','Impossibile creare il PDF qui'); }}
+  }catch(e){ console.error(e); msg.textContent=' '+L3('Impossible de créer le PDF ici','Could not create the PDF here','Impossibile creare il PDF qui')+' ('+String(e&&e.message||e).slice(0,120)+')'; }}
 window.BirdsStatsUI={open};
 })();
