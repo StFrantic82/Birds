@@ -39,16 +39,16 @@ const BLUE_OBJ=[
   {id:'C06',name:'Experienced Watchers',fr:'Poussins dans des régions avec Ruine',p2:[5,6],p34:[5,5,5,5],m:(g,p)=>g.B.regions.filter(r=>r.ruins.length).reduce((n,r)=>n+g.chicksIn(r.id,p.i),0)},
 ];
 const PERSONAL=[
-  {id:'A01',name:'Robins',tags:['Academy','Legion'],res:{chick:1,elders:1,worm:1,fruit:1}},
-  {id:'A02',name:'Swans',tags:['Academy','Court'],res:{seagull:1,chick:-1,worm:1}},
-  {id:'A03',name:'Storks',tags:['Academy','Guild'],res:{chick:-1,seed:2,elders:1,worm:1,rune:1}},
-  {id:'A04',name:'Ravens',tags:['Academy','Circle'],res:{seed:1,worm:1,fruit:1,rune:1}},
-  {id:'A05',name:'Eagles',tags:['Legion','Court'],res:{seagull:1,chick:-1,fruit:1,worm:1}},
-  {id:'A06',name:'Kingfishers',tags:['Legion','Guild'],res:{elders:1,worm:2,seed:1,fruit:1}},
-  {id:'A07',name:'Falcons',tags:['Legion','Circle'],res:{chick:1,seed:1,worm:1,rune:1}},
-  {id:'A08',name:'Woodpeckers',tags:['Court','Guild'],res:{elders:2,worm:2,fruit:1}},
-  {id:'A09',name:'Owls',tags:['Court','Circle'],res:{worm:2,seed:1,fruit:1}},
-  {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1}},
+  {id:'A01',name:'Robins',tags:['Academy','Legion'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,elders:1,worm:1,fruit:1}},
+  {id:'A02',name:'Swans',tags:['Academy','Court'],res:{seagull:1,worm:3},resNew:{seagull:1,chick:-1,worm:1}},
+  {id:'A03',name:'Storks',tags:['Academy','Guild'],res:{worm:2,seed:1},resNew:{chick:-1,seed:2,elders:1,worm:1,rune:1}},
+  {id:'A04',name:'Ravens',tags:['Academy','Circle'],res:{elders:1,worm:1,fruit:1},resNew:{seed:1,worm:1,fruit:1,rune:1}},
+  {id:'A05',name:'Eagles',tags:['Legion','Court'],res:{seagull:1,worm:1,fruit:1},resNew:{seagull:1,chick:-1,fruit:1,worm:1}},
+  {id:'A06',name:'Kingfishers',tags:['Legion','Guild'],res:{elders:1,worm:1,seed:1},resNew:{elders:1,worm:2,seed:1,fruit:1}},
+  {id:'A07',name:'Falcons',tags:['Legion','Circle'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,seed:1,worm:1,rune:1}},
+  {id:'A08',name:'Woodpeckers',tags:['Court','Guild'],res:{elders:1,worm:3},resNew:{elders:2,worm:2,fruit:1}},
+  {id:'A09',name:'Owls',tags:['Court','Circle'],res:{worm:2,fruit:1},resNew:{worm:2,seed:1,fruit:1}},
+  {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1,worm:1,seed:1},resNew:{seagull:1}},
 ];
 const PERSO_TH=[5,9];
 function resLabel(r){return Object.entries(r).filter(([k,v])=>v).map(([k,v])=>k==='chick'?(v>0?'+':'')+v+' Poussin'+(Math.abs(v)>1?'s':''):v+' '+({worm:'ver',seed:'graine',fruit:'fruit',seagull:'Mouette',elders:'Anciens',rune:'Amulette'})[k]+(v>1&&k!=='elders'?'s':'')).join(' + ');}
@@ -72,6 +72,7 @@ class Game{
     this.regions={}; this.B.regions.forEach(r=>this.regions[r.id]=r);
     this.nestById={}; this.B.nests.forEach(s=>{this.nestById[s.id]=s; s.island=this.regions[s.adj[0]].island;});
     this.cardById={}; window.BIRDS.forEach(c=>{c.type='bird'; c.tagMap={[c.family]:c.tags}; this.cardById[c.id]=c;}); window.ALLIES.forEach(c=>this.cardById[c.id]=c); window.RELICS.forEach(c=>this.cardById[c.id]=c);
+    this.persoSet=opts.persoSet==='new'?'new':'classic';
     this.players=opts.players.map((o,i)=>({
       i,name:o.name,ai:!!o.ai,color:o.color||COLORS[i],colorName:COLOR_NAMES[Math.max(0,COLORS.indexOf(o.color||COLORS[i]))],
       food:{worm:0,seed:0,fruit:0},hand:[],pobj:null,pClaims:0,tableau:[],chicks:3,eggs:2,supply:CHICKS_TOTAL-3-2-1,
@@ -125,10 +126,12 @@ class Game{
   chicksByTree(p,c){return this.B.regions.filter(r=>this.trees[r.id]===c).reduce((n,r)=>n+this.chicksIn(r.id,p.i),0);}
   persoValue(p){if(!p.pobj) return 0; const t=this.tags(p); return t[p.pobj.tags[0]]+t[p.pobj.tags[1]]+this.wild(p);}
   async choosePersonal(p){const t={}; FAMS.forEach(f=>t[f]=0); p.hand.forEach(id=>{const c=this.card(id); for(const f in (c.tagMap||{})) t[f]+=c.tagMap[f];});
-    const o=await this.ask(p,{personal:true,title:'Choisissez votre objectif personnel (l\'autre est défaussé)',options:p.pOffer.map(o=>({label:`${o.name} — total ${o.tags.join(' + ')} : 5 puis 9 (1 Étoile chacun) · départ : ${resLabel(o.res)}`,value:o,score:t[o.tags[0]]+t[o.tags[1]]+Math.random()}))});
+    const o=await this.ask(p,{personal:true,title:'Choisissez votre objectif personnel (l\'autre est défaussé)',options:p.pOffer.map(o=>({label:`${o.name} — total ${o.tags.join(' + ')} : 5 puis 9 (1 Étoile chacun) · départ : ${resLabel(this.pres(o))}`,value:o,score:t[o.tags[0]]+t[o.tags[1]]+Math.random()}))});
     p.pobj=o; this.log(`${p.name} choisit l'objectif personnel ${o.name} (${o.tags.join(' + ')}).`);
-    await this.giveStart(p,o.res);
+    await this.giveStart(p,this.pres(o));
     this.io.render();}
+  // jeu d'objectifs personnels : 'classic' (règle d'origine) ou 'new' (ressources recommandées)
+  pres(o){return this.persoSet==='new'&&o.resNew?o.resNew:o.res;}
   async giveStart(p,res){ for(const [k,v] of Object.entries(res)){ if(!v) continue; if(k==='seagull'){for(let i=0;i<v;i++){p.seagulls.push(1);} this.log(`${p.name} gagne une Mouette (niveau 1).`);} else if(k==='elders') await this.elders(p,v); else if(k==='rune'){ for(let i=0;i<v;i++) await this.rune1(p);} else if(k==='chick'){ const d=Math.max(-p.chicks,Math.min(v,p.supply)); p.chicks+=d; p.supply-=d; if(d>0) this.log(`${p.name} gagne ${d} Poussin${d>1?'s':''}.`);} else p.food[k]+=v; } }
   async checkObjectives(p){ while(p.pobj&&p.pClaims<PERSO_TH.length&&this.persoValue(p)>=PERSO_TH[p.pClaims]){p.pClaims++; await this.gainStar(p,`Objectif personnel ${p.pobj.name} (${PERSO_TH[p.pClaims-1]})`);}
     for(const o of this.objs){ const next=o.th[o.claims.length]; if(o.claims.includes(p.i)||next===undefined) continue;
@@ -406,7 +409,7 @@ class Game{
       await this.io.sleep(50);}
     this.finish();}
   statRecord(r){const w=r[0];
-    return {v:1,t:Date.now(),n:this.players.length,rounds:this.round,sim:!!this.io.sim,red:this.objs[0].d.id,blue:this.objs[1].d.id,
+    return {v:1,t:Date.now(),pset:this.persoSet,n:this.players.length,rounds:this.round,sim:!!this.io.sim,red:this.objs[0].d.id,blue:this.objs[1].d.id,
       redClaims:this.objs[0].claims.slice(),blueClaims:this.objs[1].claims.slice(),settled:Object.assign({},this.settled),
       players:this.players.map(p=>({i:p.i,ai:p.ai,win:p===w,rank:r.indexOf(p)+1,stars:p.stars,starRounds:p.starRounds||[],
         pobj:p.pobj&&p.pobj.id,pClaims:p.pClaims,pOffer:(p.pOffer||[]).map(o=>o.id),played:(p.played||[]).map(x=>x.id),

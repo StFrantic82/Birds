@@ -24,7 +24,7 @@ const IT={'Cartes jouées':'Carte giocate','Mouettes':'Gabbiani','Niveau total d
  "Envoi refusé : votre accès à l'appli ne le permet pas. Utilisez « Copier les données (JSON) ».":"Invio rifiutato: il tuo accesso all'app non lo permette. Usa «Copia i dati (JSON)».",
  "Création de l'image…":"Creazione dell'immagine…",'Image des statistiques':'Immagine delle statistiche',"si le téléchargement n'a pas démarré : clic droit sur l'image › « Enregistrer l'image sous… »":"se il download non è partito: clic destro sull'immagine › «Salva immagine con nome…»",
  'Image prête':'Immagine pronta',"Impossible de créer l'image ici":"Impossibile creare l'immagine qui",
- 'Résumé par tag':'Riepilogo per tag','Sans tag':'Senza tag','Cartes du tag':'Carte del tag','Poses':'Giocate','Écart moyen des cartes':'Scarto medio delle carte','Joueurs qui en ont posé':'Giocatori che ne hanno giocate',
+ 'Résumé par tag':'Riepilogo per tag','Objectifs perso':'Obiettivi personali','Classiques':'Classici','Recommandés':'Consigliati','Sans tag':'Senza tag','Cartes du tag':'Carte del tag','Poses':'Giocate','Écart moyen des cartes':'Scarto medio delle carte','Joueurs qui en ont posé':'Giocatori che ne hanno giocate',
  "« Écart moyen des cartes » : moyenne des écarts de victoire des cartes de ce tag, pondérée par le nombre de parties où chaque carte a été posée. « Sans tag » : Alliés et Reliques sans tag.":"«Scarto medio delle carte»: media degli scarti di vittoria delle carte di questo tag, ponderata per il numero di partite in cui ogni carta è stata giocata. «Senza tag»: Alleati e Reliquie senza tag."};
 const L=(fr,en)=>LG()==='en'?en:LG()==='it'?(IT[fr]!==undefined?IT[fr]:fr):fr;
 const L3=(fr,en,it)=>LG()==='en'?en:LG()==='it'?it:fr;
@@ -53,7 +53,7 @@ let running=false, stopReq=false;
 async function simulate(n,np,onProgress){ running=true; stopReq=false; S.batch=true; const BG=window.BirdsGame;
   for(let k=0;k<n&&!stopReq;k++){ const N=np==='mix'?2+(k%3):+np;
     const io={sim:true,aiDelay:0,sleep:()=>Promise.resolve(),log(){},render(){},ask(){throw new Error('no human');},gameOver(){}};
-    try{ const g=new BG.Game({players:Array.from({length:N},(_,i)=>({name:'IA '+(i+1),ai:true}))},io); let t=0; const o=g.takeTurn.bind(g); g.takeTurn=async()=>{ if(++t>500) throw new Error('long'); return o(); }; await g.run(); }catch(e){ console.warn('sim',e); }
+    try{ const g=new BG.Game({players:Array.from({length:N},(_,i)=>({name:'IA '+(i+1),ai:true})),persoSet:window.BirdsPersoSet||'new'},io); let t=0; const o=g.takeTurn.bind(g); g.takeTurn=async()=>{ if(++t>500) throw new Error('long'); return o(); }; await g.run(); }catch(e){ console.warn('sim',e); }
     if(k%5===4){ save(); onProgress(k+1,n); await new Promise(r=>setTimeout(r,0)); } }
   S.batch=false; save(); running=false; onProgress(n,n,true);}
 
@@ -64,7 +64,7 @@ function cardType(id){return /^A\d/.test(id)?'ally':/^O/.test(id)?'relic':'bird'
 function famOf(id){const c=window.BIRDS.find(x=>x.id===id); return c?c.family:(cardType(id)==='ally'?'Ally':'Relic');}
 function compute(f){
   const own=load(), ids=new Set(own.map(g=>g.id)); const base=f.src==='shared'?(recv||[]):f.src==='all'?own.concat((recv||[]).filter(g=>!ids.has(g.id))):own;
-  let G=base.filter(g=>(f.src==='all'||f.src==='shared'||(f.src==='sim'?g.sim:!g.sim))&&(f.n==='all'||g.n===+f.n));
+  let G=base.filter(g=>(f.src==='all'||f.src==='shared'||(f.src==='sim'?g.sim:!g.sim))&&(f.n==='all'||g.n===+f.n)&&(!f.ps||f.ps==='all'||(g.pset||'classic')===f.ps));
   const res={games:G.length}; if(!G.length) return res;
   const P=[]; G.forEach(g=>g.players.forEach(p=>P.push(Object.assign({g},p))));
   res.players=P.length; res.baseWin=P.filter(p=>p.win).length/P.length;
@@ -117,11 +117,11 @@ const FAMI=f=>/^(Academy|Legion|Court|Guild|Circle)$/.test(f)?`<img class="ftag"
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);
 const bar=(v,max,col)=>`<span class="sbar"><i style="width:${Math.max(0,Math.min(100,100*v/(max||1)))}%;background:${col||'#1f8a8a'}"></i></span>`;
 const dcol=d=>d>0.04?'#2e8b3e':d<-0.04?'#c0392b':'#8a7a5f';
-let filt={src:'all',n:'all',ctype:'all',sort:'wr',minG:5};
+let filt={src:'all',n:'all',ps:'all',ctype:'all',sort:'wr',minG:5};
 function render(){ const B=document.getElementById('statsbody'); const r=compute(filt);
   const hdr=`<div class="sfilters">
     <span>${L('Parties','Games')} :</span>${seg('src',[['all',L('Toutes','All')],['human',L('Avec humains','With humans')],['sim',L('Simulations IA','AI simulations')]].concat(recv&&recv.length?[['shared',L('Reçues des joueurs','Sent by players')+' ('+recv.length+')']]:[]))}
-    <span>${L('Joueurs','Players')} :</span>${seg('n',[['all',L('Tous','All')],['2','2'],['3','3'],['4','4']])}</div>`;
+    <span>${L('Joueurs','Players')} :</span>${seg('n',[['all',L('Tous','All')],['2','2'],['3','3'],['4','4']])}<span>${L('Objectifs perso','Personal objectives')} :</span>${seg('ps',[['all',L('Tous','All')],['classic',L('Classiques','Classic')],['new',L('Recommandés','Recommended')]])}</div>`;
   if(!r.games){B.innerHTML=hdr+`<div class="sempty">${L('Aucune partie enregistrée pour ces filtres. Jouez une partie ou lancez des simulations ci-dessus.','No game recorded for these filters. Play a game or run simulations above.')}</div>`; wire(); return;}
   const starL={settlement:L('Colonies','Settlements'),perso:L('Objectifs personnels','Personal objectives'),red:L('Objectifs rouges','Red objectives'),blue:L('Objectifs bleus','Blue objectives'),elders:L('Chemin des Anciens',"Elders' Path"),cards:L('Cartes (Reliques, Alliés…)','Cards (Relics, Allies…)')};
   let cards=r.cards.filter(c=>(filt.ctype==='all'||c.type===filt.ctype)&&c.games>=filt.minG);

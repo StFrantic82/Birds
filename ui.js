@@ -8,6 +8,7 @@ const FAMI={Academy:'♫',Legion:'⚑',Court:'♛',Guild:'❦',Circle:'☾'};
 const PAY={blue:'n\'importe quelle nourriture',red:'vers uniquement',yellow:'vers (1) + graines (2)',green:'vers (1) + fruits (2)',purple:'vers + cartes défaussées'};
 const TREEC={grey:'#7d7d7d',yellow:'#e8b923',green:'#3d9a3d'};
 const BON_FR={rune:'Amulette',reveal3:'Révéler 3',reveal2:'Révéler 2',seagull:'Mouette',worm:'1 ver',chick:'1 Poussin',dragonscale:'1 Écaille',elders:'Anciens +1',grow:'Éclore 1 Œuf',draw:'Piocher 1',seedOrFruit:'Graine ou fruit',buildAny:'Construire (toute île)',gatherAny:'Récolter (toute île)',expandAny:'S\'étendre (toute île)',ruinChick:'Poussin sur Ruine',brood:'Couvée',play1:'Jouer 1 carte',removeCheapest:'Retirer bâtiment'};
+let persoSet='new'; try{persoSet=localStorage.getItem('birds_pset')||'new';}catch(e){} window.BirdsPersoSet=persoSet;
 let G=null, pending=null, aiSpeed=0, viewer=0, filterTarget=null, lastHuman=null;
 // Partie en ligne : role 'host' (fait tourner le moteur) ou 'guest' (affiche l'état reçu et envoie ses choix)
 const NET={role:null,db:null,user:null,uid:null,code:null,seat:-1,seats:[],gref:null,qid:0,status:'lobby',ranking:null,writing:false,dirty:false,timer:null,lastAct:{},unsub:[],canWrite:null};
@@ -45,7 +46,7 @@ function undo(){ if(NET.role==='guest'){ if(canUndo()) netAct({undo:1}); return;
 function answer(v){ if(NET.role==='guest'){ netAct(v===null||v===undefined?{c:1}:{i:v}); pending=null; filterTarget=null; render(); return;}
   const q=pending.q, r=pending.res; if(U.active&&!pending.p.ai){const i=q.options.findIndex(o=>o.value===v); U.hist.push(i>=0?{i}:{c:1});} pending=null; filterTarget=null; render(); r(v);}
 
-function start(opts,before){ $('#setup').style.display='none'; $('#game').style.display='flex'; $('#log').innerHTML='';
+function start(opts,before){ opts.persoSet=opts.persoSet||persoSet; $('#setup').style.display='none'; $('#game').style.display='flex'; $('#log').innerHTML='';
   G=new BG.Game(opts,io); io.aiDelay=aiSpeed;
   io.lookahead={k:6,r:3,yield:true}; // IA la plus forte : poids appris + anticipation par simulations
   $('#boardimg').src=G.boardKey==='p2'?'board2p.jpg':'board34p.jpg'; if(before) before(G);
@@ -102,7 +103,7 @@ function renderPersonal(){let M=$('#pchoice'); const show=pending&&mine(pending.
   if(!show){if(M) M.remove(); return false;}
   if(!M){M=el('div',''); M.id='pchoice'; $('#boardwrap').appendChild(M);}
   const {p,q}=pending; M.innerHTML=`<div class="pcbox"><div class="pct"><span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — choisissez votre objectif personnel</div><div class="pcsub">L'autre est défaussé. 1 Étoile quand le total des deux tags atteint 5, puis 1 autre à 9. Les ressources du bas sont gagnées tout de suite.</div><div class="pcards"></div><div class="pchint">Votre main est visible plus bas : faites défiler si besoin.</div></div>`;
-  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="perso/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}<small>${v.tags.join(' + ')}</small><small class="pres">Départ : ${esc(BG.resLabel?BG.resLabel(v.res||{}):'')}</small></span>`); b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
+  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="${G.persoSet==='new'?'perso2':'perso'}/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}<small>${v.tags.join(' + ')}</small><small class="pres">Départ : ${esc(BG.resLabel?BG.resLabel(G.pres?G.pres(v):(v.res||{})):'')}</small></span>`); b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
   return true;}
 const BTYPE=l=>{const m=/\b(Nid|Sanctuaire|Atelier)\b/.exec(l||''); return m?{Nid:'nest',Sanctuaire:'shrine',Atelier:'workshop'}[m[1]]:null;};
 const bico=(t,c)=>`<i class="bico wood${String(c).toLowerCase()==='#ffffff'?' wt':''}" style="--c:${c};--ico:${IC(t,c)}"></i>`;
@@ -126,7 +127,7 @@ function renderPrompt(){const Q=$('#prompt'); Q.innerHTML=''; if(renderPersonal(
   if(q.options.some(o=>o.target)&&!filterTarget) Q.appendChild(el('div','hint','Astuce : vous pouvez aussi cliquer directement sur les cibles en surbrillance sur le plateau.'));}
 const PB={"amu": [[1.25, 12.31], [1.25, 31.36], [1.25, 50.61], [1.25, 69.66], [1.25, 88.9]], "pstar": [[21.25, 7.4], [27.08, 7.4]], "rstar": [[42.5, 7.4]], "bstar": [[56.67, 7.4]], "cstar": [[72.33, 7.8], [77.5, 7.8], [82.5, 7.8], [87.5, 7.8], [92.67, 7.8]], "wk": [[29.58, 53.55], [38.5, 53.55], [47.33, 53.55], [56.17, 53.55]], "sh": [[19.58, 93.22], [40.83, 93.22], [62.08, 93.22], [83.33, 93.22]], "nest": [[70.0, 31.95], [92.5, 31.95], [92.5, 62.39], [70.0, 62.39]], "chick": [81.25, 46.68]};
 function pboard(p){const W=el('div','pboard'); W.innerHTML='<img src="pboard.png" class="pbimg" alt="Plateau joueur">'; const add=(xy,cls,html,title,dx=0,dy=0)=>{const d=el('div','pbt '+cls,html||''); d.style.left=(xy[0]+dx)+'%'; d.style.top=(xy[1]+dy)+'%'; if(title) d.title=title; W.appendChild(d); return d;};
-  if(p.pobj){const c=el('div','pbobj'); c.innerHTML=`<img src="perso/${p.pobj.id}.jpg" alt="${esc(p.pobj.name)}">`; c.title=`Objectif personnel : ${p.pobj.name} (${p.pobj.tags.join(' + ')}) — ${G.persoValue(p)} / ${BG.PERSO_TH[Math.min(p.pClaims,1)]}`; W.appendChild(c); W.classList.add('hasobj');}
+  if(p.pobj){const c=el('div','pbobj'); c.innerHTML=`<img src="${G.persoSet==='new'?'perso2':'perso'}/${p.pobj.id}.jpg" alt="${esc(p.pobj.name)}">`; c.title=`Objectif personnel : ${p.pobj.name} (${p.pobj.tags.join(' + ')}) — ${G.persoValue(p)} / ${BG.PERSO_TH[Math.min(p.pClaims,1)]}`; W.appendChild(c); W.classList.add('hasobj');}
   const wood=(xy,type,title)=>{const d=wt(add(xy,'wood pbw','',title),p.color); d.style.setProperty('--c',p.color); d.style.setProperty('--ico',IC(type,p.color));};
   p.left.nest.forEach(l=>wood(PB.nest[l],'nest',`Nid ${l} (pas encore construit)`));
   p.left.shrine.forEach(l=>wood(PB.sh[l],'shrine',`Sanctuaire ${l+1} (pas encore construit)`));
@@ -194,7 +195,7 @@ document.addEventListener('mousemove',e=>{const Z=$('#zoom'); if(Z.style.display
 const CODE_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function netSnap(){const sn=G.snapshot(); sn.objs=sn.objs.map(o=>Object.assign({},o,{d:o.d.id})); delete sn.redObj; delete sn.redThresholds; delete sn.redClaims; return JSON.stringify(sn);}
 function serQ(q){return {title:q.title,main:!!q.main,cards:!!q.cards,cancel:!!q.cancel,personal:!!q.personal,endTurn:!!q.endTurn,
-  options:q.options.map(o=>({label:o.label||'',card:o.card||null,target:o.target||null,disabled:!!o.disabled,why:o.why||'',h:(o.card&&o.value===o.card)?1:0,pv:q.personal&&o.value?{id:o.value.id,name:o.value.name,tags:o.value.tags,res:o.value.res}:null}))};}
+  options:q.options.map(o=>({label:o.label||'',card:o.card||null,target:o.target||null,disabled:!!o.disabled,why:o.why||'',h:(o.card&&o.value===o.card)?1:0,pv:q.personal&&o.value?{id:o.value.id,name:o.value.name,tags:o.value.tags,res:G.pres(o.value)}:null}))};}
 function netDoc(){const d={v:1,host:NET.uid,status:NET.status,seats:NET.seats,t:Date.now(),pend:null,ranking:NET.ranking||null,rec:NET.status==='over'&&NET.rec?NET.rec:null};
   if(G){d.state=netSnap(); if(pending&&pending.p.remote) d.pend={seat:pending.p.i,qid:NET.qid,q:serQ(pending.q),undo:hostCanUndo()};}
   return d;}
@@ -284,6 +285,7 @@ function setup(){const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'
   let autoNet=false;
   const applyMode=()=>{ const on=MODE==='online'; if(ONL()&&types.slice(1,+n.value).every(t=>t==='ai')){types[1]='h'; autoNet=true;} else if(!on&&autoNet){ if(types[1]==='h') types[1]='ai'; autoNet=false; } $('#onlpick').hidden=!on; $('#onljoin').hidden=!(on&&SUB==='join'); $('#cfg').hidden=on&&SUB==='join'; $('#go').hidden=on&&SUB==='join';
     $('#go').textContent=ONL()?'Créer la partie en ligne':'Lancer la partie'; draw();};
+  $('#psseg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===persoSet)); seg('#psseg',v=>{persoSet=v; window.BirdsPersoSet=v; try{localStorage.setItem('birds_pset',v);}catch(e){}});
   seg('#modeseg',v=>{MODE=v; applyMode();}); seg('#onlseg',v=>{SUB=v; applyMode();});
   $('#jgo').onclick=async()=>{ $('#jgo').disabled=true; setStatus(''); try{ await netJoin($('#jcode').value,$('#jname').value.trim()); } finally{ $('#jgo').disabled=false; } };
   netInit();

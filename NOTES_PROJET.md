@@ -67,9 +67,11 @@ Depuis novembre 2026 : poids appris par auto-apprentissage (parties IA contre IA
 Vise les Colonies, récolte ce qui débloque les cartes de sa main, saisit les Étoiles immédiates (« tempo »), couve surtout sans Poussins (double Couvée en fin de partie si elle rapporte une Étoile). Elle choisit ses Amulettes selon le contexte (joker en priorité) et ses Mouettes aussi (améliorer par défaut, gagner selon les objectifs, les Œufs ou les sacrifices). Elle sacrifie l'élément qui lui coûte le moins, construit de grands Sanctuaires quand les Reliques comptent, et poursuit ses objectifs (personnel, rouge, bleu, Reliques à Étoile).
 Durée moyenne entre IA : environ 23 manches à 2 joueurs, 21,3 à 3, 20,8 à 4. Les parties humaines durent environ 20 manches.
 
-## Ressources de départ des objectifs personnels (rééquilibrées en novembre 2026)
+## Ressources de départ des objectifs personnels : deux jeux au choix
 
-Tous les joueurs commencent avec 2 Œufs et 3 Poussins ; l'objectif choisi ajoute (ou retire) :
+Sur l'accueil, « Objectifs personnels : Classiques / Recommandés » (Recommandés par défaut, choix mémorisé). Classiques = ressources de la règle d'origine, images `perso/`. Recommandés = tableau ci-dessous, images `perso2/` (fournies par l'auteur). Dans `engine.js`, chaque objectif a `res` (classique) et `resNew` (recommandé) ; option de partie `persoSet`. Les statistiques enregistrent le jeu utilisé (`pset`) et ont un filtre « Objectifs perso ».
+
+Recommandés — tous les joueurs commencent avec 2 Œufs et 3 Poussins ; l'objectif choisi ajoute (ou retire) :
 
 | Objectif | Tags | Départ |
 |---|---|---|
@@ -85,7 +87,7 @@ Tous les joueurs commencent avec 2 Œufs et 3 Poussins ; l'objectif choisi ajout
 | Magpies | Guild + Circle | Mouette |
 
 Contraintes respectées : même total qu'avant (32 ressources, un Poussin compté comme 3 nourritures), autant de graines que de fruits (6 et 6). Totaux : 12 vers, 6 graines, 6 fruits, 3 Mouettes, 5 Anciens, 3 Amulettes, Poussins +2 / −3.
-Résultat (18 000 parties IA contre IA à 2 joueurs) : chaque objectif gagne entre 47,6 % et 51,8 % quand il est choisi (avant : 42 % à 62 %). Les images `perso/` montrent encore les anciennes ressources ; l'écran de choix affiche la ligne « Départ ».
+Résultat (18 000 parties IA contre IA à 2 joueurs) : chaque objectif gagne entre 47,6 % et 51,8 % quand il est choisi (avant : 42 % à 62 %). L'écran de choix affiche aussi la ligne « Départ ».
 
 Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs) : Mouette +12,5 pts ; graine +4,2 ; +1 Poussin +4,1 ; case des Anciens +3,5 ; ver +2,2 ; fruit +2,1 ; Amulette +1,7 ; −1 Poussin −4,9. Ces valeurs ne s'additionnent qu'approximativement : l'équilibre final a été réglé par simulations successives. Outils : `train/` (non versionné) — `extra.js` (valeur d'une ressource), `pv_run.sh` (équilibre des objectifs).
 
