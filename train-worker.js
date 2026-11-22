@@ -24,24 +24,27 @@ self.onmessage=async ev=>{ const m=ev.data;
   let best=Object.assign({},BG.AIW_CLASSIC,BG.AIW_TRAINED,m.weights||{}), bestRounds=null;
   for(let gen=1; gen<=m.gens && !stop; gen++){
     const ch=mutate(best,m.sigma||0.4);
-    let share=0, games=0, rounds=0, six=0, sixN=0;
+    let share=0, games=0, rounds=0, six=0, sixB=0, nCh=0, nB=0;
     for(let g=0; g<m.perGen && !stop; g++){
       // le challenger occupe une place sur deux, en alternant
       const ws=[...Array(n)].map((_,k)=>((k+g)%2===0)?ch:best);
       const s=await play(ws,m.persoSet);
       const chSeats=ws.map((w,k)=>w===ch?k:-1).filter(k=>k>=0);
       games++; rounds+=s.round; if(chSeats.includes(s.ranking[0].i)) share++;
-      chSeats.forEach(k=>{ const r=(s.players[k].starRounds||[])[5]; if(r){ six+=r.round; sixN++; } });
+      // manche où chaque joueur atteint 6 étoiles (s'il ne les atteint pas : fin de partie + 3)
+      s.players.forEach((p,k)=>{ const r=(p.starRounds||[])[5]; const v=r?r.round:s.round+3; if(chSeats.includes(k)){six+=v; nCh++;} else {sixB+=v; nB++;} });
       if(g%5===4) self.postMessage({type:'tgame',gen,g:g+1});
     }
     if(!games) break;
     const expected=Math.ceil(n/2)/n, rate=share/games, r=rounds/games;
     const se=Math.sqrt(expected*(1-expected)/games);
     if(bestRounds===null) bestRounds=r;
-    // gagne nettement plus que sa part attendue ; ou, en mode « parties rapides », aussi fort mais plus rapide
-    const accepted= rate>expected+Math.max(0.04,1.6*se) || (m.rush && rate>=expected-0.02 && r<bestRounds-0.3);
+    // objectif du jeu : atteindre 6 étoiles le plus vite. Adopté si le challenger gagne nettement plus que sa part attendue,
+    // ou s'il est aussi fort et atteint ses 6 étoiles au moins 1/3 de manche plus tôt que l'IA actuelle, dans les mêmes parties
+    const chSix=nCh?six/nCh:null, bSix=nB?sixB/nB:null;
+    const accepted= rate>expected+Math.max(0.04,1.6*se) || (rate>=expected-0.02 && chSix!==null && bSix!==null && chSix<bSix-0.33);
     if(accepted){ best=ch; bestRounds=r; }
-    self.postMessage({type:'gen',gen,rate,expected,accepted,rounds:r,six:sixN?six/sixN:null,best});
+    self.postMessage({type:'gen',gen,rate,expected,accepted,rounds:r,six:chSix,sixBest:bSix,best});
   }
   self.postMessage({type:'done',best});
 };

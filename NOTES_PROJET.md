@@ -107,3 +107,6 @@ Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs
 ## Méthode de travail
 
 À chaque changement : tests (simulations Node, partie en cliquant au hasard dans le navigateur, scan des versions anglaise et italienne), puis **les deux en même temps** : publication de l'artefact **et** commit + push sur `main` de ce dépôt, avec les mêmes fichiers. Ne jamais publier l'un sans l'autre.
+
+### Critère d'adoption de l'entraînement (objectif : finir vite)
+Le challenger est adopté s'il gagne nettement plus que sa part attendue (> attendu + max(4 %, 1,6 σ)), OU s'il est aussi fort (≥ attendu − 2 %) et atteint ses 6 étoiles au moins 1/3 de manche plus tôt que l'IA actuelle dans les mêmes parties (6 étoiles non atteintes = fin de partie + 3). Pas d'option « Parties rapides » : la vitesse fait toujours partie du critère. Le journal affiche « 6 étoiles : challenger / actuelle ».
