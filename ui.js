@@ -273,11 +273,12 @@ async function netInit(){ const box=$('#onlnote'); if(!window.claude||!window.cl
   netPid();
   if(!NET.db){ if(box) box.textContent='Mode en ligne indisponible : connectez-vous à votre compte Claude pour jouer en ligne.'; return;}
   try{ NET.isOwner=NET.user?await NET.user.isOwner():false; }catch(e){ NET.isOwner=false; }
-  window.BirdsNet={db:NET.db,user:NET.user};
+  window.BirdsNet={db:NET.db,user:NET.user}; if(window.BirdsStats&&BirdsStats.loadAIW) BirdsStats.loadAIW();
   if(NET.canWrite===false){ if(box) box.textContent='Votre accès à l\'appli est en lecture seule : demandez au propriétaire de vous la partager en Contributeur (ou Éditeur) pour jouer en ligne.'; return;}
   netReady(); }
 // écran de configuration
-function setup(){const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'; const L3=(fr,en,it)=>IT?it:EN?en:fr; $('#langseg').querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v===LG); b.onclick=()=>{ if(b.dataset.v!==I18N.lang){I18N.set(b.dataset.v); location.reload();}};});
+function setup(){ try{ window.BirdsStats&&BirdsStats.applyAIW&&BirdsStats.applyAIW(BirdsStats.aiwInfo()); }catch(e){}
+const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'; const L3=(fr,en,it)=>IT?it:EN?en:fr; $('#langseg').querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v===LG); b.onclick=()=>{ if(b.dataset.v!==I18N.lang){I18N.set(b.dataset.v); location.reload();}};});
   let MODE='local', SUB='create'; const ONL=()=>MODE==='online'&&SUB==='create';
   const n=$('#np'), seats=$('#seats'); const types=['h','ai','ai','ai']; const cols=BG.COLORS.slice(); const CN=['Rouge','Bleu','Blanc','Violet'];
   const seg=(id,fn)=>$(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{$(id).querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); fn(b.dataset.v);});

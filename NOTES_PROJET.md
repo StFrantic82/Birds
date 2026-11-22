@@ -22,6 +22,7 @@
 | `stats.js` | Onglet Statistiques (localStorage), simulations IA, export JSON et image |
 | `i18n.js` | Traduction FR → EN appliquée à l'affichage, et moteur de traduction commun |
 | `i18n_it.js` | Traduction FR → IT (mêmes motifs que l'anglais) |
+| `train-worker.js` | Entraînement de l'IA en arrière-plan (Web Worker), lancé depuis Statistiques |
 | `peerdb.js` | Jeu en ligne hors de claude.ai : imite l'API « db » au-dessus d'une connexion directe PeerJS |
 | `cards/`, `obj/`, `perso/`, `icons/` | Images des 160 cartes (+ `S1`–`S4` : Mouettes niveaux 1 à 4), tuiles d'objectifs, objectifs personnels, icônes et pions |
 
@@ -54,6 +55,7 @@ Italien : Poussin / Pulcino, Œuf / Uovo, Nid / Nido, Sanctuaire / Santuario, At
 - **Annuler** : « ↶ Annuler mon dernier choix » (Ctrl+Z) jusqu'au début de son tour ; le tour se termine par « Finir le tour » (Entrée). Fonctionne par instantané de l'état + rejeu des choix (`Game.takeTurnUndoable`).
 - **Écailles** : utilisables avant l'action, entre deux cartes jouées et en fin de tour.
 - **Statistiques partagées** (artefact claude.ai) : les autres joueurs peuvent envoyer leurs parties (bouton en fin de partie, ou « Envoyer mes parties à l'auteur » dans Statistiques) ; elles arrivent dans la base (`sharedstats/<id de partie>`) et le propriétaire les voit avec le filtre « Reçues des joueurs ». En ligne, chaque invité reçoit aussi l'enregistrement de la partie.
+- **Entraînement de l'IA** (Statistiques) : à chaque génération, un challenger aux réglages légèrement modifiés affronte l'IA actuelle ; adopté s'il gagne nettement plus que sa part attendue (seuil : +4 pts et 1,6 écart-type), option « parties rapides ». Les réglages adoptés sont enregistrés dans le navigateur (`birds_aiw`) et, sur claude.ai, partagés avec tous les joueurs (`ai/best` dans la base) ; bouton pour revenir aux réglages d'origine. Les poids passent par `window.AIW` (lu par `W(p)`).
 - **Statistiques** : résumé par tag (icônes) = moyenne des écarts de victoire des cartes du tag, pondérée par le nombre de parties ; ligne « Sans tag » (Alliés et Reliques sans tag). Page des statistiques en FR / EN / IT.
 - Plateau avec pions en bois, ombre sur les îles hors de portée du Vol, présence par île, parchemin avec les tuiles et les Étoiles.
 - Plateau joueur complet : bâtiments, Œufs dans les Nids, Poussins, Runes, Étoiles, Reliques glissées sous les Sanctuaires, objectif personnel glissé au-dessus.

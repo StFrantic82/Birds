@@ -150,6 +150,7 @@ input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-ra
 .sbox2{background:#fffaf0;border-radius:18px;max-width:1050px;width:100%;padding:18px 24px 30px;box-shadow:0 20px 60px #0009}
 .shead{display:flex;align-items:center;justify-content:space-between}.shead h2{margin:0;font:600 30px Fredoka,sans-serif;color:#1f6f78}
 .sclose{border:0;background:#eee3cc;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer}
+.strain{display:block}.strain .trow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.strain .snote{margin:6px 0 4px}.tstat{font-size:12.5px;color:#6b5a3e}.tmsg{font-size:13px;font-weight:600;color:#1f6f78;margin-top:4px}.tlog{margin-top:6px}.tchk{font-size:13px}
 .ssim{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#f3e6cc;border-radius:12px;padding:10px 12px;margin:12px 0 4px}.ssim select{padding:4px 6px}.sright{margin-left:auto;display:flex;gap:4px}
 .snote{font-size:12px;color:#8a7a5f;margin:6px 0}
 .sfilters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;font-size:13px;color:#6b5a3e}
@@ -320,15 +321,15 @@ small.onl{color:#1f8a8a;font-weight:600}
 <div id="zoom"></div>
 <div id="modal"></div>
 <div id="aide" style="position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:70;cursor:pointer" onclick="this.style.display='none'"><img src="aide.jpg" alt="Aide de jeu" style="max-height:92vh;max-width:92vw;border-radius:12px"></div>
-<script src="data.js?v=1795273000"></script>
-<script src="content.js?v=1795273000"></script>
-<script src="engine.js?v=1795273000"></script>
-<script src="cards.js?v=1795273000"></script>
-<script src="i18n_it.js?v=1795273000"></script>
-<script src="i18n.js?v=1795273000"></script>
-<script src="stats.js?v=1795273000"></script>
-<script src="peerdb.js?v=1795273000"></script>
-<script src="ui.js?v=1795273000"></script>
+<script src="data.js?v=1795274000"></script>
+<script src="content.js?v=1795274000"></script>
+<script src="engine.js?v=1795274000"></script>
+<script src="cards.js?v=1795274000"></script>
+<script src="i18n_it.js?v=1795274000"></script>
+<script src="i18n.js?v=1795274000"></script>
+<script src="stats.js?v=1795274000"></script>
+<script src="peerdb.js?v=1795274000"></script>
+<script src="ui.js?v=1795274000"></script>
 <script>document.getElementById("statsbtn").onclick=document.getElementById("statsbtn2").onclick=()=>BirdsStatsUI.open();
 {const h=document.getElementById("homebtn"); let armed=null;
  h.onclick=()=>{ if(armed){location.reload(); return;} armed=setTimeout(()=>{armed=null; h.textContent=h.dataset.t; h.title=""; h.classList.remove("warn");},3000); h.dataset.t=h.textContent; const lg=window.I18N?I18N.lang:"fr"; h.textContent="Quitter ? ✓"; h.title=({en:"Click again to quit the game and go back home",it:"Clicca di nuovo per uscire dalla partita e tornare alla home"})[lg]||"Cliquez encore pour quitter la partie et revenir à l'accueil"; h.classList.add("warn");};}
