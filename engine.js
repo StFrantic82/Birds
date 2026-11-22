@@ -20,8 +20,8 @@ const RUNES=['Tag supplémentaire au choix (coût : 1 graine ou 1 fruit)','La Nu
 // Chemin des Anciens : piste infinie de 12 cases (la case 12 = case de départ), bonus regagnés à chaque tour
 const ELDERS_LEN=12;
 const ELDERS_BONUS={3:'anyFood',5:'seagull',7:'rune',9:'chickOr2ds',0:'star'};
-const ELDERS_FR={anyFood:'1 nourriture au choix',seagull:'gagner ou améliorer une Mouette',rune:'1 Amulette',chickOr2ds:'1 Poussin ou jusqu\'à 2 Écailles',star:'1 Étoile'};
-const BON_FR={rune:'Amulette',reveal3:'révéler 3 cartes',reveal2:'révéler 2 cartes',seagull:'Mouette',worm:'1 ver',chick:'1 Poussin',dragonscale:'1 Écaille',elders:'Anciens +1',grow:'éclore 1 Œuf',draw:'piocher 1',seedOrFruit:'graine ou fruit',buildAny:'construire sur toute île',gatherAny:'récolter sur toute île',expandAny:'s\'étendre sur toute île',ruinChick:'Poussin sur Ruine',brood:'Couvée',play1:'jouer 1 carte',removeCheapest:'retirer un bâtiment'};
+const ELDERS_FR={anyFood:'1 nourriture au choix',seagull:'gagner ou améliorer une Mouette',rune:'1 Rune',chickOr2ds:'1 Poussin ou jusqu\'à 2 Écailles',star:'1 Étoile'};
+const BON_FR={rune:'Rune',reveal3:'révéler 3 cartes',reveal2:'révéler 2 cartes',seagull:'Mouette',worm:'1 ver',chick:'1 Poussin',dragonscale:'1 Écaille',elders:'Anciens +1',grow:'éclore 1 Œuf',draw:'piocher 1',seedOrFruit:'graine ou fruit',buildAny:'construire sur toute île',gatherAny:'récolter sur toute île',expandAny:'s\'étendre sur toute île',ruinChick:'Poussin sur Ruine',brood:'Couvée',play1:'jouer 1 carte',removeCheapest:'retirer un bâtiment'};
 const RED_OBJ=[
   {id:'B01',name:'Tiny Flock',fr:'Cartes de coût 1-2',p2:[6,7],p34:[6,7,7,8],m:(g,p)=>g.sizeCount(p,1,2)},
   {id:'B02',name:'Average Flock',fr:'Cartes de coût 3',p2:[4,5],p34:[4,5,5,6],m:(g,p)=>g.sizeCount(p,3,3)},
@@ -51,7 +51,7 @@ const PERSONAL=[
   {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1,worm:1,seed:1},resNew:{seagull:1}},
 ];
 const PERSO_TH=[5,9];
-function resLabel(r){return Object.entries(r).filter(([k,v])=>v).map(([k,v])=>k==='chick'?(v>0?'+':'')+v+' Poussin'+(Math.abs(v)>1?'s':''):v+' '+({worm:'ver',seed:'graine',fruit:'fruit',seagull:'Mouette',elders:'Anciens',rune:'Amulette'})[k]+(v>1&&k!=='elders'?'s':'')).join(' + ');}
+function resLabel(r){return Object.entries(r).filter(([k,v])=>v).map(([k,v])=>k==='chick'?(v>0?'+':'')+v+' Poussin'+(Math.abs(v)>1?'s':''):v+' '+({worm:'ver',seed:'graine',fruit:'fruit',seagull:'Mouette',elders:'Anciens',rune:'Rune'})[k]+(v>1&&k!=='elders'?'s':'')).join(' + ');}
 const NEST_CAP=2; // provisoire
 const CHICKS_TOTAL=25;
 const TREES_TOTAL={grey:14,yellow:8,green:8};
@@ -193,10 +193,10 @@ class Game{
       else {p.seagulls[k]++; this.log(`${p.name} améliore une Mouette au niveau ${p.seagulls[k]}.`); if(p.seagulls[k]===4) await this.removeCheapest(p,null);} }}
   async rune(p){await this.rune1(p);}
   rm(p,k){return p.runes.includes(k)?(this.has(p,'OP2')?2:1):0;}
-  async rune1(p){const free=[0,1,2,3,4].filter(k=>!p.runes.includes(k)&&(k!==0||p.food.seed+p.food.fruit>0)); if(!free.length){this.log(`${p.name} n'a plus de place pour une Amulette.`);return;}
-    const k=await this.ask(p,{title:'Placez votre Amulette',options:free.map(k=>({label:RUNES[k],value:k,score:this.amuletScore(p,k)}))});
-    if(k===0){const t=p.food.seed>0&&p.food.fruit>0?await this.ask(p,{title:'Payer l\'Amulette',options:[{label:'1 graine',value:'seed',score:1},{label:'1 fruit',value:'fruit',score:1}]}):(p.food.seed>0?'seed':'fruit'); p.food[t]--;}
-    p.runes.push(k); this.log(`${p.name} gagne une Amulette : ${RUNES[k]}.`);}
+  async rune1(p){const free=[0,1,2,3,4].filter(k=>!p.runes.includes(k)&&(k!==0||p.food.seed+p.food.fruit>0)); if(!free.length){this.log(`${p.name} n'a plus de place pour une Rune.`);return;}
+    const k=await this.ask(p,{title:'Placez votre Rune',options:free.map(k=>({label:RUNES[k],value:k,score:this.amuletScore(p,k)}))});
+    if(k===0){const t=p.food.seed>0&&p.food.fruit>0?await this.ask(p,{title:'Payer la Rune',options:[{label:'1 graine',value:'seed',score:1},{label:'1 fruit',value:'fruit',score:1}]}):(p.food.seed>0?'seed':'fruit'); p.food[t]--;}
+    p.runes.push(k); this.log(`${p.name} gagne une Rune : ${RUNES[k]}.`);}
   async gainStar(p,why){p.stars++; p.starLog.push(why); (p.starRounds=p.starRounds||[]).push({why,round:this.round}); this.log(`★ ${p.name} gagne une Étoile (${why}) — ${p.stars}/6.`); if(p.stars>=6&&!this.endTriggered){this.endTriggered=true; this.log(`${p.name} atteint 6 Étoiles : la fin de partie est déclenchée, on termine le tour.`);}
     if(this.has(p,'OB2')) await this.layEgg(p,1); if(this.has(p,'OG4')) await this.placeDSany(p,1); if(this.has(p,'ON5')) await this.draw(p,2);
     if(this.has(p,'OP4')) await this.gainAnyFood(p,1); if(this.has(p,'OR2')) await this.gainChick(p,1); if(this.has(p,'OY1')) await this.elders(p,1);}
@@ -481,7 +481,7 @@ class Game{
   buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const lvB=this.W(p).lvl?({nest:[0,0.4,1.2,1.3],shrine:[0,0.3,0.6,0.9],workshop:[0,0.2,0.6,0.7]})[b.type][b.lvl]:0; const relNeed=b.type==='shrine'?(this.redOn(p,'B04')?1:0)+p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length*0.5:0; const lvB2=lvB+relNeed*0.6*b.lvl; const base={nest:3.2+lvB,shrine:1.2+lvB2,workshop:2.8+lvB}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
   W(p){return Object.assign({},AIW_CLASSIC,AIW_TRAINED,p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
-    const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Amulette/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
+    const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Rune/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
   playScore(p,id,free){const c=this.card(id); const ob=this.redObj; let objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; objB*=this.W(p).red; const cs=window.COND_STARS&&window.COND_STARS[id]?2.5:0; const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=(c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0);
     if(c.type!=='bird'){ let t2=0; const W2=this.W(p); if(W2.tempo){const o=this.objs[0]; if(o.d.id==='B04'&&c.type==='relic'&&this.objNear(o,p,1)) t2+=7; if(p.pobj&&p.pClaims<2){const a2=((c.tagMap||{})[p.pobj.tags[0]]||0)+((c.tagMap||{})[p.pobj.tags[1]]||0)+(c.wild||0); if(a2&&this.persoValue(p)+a2>=PERSO_TH[p.pClaims]) t2+=7;} t2*=W2.tempo;} return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB+cs+persoB+gb+t2:-9;} const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);

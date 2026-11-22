@@ -14,11 +14,11 @@ const R={
   tag2:(a)=>(g,p)=>{const t=g.tags(p); return Math.max(0,2-t[a])<=g.wild(p);},
   bld:(type,isl)=>(g,p)=>Object.entries(g.nestOwner).some(([sid,b])=>b.owner===p.i&&b.type===type&&g.nestById[sid].island===isl),
 };
-const RF={rune:'1 Amulette',shrine:'1 Sanctuaire',star:'1 Étoile'};
+const RF={rune:'1 Rune',shrine:'1 Sanctuaire',star:'1 Étoile'};
 const ISL={marsh:'Marais',meadow:'Prairie',jungle:'Jungle',desert:'Désert',mountain:'Montagne',tundra:'Toundra'};
 const reqB=(type,isl)=>({f:R.bld(type,isl),l:`${type==='workshop'?'Atelier':'Nid'} en ${ISL[isl]}`});
 const ALLIES=[
- ALLY(1,'Chameleon',3,null,0,[{f:R.rune,l:'1 Amulette'},{f:R.shrine,l:'1 Sanctuaire'},{f:R.star,l:'1 Étoile'}],'⚡ 1 Écaille par tag différent. ◈ 5 Écailles : une action au choix, puis sacrifier cette carte.',1),
+ ALLY(1,'Chameleon',3,null,0,[{f:R.rune,l:'1 Rune'},{f:R.shrine,l:'1 Sanctuaire'},{f:R.star,l:'1 Étoile'}],'⚡ 1 Écaille par tag différent. ◈ 5 Écailles : une action au choix, puis sacrifier cette carte.',1),
  ALLY(2,'Beaver',3,null,0,[{f:R.diff3,l:'3 tags différents'}],'⚡ Construire sur n\'importe quelle île.'),
  ALLY(3,'Ant',3,null,0,[{f:R.treesAll,l:'Poussins sur arbres gris, jaune et vert'}],'⚡ Défausser des cartes couvrant les 5 tags : 1 Étoile.'),
  ALLY(4,'Squirrel',3,null,0,[{f:R.same3,l:'3 tags identiques'}],'⚡ 1 nourriture au choix. ↻ 1 nourriture au choix.'),
@@ -32,7 +32,7 @@ const ALLIES=[
  ALLY(12,'Frog',4,null,0,[{f:R.tags('Legion','Circle'),l:'2 Legion + 2 Circle'}],'⚡ 1 Mouette + 1 Poussin sur une Ruine.'),
  ALLY(13,'Turtle',4,null,0,[{f:R.tags('Court','Guild'),l:'2 Court + 2 Guild'}],'⚡ 1 ver : construire votre Sanctuaire le moins cher gratuitement.'),
  ALLY(14,'Lizard',4,null,0,[{f:R.tags('Court','Circle'),l:'2 Court + 2 Circle'}],'⚡ Sacrifier : Anciens +2 et jouer 1 carte.'),
- ALLY(15,'Butterfly',4,null,0,[{f:R.tags('Guild','Circle'),l:'2 Guild + 2 Circle'}],'⚡ 2 Écailles + 1 Amulette.'),
+ ALLY(15,'Butterfly',4,null,0,[{f:R.tags('Guild','Circle'),l:'2 Guild + 2 Circle'}],'⚡ 2 Écailles + 1 Rune.'),
  ALLY(16,'Firefly',2,T('Academy'),0,[{f:R.tag2('Academy'),l:'2 Academy'}],'⚡ 1 Écaille par Atelier. ◈ 1 : déplacer la Nuée.',1),
  ALLY(17,'Raccoon',2,T('Legion'),0,[{f:R.tag2('Legion'),l:'2 Legion'}],'⚡ 1 Écaille par Atelier. ◈ 2 : déclencher un Atelier.',1),
  ALLY(18,'Crocodile',2,T('Court'),0,[{f:R.tag2('Court'),l:'2 Court'}],'⚡ 1 Écaille par Atelier. ◈ 1 : faire éclore 1 Œuf.',1),
@@ -40,15 +40,15 @@ const ALLIES=[
  ALLY(20,'Weasel',2,T('Circle'),0,[{f:R.tag2('Circle'),l:'2 Circle'}],'⚡ 1 Écaille par Atelier. ◈ 3 : retirer un bâtiment de votre plateau.',1),
  ALLY(21,'Seal',1,T('Academy','Legion'),0,[reqB('workshop','marsh')],'⚡ 1 Mouette. ↻ Défausser 1 Mouette : piocher 2.'),
  ALLY(22,'Ibex',1,T('Academy','Court'),0,[reqB('workshop','meadow')],'⚡ Faire éclore 2 Œufs. ↻ Pondre 1 Œuf.'),
- ALLY(23,'Meerkat',1,T('Academy','Circle'),0,[reqB('workshop','jungle')],'⚡ Déplacer la Nuée. ↻ Si 1 Amulette : révéler 3.'),
+ ALLY(23,'Meerkat',1,T('Academy','Circle'),0,[reqB('workshop','jungle')],'⚡ Déplacer la Nuée. ↻ Si 1 Rune : révéler 3.'),
  ALLY(24,'Salamander',1,T('Academy','Guild'),0,[reqB('workshop','desert')],'◈ 1 : 1 ver. ↻ Piocher 1 par Allié.',1),
  ALLY(25,'Dog',1,T('Legion','Court'),0,[reqB('workshop','mountain')],'⚡ Si Oiseau 3- : 1 Mouette. ↻ Défausser 1 Mouette : Anciens +2.'),
  ALLY(26,'Mole',1,null,1,[reqB('workshop','tundra')],'⚡ Défausser 4 cartes : construire gratuitement ici. Tag joker.'),
  ALLY(27,'Hedgehog',1,T('Court','Guild'),0,[reqB('nest','marsh')],'⚡ 1 Écaille par Allié. ↻ Anciens +1 par 2 Alliés.'),
  ALLY(28,'Bat',1,T('Legion','Circle'),0,[reqB('nest','meadow')],'⚡ 1 Mouette. ↻ Sacrifier : Poussin sur une Ruine.'),
  ALLY(29,'Mouse',1,T('Legion','Guild'),0,[reqB('nest','jungle')],'⚡ 1 ver : 1 Poussin. ↻ 1 ver par Allié.'),
- ALLY(30,'Muskrat',1,T('Court','Circle'),0,[reqB('nest','desert')],'⚡ Sacrifier : 1 Amulette. ↻ Si Oiseau 4+ : Anciens +1.'),
- ALLY(31,'Cat',1,T('Guild','Circle'),0,[reqB('nest','mountain')],'⚡ 1 ver. ↻ 1 Écaille par Amulette.'),
+ ALLY(30,'Muskrat',1,T('Court','Circle'),0,[reqB('nest','desert')],'⚡ Sacrifier : 1 Rune. ↻ Si Oiseau 4+ : Anciens +1.'),
+ ALLY(31,'Cat',1,T('Guild','Circle'),0,[reqB('nest','mountain')],'⚡ 1 ver. ↻ 1 Écaille par Rune.'),
  ALLY(32,'Wild Boar',1,null,1,[reqB('nest','tundra')],'↻ Défausser 2 cartes : 1 nourriture au choix + Anciens +1. Tag joker.'),
 ];
 const RELICS=[
@@ -77,11 +77,11 @@ const RELICS=[
  RELIC('ON7','Traveler\'s Pack',2,null,0,'⚡ Piocher 1. ∞ Oiseau : défausser 1 carte pour -2 au coût.'),
  RELIC('ON8','Neutral 8',1,null,0,'∞ La Nuée peut avancer d\'1 île de plus.'),
  RELIC('OP1','Ritual Mask',1,T('Circle'),0,'∞ Oiseaux Circle : coût -1 (min. 1).'),
- RELIC('OP2','Forbidden Map',2,T('Circle'),0,'∞ Les effets de vos Amulettes sont doublés.'),
+ RELIC('OP2','Forbidden Map',2,T('Circle'),0,'∞ Les effets de vos Runes sont doublés.'),
  RELIC('OP3','Whispering Totem',3,T('Circle'),0,'∞ Quand vous jouez une carte Circle : défausser 1 pour un Poussin sur une Ruine.'),
  RELIC('OP4','Shadow Cloak',2,T('Circle'),0,'∞ Quand vous gagnez une Étoile : 1 nourriture au choix.'),
  RELIC('OP5','Sacrificial Dagger',2,T('Circle'),0,'⚡ Sacrifier 1 carte. ∞ Quand vous sacrifiez : résoudre son effet ⚡.'),
- RELIC('OP6','Hidden Sanctuary',3,T('Circle'),0,'⚡ Défausser 1 carte. ∞ 4 Amulettes = 1 Étoile.'),
+ RELIC('OP6','Hidden Sanctuary',3,T('Circle'),0,'⚡ Défausser 1 carte. ∞ 4 Runes = 1 Étoile.'),
  RELIC('OP7','Black Codex',3,T('Circle'),0,'⚡ Sacrifier 1 carte. ∞ Défausser 4 cartes du même tag : 1 Étoile (une fois).'),
  RELIC('OP8','Soul Reliquary',6,T('Circle'),0,'∞ Sacrifier cette carte : 1 Étoile.'),
  RELIC('OR1','Signal Horn',1,T('Legion'),0,'⚡ Déclencher un Atelier. ∞ Construire un Atelier déclenche son effet.'),
@@ -133,7 +133,7 @@ const FX={
  A27:{i:async(g,p)=>g.placeDSany(p,g.allyCount(p)),b:async(g,p)=>g.elders(p,Math.floor(g.allyCount(p)/2))},
  A28:{i:async(g,p)=>g.seagull(p,1),b:async(g,p)=>{if(await g.sacrifice(p,'Bat : sacrifier 1 carte pour un Poussin sur une Ruine ?',0.3)) await g.ruinChick(p,1);}},
  A29:{i:async(g,p)=>{if(p.food.worm>0&&p.supply>0&&await yes(g,p,'Mouse : dépenser 1 ver pour 1 Poussin ?',1.5)){p.food.worm--; await g.gainChick(p,1);}},b:async(g,p)=>g.gainFood(p,'worm',g.allyCount(p))},
- A30:{i:async(g,p)=>{if(await g.sacrifice(p,'Muskrat : sacrifier 1 carte pour 1 Amulette ?',0.3)) await g.rune(p);},b:async(g,p)=>{if(g.birds4(p)) await g.elders(p,1);}},
+ A30:{i:async(g,p)=>{if(await g.sacrifice(p,'Muskrat : sacrifier 1 carte pour 1 Rune ?',0.3)) await g.rune(p);},b:async(g,p)=>{if(g.birds4(p)) await g.elders(p,1);}},
  A31:{i:async(g,p)=>g.gainFood(p,'worm',1),b:async(g,p)=>g.placeDSany(p,p.runes.length)},
  A32:{b:async(g,p)=>{if(p.hand.length>=2&&await g.discardCards(p,2,'Wild Boar : défausser 2 cartes pour 1 nourriture + Anciens +1 ?',0.6)){await g.gainAnyFood(p,1); await g.elders(p,1);}}},
  // Reliques (effets instantanés et capacités Écaille ; les effets ∞ sont dans le moteur)

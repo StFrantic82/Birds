@@ -3,7 +3,7 @@
 'use strict';
 const KEY='birds_stats_v1', MAX=5000;
 const LG=()=>window.I18N?I18N.lang:'fr', EN=()=>LG()==='en';
-const IT={'Cartes jouées':'Carte giocate','Mouettes':'Gabbiani','Niveau total des Mouettes':'Livello totale dei Gabbiani','Amulettes':'Amuleti','Cases du Chemin des Anciens':'Caselle del Sentiero degli Antichi','Étoiles':'Stelle',
+const IT={'Cartes jouées':'Carte giocate','Mouettes':'Gabbiani','Niveau total des Mouettes':'Livello totale dei Gabbiani','Runes':'Rune','Cases du Chemin des Anciens':'Caselle del Sentiero degli Antichi','Étoiles':'Stelle',
  'Parties':'Partite','Toutes':'Tutte','Avec humains':'Con umani','Simulations IA':'Simulazioni IA','Reçues des joueurs':'Ricevute dai giocatori','Joueurs':'Giocatori','Tous':'Tutti',
  'Aucune partie enregistrée pour ces filtres. Jouez une partie ou lancez des simulations ci-dessus.':'Nessuna partita registrata per questi filtri. Gioca una partita o avvia delle simulazioni qui sopra.',
  'Colonies':'Colonie','Objectifs personnels':'Obiettivi personali','Objectifs rouges':'Obiettivi rossi','Objectifs bleus':'Obiettivi blu','Chemin des Anciens':'Sentiero degli Antichi','Cartes (Reliques, Alliés…)':'Carte (Reliquie, Alleati…)',
@@ -106,7 +106,7 @@ function compute(f){
   const avg=(arr,f)=>arr.length?(arr.reduce((a,p)=>a+f(p),0)/arr.length).toFixed(2):'—';
   const W=P.filter(p=>p.win), Lo=P.filter(p=>!p.win);
   res.misc=[[L('Cartes jouées','Cards played'),p=>(p.played||[]).length],[L('Mouettes','Seagulls'),p=>p.seagulls.length],[L('Niveau total des Mouettes','Total Seagull level'),p=>p.seagulls.reduce((a,b)=>a+b,0)],
-    [L('Amulettes','Amulets'),p=>p.runes.length],[L('Cases du Chemin des Anciens','Elders\' Path spaces'),p=>p.elders],[L('Étoiles','Stars'),p=>p.stars]].map(([l,f])=>({l,w:avg(W,f),lo:avg(Lo,f)}));
+    [L('Runes','Runes'),p=>p.runes.length],[L('Cases du Chemin des Anciens','Elders\' Path spaces'),p=>p.elders],[L('Étoiles','Stars'),p=>p.stars]].map(([l,f])=>({l,w:avg(W,f),lo:avg(Lo,f)}));
   const isl={}; G.forEach(g=>Object.keys(g.settled).forEach(k=>isl[k]=(isl[k]||0)+1)); res.islands=Object.entries(isl).map(([k,v])=>({k,p:pct(v,G.length)})).sort((a,b)=>b.p-a.p);
   return res;}
 
@@ -147,7 +147,7 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
    ${r.build.map(b=>`<tr><td><b>${({nest:L('Nids','Nests'),shrine:L('Sanctuaires','Shrines'),workshop:L('Ateliers','Workshops')})[b.t]}</b>${b.t==='nest'?` <small>${L('(hors Nid de départ)','(excluding starting nest)')}</small>`:''}</td><td>${b.all}</td><td style="color:${+b.win>+b.lose?'#2e8b3e':'#c0392b'}">${b.win}</td><td>${b.lose}</td><td>${(b.t==='nest'?b.lv.slice(1):b.lv).map(v=>v+'%').join(' / ')}</td></tr>`).join('')}</table>
   <h3>${L('Gagnants vs perdants','Winners vs losers')}</h3>
   <table class="stab"><tr><th></th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th></tr>${r.misc.map(m=>`<tr><td>${m.l}</td><td style="color:${+m.w>+m.lo?'#2e8b3e':'#c0392b'}"><b>${m.w}</b></td><td>${m.lo}</td></tr>`).join('')}</table>
-  <h3>${L('Amulettes','Amulets')}</h3>
+  <h3>${L('Runes','Runes')}</h3>
   <table class="stab"><tr><th></th><th>${L('Prise par','Taken by')}</th><th>${L('Victoires','Wins')}</th></tr>${r.runes.map(a=>`<tr><td>${esc(window.BirdsGame.RUNES[a.k])}</td><td class="w">${bar(a.pct,100,'#7a4fa0')} ${a.pct}%</td><td style="color:${dcol(a.wr/100-r.baseWin)}">${a.wr}%</td></tr>`).join('')}</table>
   <h3>${L('Colonies fondées','Settlements founded')}</h3>
   <table class="stab">${r.islands.map(i=>`<tr><td><img class="islic" src="icons/isl_${i.k}.png" alt=""> ${ISL[i.k][LG()==='en'?1:LG()==='it'?2:0]}</td><td class="w">${bar(i.p,100,'#3a8f6a')}</td><td>${i.p}% ${L('des parties','of games')}</td></tr>`).join('')}</table>

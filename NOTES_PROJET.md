@@ -26,7 +26,7 @@
 
 ## Vocabulaire (FR / EN / IT)
 
-**Nuée / Flock / Stormo** (ancien nom FR : Vol), Couvée / Brood, S'étendre / Expand, Récolter / Gather, Construire / Build, Nid / Nest, Sanctuaire / Shrine (ancien nom : House), Atelier / Workshop (ancien nom : Outpost), Chemin des Anciens / Elders' Path, **Amulette / Amulet** (jetons, ancien nom : Rune), **Relique / Relic** (cartes rangées dans les Sanctuaires), Écaille de dragon / Dragonscale, Colonie / **Settlement**, Ruine = Lac (Lake), Discover = Expand.
+**Nuée / Flock / Stormo** (ancien nom FR : Vol), Couvée / Brood, S'étendre / Expand, Récolter / Gather, Construire / Build, Nid / Nest, Sanctuaire / Shrine (ancien nom : House), Atelier / Workshop (ancien nom : Outpost), Chemin des Anciens / Elders' Path, **Rune / Amulet** (jetons, ancien nom : Rune), **Relique / Relic** (cartes rangées dans les Sanctuaires), Écaille de dragon / Dragonscale, Colonie / **Settlement**, Ruine = Lac (Lake), Discover = Expand.
 Italien : Poussin / Pulcino, Œuf / Uovo, Nid / Nido, Sanctuaire / Santuario, Atelier / Laboratorio, Chemin des Anciens / Sentiero degli Antichi, Couvée / Covata, Mouette / Gabbiano, Écaille / Scaglia, Colonie / Colonia.
 
 ## Règles validées avec l'autrice
@@ -35,11 +35,11 @@ Italien : Poussin / Pulcino, Œuf / Uovo, Nid / Nido, Sanctuaire / Santuario, At
 - **Objectif personnel** : 2 cartes proposées, 1 gardée. 1 Étoile quand le total des deux tags atteint 5, une autre à 9 (tags joker compris). Les ressources du bas de la carte sont gagnées tout de suite.
 - **Objectifs communs** : 1 tuile rouge et 1 bleue, avec les seuils du bas des tuiles. Chaque seuil est pris dans l'ordre, 1 Étoile par joueur et par tuile. Les objectifs de coût comptent toutes les cartes en jeu et les Mouettes (coût = niveau). Experienced Watchers = **total** de Poussins dans des régions avec Ruine.
 - **Bâtiments** : construction **dans n'importe quel ordre**. Les effets « build your cheapest… » gardent le moins cher. Chaque bâtiment touche 2 régions. Nid 1 = 3 poussins + 1 graine, Nid 2 = + 2 graines, Nid 3 = + 3 graines (corriger l'annexe des règles, qui dit 2).
-- **Nids** : 2 Œufs chacun, 3 avec l'Amulette Nid. Le surplus d'Œufs pondus est perdu. La Couvée fait éclore tous les Œufs, puis pond.
-- **Sanctuaires** : capacité 2 / 3 / 4 / 5 en **taille** (somme des coûts des Reliques), +1 avec l'Amulette. Poser une Relique est gratuit.
+- **Nids** : 2 Œufs chacun, 3 avec l'Rune Nid. Le surplus d'Œufs pondus est perdu. La Couvée fait éclore tous les Œufs, puis pond.
+- **Sanctuaires** : capacité 2 / 3 / 4 / 5 en **taille** (somme des coûts des Reliques), +1 avec l'Rune. Poser une Relique est gratuit.
 - **Reliques à Étoile** : l'Étoile est posée sur la carte, puis rejoint le plateau quand la condition est remplie.
 - **Mouettes** : 4 niveaux. Niv. 1 : Couvée = 1 Œuf. Niv. 2 : + 1 case Anciens. Niv. 3 : + tag joker. Niv. 4 : en l'atteignant (une seule fois), retirer de son plateau le bâtiment le moins cher **du type de son choix**. Gagner une Mouette = en prendre une nouvelle au niveau 1 **ou** en améliorer une. Une Mouette compte comme un Oiseau de coût égal à son niveau.
-- **Chemin des Anciens** : 12 cases, piste infinie. Case 3 : nourriture au choix. Case 5 : gagner ou améliorer une Mouette. Case 7 : Amulette. Case 9 : 1 Poussin ou jusqu'à 2 Écailles. Case 12 : Étoile. L'affichage commence à 0, la case de départ devient 12 après un tour.
+- **Chemin des Anciens** : 12 cases, piste infinie. Case 3 : nourriture au choix. Case 5 : gagner ou améliorer une Mouette. Case 7 : Rune. Case 9 : 1 Poussin ou jusqu'à 2 Écailles. Case 12 : Étoile. L'affichage commence à 0, la case de départ devient 12 après un tour.
 - **Sacrifier** = détruire une de ses cartes en jeu (une Mouette compte). **Défausser** = depuis la main.
 - **Search the next X cards** : garder 1 carte, défausser les autres. Archivist = deux recherches de 3.
 - **Supply Crate** : pour chaque Oiseau joué, on peut dépenser 1 graine ou 1 fruit pour réduire son coût de 2.
@@ -55,16 +55,16 @@ Italien : Poussin / Pulcino, Œuf / Uovo, Nid / Nido, Sanctuaire / Santuario, At
 - **Statistiques partagées** (artefact claude.ai) : les autres joueurs peuvent envoyer leurs parties (bouton en fin de partie, ou « Envoyer mes parties à l'auteur » dans Statistiques) ; elles arrivent dans la base (`sharedstats/<id de partie>`) et le propriétaire les voit avec le filtre « Reçues des joueurs ». En ligne, chaque invité reçoit aussi l'enregistrement de la partie.
 - **Statistiques** : résumé par tag (icônes) = moyenne des écarts de victoire des cartes du tag, pondérée par le nombre de parties ; ligne « Sans tag » (Alliés et Reliques sans tag). Page des statistiques en FR / EN / IT.
 - Plateau avec pions en bois, ombre sur les îles hors de portée du Vol, présence par île, parchemin avec les tuiles et les Étoiles.
-- Plateau joueur complet : bâtiments, Œufs dans les Nids, Poussins, Amulettes, Étoiles, Reliques glissées sous les Sanctuaires, objectif personnel glissé au-dessus.
+- Plateau joueur complet : bâtiments, Œufs dans les Nids, Poussins, Runes, Étoiles, Reliques glissées sous les Sanctuaires, objectif personnel glissé au-dessus.
 - Boutons d'action avec icônes, sous le Chemin des Anciens. Aide de jeu.
-- **Statistiques** : parties enregistrées dans le navigateur, simulations IA, Étoiles par source, objectifs, bâtiments, Amulettes, Colonies, cartes (taux de victoire, aperçu au survol), export JSON et image.
+- **Statistiques** : parties enregistrées dans le navigateur, simulations IA, Étoiles par source, objectifs, bâtiments, Runes, Colonies, cartes (taux de victoire, aperçu au survol), export JSON et image.
 
 ## IA (réglages dans `engine.js` : `AIW_CLASSIC`, `AIW_TRAINED`, fonction `W(p)`)
 
 Depuis novembre 2026 : poids appris par auto-apprentissage (parties IA contre IA, `AIW_TRAINED`) + **anticipation** : avant chaque action principale, elle simule 3 fins de partie pour ses 6 meilleurs choix (mains adverses et pioche redistribuées au hasard) et garde le plus gagnant (`aiMainLookahead`, `rollout`). Résultat à 2 joueurs : 6 Étoiles vers la manche 21,7 (contre 26 avant), 85 % de victoires contre l'ancienne IA, environ 0,25 s de réflexion par tour.
 
 
-Vise les Colonies, récolte ce qui débloque les cartes de sa main, saisit les Étoiles immédiates (« tempo »), couve surtout sans Poussins (double Couvée en fin de partie si elle rapporte une Étoile). Elle choisit ses Amulettes selon le contexte (joker en priorité) et ses Mouettes aussi (améliorer par défaut, gagner selon les objectifs, les Œufs ou les sacrifices). Elle sacrifie l'élément qui lui coûte le moins, construit de grands Sanctuaires quand les Reliques comptent, et poursuit ses objectifs (personnel, rouge, bleu, Reliques à Étoile).
+Vise les Colonies, récolte ce qui débloque les cartes de sa main, saisit les Étoiles immédiates (« tempo »), couve surtout sans Poussins (double Couvée en fin de partie si elle rapporte une Étoile). Elle choisit ses Runes selon le contexte (joker en priorité) et ses Mouettes aussi (améliorer par défaut, gagner selon les objectifs, les Œufs ou les sacrifices). Elle sacrifie l'élément qui lui coûte le moins, construit de grands Sanctuaires quand les Reliques comptent, et poursuit ses objectifs (personnel, rouge, bleu, Reliques à Étoile).
 Durée moyenne entre IA : environ 23 manches à 2 joueurs, 21,3 à 3, 20,8 à 4. Les parties humaines durent environ 20 manches.
 
 ## Ressources de départ des objectifs personnels : deux jeux au choix
@@ -77,19 +77,19 @@ Recommandés — tous les joueurs commencent avec 2 Œufs et 3 Poussins ; l'obje
 |---|---|---|
 | Robins | Academy + Legion | +1 Poussin, 1 Ancien, 1 ver, 1 fruit |
 | Swans | Academy + Court | Mouette, −1 Poussin, 1 ver |
-| Storks | Academy + Guild | −1 Poussin, 2 graines, 1 Ancien, 1 ver, 1 Amulette |
-| Ravens | Academy + Circle | 1 graine, 1 ver, 1 fruit, 1 Amulette |
+| Storks | Academy + Guild | −1 Poussin, 2 graines, 1 Ancien, 1 ver, 1 Rune |
+| Ravens | Academy + Circle | 1 graine, 1 ver, 1 fruit, 1 Rune |
 | Eagles | Legion + Court | Mouette, −1 Poussin, 1 fruit, 1 ver |
 | Kingfishers | Legion + Guild | 1 Ancien, 2 vers, 1 graine, 1 fruit |
-| Falcons | Legion + Circle | +1 Poussin, 1 graine, 1 ver, 1 Amulette |
+| Falcons | Legion + Circle | +1 Poussin, 1 graine, 1 ver, 1 Rune |
 | Woodpeckers | Court + Guild | 2 Anciens, 2 vers, 1 fruit |
 | Owls | Court + Circle | 2 vers, 1 graine, 1 fruit |
 | Magpies | Guild + Circle | Mouette |
 
-Contraintes respectées : même total qu'avant (32 ressources, un Poussin compté comme 3 nourritures), autant de graines que de fruits (6 et 6). Totaux : 12 vers, 6 graines, 6 fruits, 3 Mouettes, 5 Anciens, 3 Amulettes, Poussins +2 / −3.
+Contraintes respectées : même total qu'avant (32 ressources, un Poussin compté comme 3 nourritures), autant de graines que de fruits (6 et 6). Totaux : 12 vers, 6 graines, 6 fruits, 3 Mouettes, 5 Anciens, 3 Runes, Poussins +2 / −3.
 Résultat (18 000 parties IA contre IA à 2 joueurs) : chaque objectif gagne entre 47,6 % et 51,8 % quand il est choisi (avant : 42 % à 62 %). L'écran de choix affiche aussi la ligne « Départ ».
 
-Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs) : Mouette +12,5 pts ; graine +4,2 ; +1 Poussin +4,1 ; case des Anciens +3,5 ; ver +2,2 ; fruit +2,1 ; Amulette +1,7 ; −1 Poussin −4,9. Ces valeurs ne s'additionnent qu'approximativement : l'équilibre final a été réglé par simulations successives. Outils : `train/` (non versionné) — `extra.js` (valeur d'une ressource), `pv_run.sh` (équilibre des objectifs).
+Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs) : Mouette +12,5 pts ; graine +4,2 ; +1 Poussin +4,1 ; case des Anciens +3,5 ; ver +2,2 ; fruit +2,1 ; Rune +1,7 ; −1 Poussin −4,9. Ces valeurs ne s'additionnent qu'approximativement : l'équilibre final a été réglé par simulations successives. Outils : `train/` (non versionné) — `extra.js` (valeur d'une ressource), `pv_run.sh` (équilibre des objectifs).
 
 ## Points ouverts
 
