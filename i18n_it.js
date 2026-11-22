@@ -14,7 +14,7 @@ const R=[
 [/^Changer de couleur \((\w+)\)$/,(m,c)=>`Cambia colore (${({Rouge:'Rosso',Bleu:'Blu',Blanc:'Bianco',Violet:'Viola'})[c]||c})`],
 [/^Aide de jeu$/,'Aiuto di gioco'],[/^Étoile en attente : condition non remplie$/,'Stella in attesa: condizione non ancora soddisfatta'],[/^📊 Statistiques$/,'📊 Statistiche'],[/^Statistiques$/,'Statistiche'],
 [/^Chemin des Anciens$/,'Sentiero degli Antichi'],[/^Nouvelle partie$/,'Nuova partita'],[/^Fin de partie$/,'Fine partita'],[/^Partie terminée$/,'Partita terminata'],
-[/^📤 Envoyer les stats de cette partie$/,'📤 Invia le statistiche di questa partita'],[/^📤 Stats envoyées$/,'📤 Statistiche inviate'],[/^Envoi…$/,'Invio…'],[/^✓ Merci !$/,'✓ Grazie!'],[/^Envoi refusé : votre accès à l'appli ne le permet pas\.$/,'Invio rifiutato: il tuo accesso all\'app non lo permette.'],[/^Retour$/,'Indietro'],[/^🏠 Accueil$/,'🏠 Home'],[/^Quitter \? ✓$/,'Uscire? ✓'],[/^Retour à l'accueil$/,'Torna alla schermata iniziale'],
+[/^📤 Envoyer les stats de cette partie$/,'📤 Invia le statistiche di questa partita'],[/^📤 Stats envoyées$/,'📤 Statistiche inviate'],[/^Envoi…$/,'Invio…'],[/^✓ Merci !$/,'✓ Grazie!'],[/^Envoi refusé : votre accès à l'appli ne le permet pas\.$/,'Invio rifiutato: il tuo accesso all\'app non lo permette.'],[/^Départ : (.+)$/,(m,r)=>'Partenza: '+tr(r)],[/^Retour$/,'Indietro'],[/^🏠 Accueil$/,'🏠 Home'],[/^Quitter \? ✓$/,'Uscire? ✓'],[/^Retour à l'accueil$/,'Torna alla schermata iniziale'],
 [/^Mode de jeu$/,'Modalità di gioco'],[/^Sur cet appareil$/,'Su questo dispositivo'],[/^🌐 En ligne$/,'🌐 Online'],[/^Vérification du mode en ligne…$/,'Verifica della modalità online…'],
 [/^Créer une partie$/,'Crea una partita'],[/^Rejoindre$/,'Unisciti'],[/^Votre nom$/,'Il tuo nome'],[/^Code de la partie$/,'Codice della partita'],[/^Rejoindre la partie$/,'Unisciti alla partita'],
 [/^Créer la partie en ligne$/,'Crea la partita online'],[/^Vous \(hôte\)$/,'Tu (host)'],[/^En ligne$/,'Online'],
@@ -153,7 +153,7 @@ const R=[
 [/^(.+?) — (.+)$/,(m,a,b)=>{const t=tr(b); return t===b?m:`${a} — ${t}`;}],
 ];
 // mots et expressions isolés (après les phrases)
-const W=[[/avancer d'1 case sur le Chemin des Anciens/g,'avanzare di 1 casella sul Sentiero degli Antichi'],[/construire gratuitement votre (Nid|Sanctuaire|Atelier) le moins cher ici/g,(m,b)=>`costruire gratis qui il tuo ${BAT[b]} più economico`],
+const W=[[/(\d) Anciens\b/g,'$1 Antichi'],[/avancer d'1 case sur le Chemin des Anciens/g,'avanzare di 1 casella sul Sentiero degli Antichi'],[/construire gratuitement votre (Nid|Sanctuaire|Atelier) le moins cher ici/g,(m,b)=>`costruire gratis qui il tuo ${BAT[b]} più economico`],
  [/construire gratuitement ici/g,'costruire gratis qui'],[/récolter sur n'importe quelle île/g,'raccogliere su qualsiasi isola'],[/s'étendre sur n'importe quelle île/g,'espandersi su qualsiasi isola'],
  [/retirer votre Nid \/ Atelier \/ Sanctuaire le moins cher/g,'togliere il tuo Nido / Laboratorio / Santuario più economico'],[/gagner une Amulette/g,'ottenere un Amuleto'],[/jouer 1 Oiseau gratuitement/g,'giocare 1 Uccello gratis'],
  [/avancer de 2 sur le Chemin des Anciens/g,'avanzare di 2 sul Sentiero degli Antichi'],[/piocher 1 carte par Nid/g,'pescare 1 carta per Nido'],[/un Poussin sur une Ruine/g,'un pulcino su una Rovina'],[/révéler 3 deux fois/g,'rivelare 3 due volte'],

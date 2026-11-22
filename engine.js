@@ -39,19 +39,19 @@ const BLUE_OBJ=[
   {id:'C06',name:'Experienced Watchers',fr:'Poussins dans des régions avec Ruine',p2:[5,6],p34:[5,5,5,5],m:(g,p)=>g.B.regions.filter(r=>r.ruins.length).reduce((n,r)=>n+g.chicksIn(r.id,p.i),0)},
 ];
 const PERSONAL=[
-  {id:'A01',name:'Robins',tags:['Academy','Legion'],res:{worm:1,seed:1,fruit:1}},
-  {id:'A02',name:'Swans',tags:['Academy','Court'],res:{seagull:1,worm:3}},
-  {id:'A03',name:'Storks',tags:['Academy','Guild'],res:{worm:2,seed:1}},
-  {id:'A04',name:'Ravens',tags:['Academy','Circle'],res:{elders:1,worm:1,fruit:1}},
-  {id:'A05',name:'Eagles',tags:['Legion','Court'],res:{seagull:1,worm:1,fruit:1}},
-  {id:'A06',name:'Kingfishers',tags:['Legion','Guild'],res:{elders:1,worm:1,seed:1}},
-  {id:'A07',name:'Falcons',tags:['Legion','Circle'],res:{worm:1,seed:1,fruit:1}},
-  {id:'A08',name:'Woodpeckers',tags:['Court','Guild'],res:{elders:1,worm:3}},
-  {id:'A09',name:'Owls',tags:['Court','Circle'],res:{worm:2,fruit:1}},
-  {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1,worm:1,seed:1}},
+  {id:'A01',name:'Robins',tags:['Academy','Legion'],res:{chick:1,elders:2,worm:1,fruit:1}},
+  {id:'A02',name:'Swans',tags:['Academy','Court'],res:{seagull:1,chick:-1,seed:1,worm:1}},
+  {id:'A03',name:'Storks',tags:['Academy','Guild'],res:{chick:-1,seed:2,elders:2,rune:1}},
+  {id:'A04',name:'Ravens',tags:['Academy','Circle'],res:{seed:1,worm:1,fruit:1,elders:1,rune:1}},
+  {id:'A05',name:'Eagles',tags:['Legion','Court'],res:{seagull:1,fruit:1}},
+  {id:'A06',name:'Kingfishers',tags:['Legion','Guild'],res:{elders:2,worm:1,seed:2}},
+  {id:'A07',name:'Falcons',tags:['Legion','Circle'],res:{chick:1,seed:1,worm:1,elders:1}},
+  {id:'A08',name:'Woodpeckers',tags:['Court','Guild'],res:{elders:2,worm:2,fruit:1}},
+  {id:'A09',name:'Owls',tags:['Court','Circle'],res:{elders:1,worm:2,fruit:2,rune:1}},
+  {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1,worm:1}},
 ];
 const PERSO_TH=[5,9];
-function resLabel(r){return Object.entries(r).map(([k,v])=>v+' '+({worm:'ver',seed:'graine',fruit:'fruit',seagull:'Mouette',elders:'Anciens'})[k]+(v>1&&k!=='elders'?'s':'')).join(' + ');}
+function resLabel(r){return Object.entries(r).filter(([k,v])=>v).map(([k,v])=>k==='chick'?(v>0?'+':'')+v+' Poussin'+(Math.abs(v)>1?'s':''):v+' '+({worm:'ver',seed:'graine',fruit:'fruit',seagull:'Mouette',elders:'Anciens',rune:'Amulette'})[k]+(v>1&&k!=='elders'?'s':'')).join(' + ');}
 const NEST_CAP=2; // provisoire
 const CHICKS_TOTAL=25;
 const TREES_TOTAL={grey:14,yellow:8,green:8};
@@ -127,8 +127,9 @@ class Game{
   async choosePersonal(p){const t={}; FAMS.forEach(f=>t[f]=0); p.hand.forEach(id=>{const c=this.card(id); for(const f in (c.tagMap||{})) t[f]+=c.tagMap[f];});
     const o=await this.ask(p,{personal:true,title:'Choisissez votre objectif personnel (l\'autre est défaussé)',options:p.pOffer.map(o=>({label:`${o.name} — total ${o.tags.join(' + ')} : 5 puis 9 (1 Étoile chacun) · départ : ${resLabel(o.res)}`,value:o,score:t[o.tags[0]]+t[o.tags[1]]+Math.random()}))});
     p.pobj=o; this.log(`${p.name} choisit l'objectif personnel ${o.name} (${o.tags.join(' + ')}).`);
-    for(const [k,v] of Object.entries(o.res)){ if(k==='seagull'){for(let i=0;i<v;i++){p.seagulls.push(1);} this.log(`${p.name} gagne une Mouette (niveau 1).`);} else if(k==='elders') await this.elders(p,v); else p.food[k]+=v; }
+    await this.giveStart(p,o.res);
     this.io.render();}
+  async giveStart(p,res){ for(const [k,v] of Object.entries(res)){ if(!v) continue; if(k==='seagull'){for(let i=0;i<v;i++){p.seagulls.push(1);} this.log(`${p.name} gagne une Mouette (niveau 1).`);} else if(k==='elders') await this.elders(p,v); else if(k==='rune'){ for(let i=0;i<v;i++) await this.rune1(p);} else if(k==='chick'){ const d=Math.max(-p.chicks,Math.min(v,p.supply)); p.chicks+=d; p.supply-=d; if(d>0) this.log(`${p.name} gagne ${d} Poussin${d>1?'s':''}.`);} else p.food[k]+=v; } }
   async checkObjectives(p){ while(p.pobj&&p.pClaims<PERSO_TH.length&&this.persoValue(p)>=PERSO_TH[p.pClaims]){p.pClaims++; await this.gainStar(p,`Objectif personnel ${p.pobj.name} (${PERSO_TH[p.pClaims-1]})`);}
     for(const o of this.objs){ const next=o.th[o.claims.length]; if(o.claims.includes(p.i)||next===undefined) continue;
     if(o.d.m(this,p)>=next){o.claims.push(p.i); await this.gainStar(p,`Objectif ${o.color==='red'?'rouge':'bleu'} ${o.d.name}`);}}}
@@ -526,5 +527,5 @@ class Game{
     if(all) return cands;
     cands.forEach(c=>c.s+=Math.random()*0.5); cands.sort((a,b)=>b.s-a.s); const best=cands[0]; p.broodStreak=best.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.plan.slice(); return best.v;}
 }
-window.BirdsGame={Game,AIW_CLASSIC,AIW_TRAINED,PERSONAL,PERSO_TH,RED_OBJ,BLUE_OBJ,ISLANDS,ISL_FR,FOOD_FR,BUILD,BUILD_FR,RUNES,ELDERS_LEN,ELDERS_BONUS,ELDERS_FR,COLORS,FAM,FAMS,TREE_FOOD,NEUTRAL};
+window.BirdsGame={Game,resLabel,AIW_CLASSIC,AIW_TRAINED,PERSONAL,PERSO_TH,RED_OBJ,BLUE_OBJ,ISLANDS,ISL_FR,FOOD_FR,BUILD,BUILD_FR,RUNES,ELDERS_LEN,ELDERS_BONUS,ELDERS_FR,COLORS,FAM,FAMS,TREE_FOOD,NEUTRAL};
 })();

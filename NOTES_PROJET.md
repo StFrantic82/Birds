@@ -67,6 +67,27 @@ Depuis novembre 2026 : poids appris par auto-apprentissage (parties IA contre IA
 Vise les Colonies, récolte ce qui débloque les cartes de sa main, saisit les Étoiles immédiates (« tempo »), couve surtout sans Poussins (double Couvée en fin de partie si elle rapporte une Étoile). Elle choisit ses Amulettes selon le contexte (joker en priorité) et ses Mouettes aussi (améliorer par défaut, gagner selon les objectifs, les Œufs ou les sacrifices). Elle sacrifie l'élément qui lui coûte le moins, construit de grands Sanctuaires quand les Reliques comptent, et poursuit ses objectifs (personnel, rouge, bleu, Reliques à Étoile).
 Durée moyenne entre IA : environ 23 manches à 2 joueurs, 21,3 à 3, 20,8 à 4. Les parties humaines durent environ 20 manches.
 
+## Ressources de départ des objectifs personnels (rééquilibrées en novembre 2026)
+
+Tous les joueurs commencent avec 2 Œufs et 3 Poussins ; l'objectif choisi ajoute (ou retire) :
+
+| Objectif | Tags | Départ |
+|---|---|---|
+| Robins | Academy + Legion | +1 Poussin, 2 Anciens, 1 ver, 1 fruit |
+| Swans | Academy + Court | Mouette, −1 Poussin, 1 graine, 1 ver |
+| Storks | Academy + Guild | −1 Poussin, 2 graines, 2 Anciens, 1 Amulette |
+| Ravens | Academy + Circle | 1 graine, 1 ver, 1 fruit, 1 Ancien, 1 Amulette |
+| Eagles | Legion + Court | Mouette, 1 fruit |
+| Kingfishers | Legion + Guild | 2 Anciens, 1 ver, 2 graines |
+| Falcons | Legion + Circle | +1 Poussin, 1 graine, 1 ver, 1 Ancien |
+| Woodpeckers | Court + Guild | 2 Anciens, 2 vers, 1 fruit |
+| Owls | Court + Circle | 1 Ancien, 2 vers, 2 fruits, 1 Amulette |
+| Magpies | Guild + Circle | Mouette, 1 ver |
+
+Résultat (18 000 parties IA contre IA à 2 joueurs) : chaque objectif gagne entre 47,6 % et 51,7 % quand il est choisi (avant : 42 % à 62 %). Les images `perso/` montrent encore les anciennes ressources ; l'écran de choix affiche la ligne « Départ ».
+
+Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs) : Mouette +12,5 pts ; graine +4,2 ; +1 Poussin +4,1 ; case des Anciens +3,5 ; ver +2,2 ; fruit +2,1 ; Amulette +1,7 ; −1 Poussin −4,9. Les paires de tags avec Guild sont un peu plus faibles. Outils : `train/` (non versionné) — `extra.js` (valeur d'une ressource), `pv_run.sh` (équilibre des objectifs).
+
 ## Points ouverts
 
 1. **Ressources de départ des objectifs personnels** : la Mouette de départ vaut à elle seule environ 12 à 15 points de victoire (Magpies 44 %, Swans 42 %, Storks 26 %). La meilleure variante testée, sans Mouette et avec 1 ver + 1 nourriture par famille (graine pour l'Academy et la Court, ver pour la Legion et le Circle, fruit pour la Guild), ramène les victoires entre 29 et 37 %. **À faire** : proposer et simuler une variante qui garde des cases du Chemin des Anciens au départ (demande de l'autrice). Rien n'est encore appliqué dans le jeu.

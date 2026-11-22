@@ -102,7 +102,7 @@ function renderPersonal(){let M=$('#pchoice'); const show=pending&&mine(pending.
   if(!show){if(M) M.remove(); return false;}
   if(!M){M=el('div',''); M.id='pchoice'; $('#boardwrap').appendChild(M);}
   const {p,q}=pending; M.innerHTML=`<div class="pcbox"><div class="pct"><span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — choisissez votre objectif personnel</div><div class="pcsub">L'autre est défaussé. 1 Étoile quand le total des deux tags atteint 5, puis 1 autre à 9. Les ressources du bas sont gagnées tout de suite.</div><div class="pcards"></div><div class="pchint">Votre main est visible plus bas : faites défiler si besoin.</div></div>`;
-  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="perso/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}<small>${v.tags.join(' + ')}</small></span>`); b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
+  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="perso/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}<small>${v.tags.join(' + ')}</small><small class="pres">Départ : ${esc(BG.resLabel?BG.resLabel(v.res||{}):'')}</small></span>`); b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
   return true;}
 const BTYPE=l=>{const m=/\b(Nid|Sanctuaire|Atelier)\b/.exec(l||''); return m?{Nid:'nest',Sanctuaire:'shrine',Atelier:'workshop'}[m[1]]:null;};
 const bico=(t,c)=>`<i class="bico wood${String(c).toLowerCase()==='#ffffff'?' wt':''}" style="--c:${c};--ico:${IC(t,c)}"></i>`;
@@ -194,7 +194,7 @@ document.addEventListener('mousemove',e=>{const Z=$('#zoom'); if(Z.style.display
 const CODE_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function netSnap(){const sn=G.snapshot(); sn.objs=sn.objs.map(o=>Object.assign({},o,{d:o.d.id})); delete sn.redObj; delete sn.redThresholds; delete sn.redClaims; return JSON.stringify(sn);}
 function serQ(q){return {title:q.title,main:!!q.main,cards:!!q.cards,cancel:!!q.cancel,personal:!!q.personal,endTurn:!!q.endTurn,
-  options:q.options.map(o=>({label:o.label||'',card:o.card||null,target:o.target||null,disabled:!!o.disabled,why:o.why||'',h:(o.card&&o.value===o.card)?1:0,pv:q.personal&&o.value?{id:o.value.id,name:o.value.name,tags:o.value.tags}:null}))};}
+  options:q.options.map(o=>({label:o.label||'',card:o.card||null,target:o.target||null,disabled:!!o.disabled,why:o.why||'',h:(o.card&&o.value===o.card)?1:0,pv:q.personal&&o.value?{id:o.value.id,name:o.value.name,tags:o.value.tags,res:o.value.res}:null}))};}
 function netDoc(){const d={v:1,host:NET.uid,status:NET.status,seats:NET.seats,t:Date.now(),pend:null,ranking:NET.ranking||null,rec:NET.status==='over'&&NET.rec?NET.rec:null};
   if(G){d.state=netSnap(); if(pending&&pending.p.remote) d.pend={seat:pending.p.i,qid:NET.qid,q:serQ(pending.q),undo:hostCanUndo()};}
   return d;}
