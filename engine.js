@@ -39,7 +39,7 @@ const BLUE_OBJ=[
   {id:'C06',name:'Experienced Watchers',fr:'Poussins dans des régions avec Ruine',p2:[5,6],p34:[5,5,5,5],m:(g,p)=>g.B.regions.filter(r=>r.ruins.length).reduce((n,r)=>n+g.chicksIn(r.id,p.i),0)},
 ];
 const PERSONAL=[
-  {id:'A01',name:'Robins',tags:['Academy','Legion'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,elders:1,worm:1,fruit:1}},
+  {id:'A01',name:'Robins',tags:['Academy','Legion'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,elders:1,worm:2,fruit:1}},
   {id:'A02',name:'Swans',tags:['Academy','Court'],res:{seagull:1,worm:3},resNew:{seagull:1,chick:-1,worm:1}},
   {id:'A03',name:'Storks',tags:['Academy','Guild'],res:{worm:2,seed:1},resNew:{chick:-1,seed:2,elders:1,worm:1,rune:1}},
   {id:'A04',name:'Ravens',tags:['Academy','Circle'],res:{elders:1,worm:1,fruit:1},resNew:{seed:1,worm:1,fruit:1,rune:1}},
