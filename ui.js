@@ -210,7 +210,9 @@ function netOnAct(uid,a){ if(NET.role!=='host'||!a||!pending||!pending.p.remote)
   const o=a.c?null:pending.q.options[a.i]; if(!a.c&&(!o||o.disabled)) return; answer(a.c?null:o.value);}
 // --- hôte
 async function netCreate(cfg){ let code='', tries=0;
-  do{ code=Array.from({length:4},()=>CODE_ABC[Math.floor(Math.random()*CODE_ABC.length)]).join(''); const g=await NET.db.doc('games/'+code).get(); if(!g.exists||(g.data()||{}).status==='over') break; }while(++tries<8);
+  do{ code=Array.from({length:4},()=>CODE_ABC[Math.floor(Math.random()*CODE_ABC.length)]).join('');
+    if(NET.peerMode){ try{ NET.db=await window.BirdsPeer.host(code); break; }catch(e){ if(e&&e.code==='taken') continue; throw e; } }
+    const g=await NET.db.doc('games/'+code).get(); if(!g.exists||(g.data()||{}).status==='over') break; }while(++tries<8);
   NET.role='host'; NET.code=code; NET.status='lobby'; NET.seats=cfg; NET.gref=NET.db.doc('games/'+code);
   await NET.gref.set(netDoc()); try{localStorage.setItem('birds_code',code);}catch(e){}
   NET.unsub.push(NET.db.collection(`games/${code}/joins`).onSnapshot(sn=>{ if(NET.status!=='lobby') return; let ch=false;
@@ -223,6 +225,8 @@ function netStartHost(){ const players=NET.seats.map(x=>({name:x.name,ai:x.kind=
   start({players},g=>NET.seats.forEach((x,i)=>{ if(x.kind==='net') g.players[i].remote=x.uid;})); netPublish(true);}
 // --- invité
 async function netJoin(code,name){ code=code.toUpperCase().replace(/[^A-Z0-9]/g,''); if(code.length!==4){setStatus('Le code fait 4 caractères.'); return;}
+  if(NET.peerMode){ setStatus('Connexion à la partie…'); try{ NET.db=await window.BirdsPeer.join(code); setStatus(''); }catch(e){ setStatus(e&&e.code==='notfound'?'Partie introuvable. Vérifiez le code, et que l\'hôte a bien la partie ouverte.':'Connexion impossible pour l\'instant. Réessayez.'); return; }
+    NET.db.onLost=()=>setStatus('Connexion perdue avec la partie en ligne.'); }
   const g=await NET.db.doc('games/'+code).get(); if(!g.exists){setStatus('Partie introuvable. Vérifiez le code.'); return;}
   const d=g.data(); const seated=(d.seats||[]).some(x=>x.uid===NET.uid);
   if(d.host===NET.uid){setStatus('C\'est votre propre partie : elle n\'existe plus sur cet appareil.'); return;}
@@ -256,17 +260,22 @@ function renderLobby(){const B=$('#lobby'); if(!B) return; $('#cfg').hidden=true
     ${host?`<button id="lgo" class="lgo" ${waiting?'disabled':''}>${waiting?`En attente de ${waiting} joueur${waiting>1?'s':''}…`:'Lancer la partie'}</button>`:`<div class="lwait">${NET.seat>=0?'En attente du lancement par l\'hôte…':'Demande envoyée, en attente d\'une place…'}</div>`}`;
   B.querySelectorAll('.lseat .ln').forEach((e,i)=>e.textContent=NET.seats[i].uid||NET.seats[i].kind!=='net'?NET.seats[i].name:'Place libre');
   const g=$('#lgo'); if(g) g.onclick=()=>{ if(!NET.seats.some(x=>x.kind==='net'&&!x.uid)) netStartHost(); };}
-async function netInit(){ const box=$('#onlnote'); if(!window.claude||!window.claude.use){ if(box) box.textContent='Mode en ligne indisponible ici : ouvrez l\'appli sur claude.ai, connecté à votre compte.'; return;}
+function netPid(){ try{ NET.uid=localStorage.getItem('birds_pid'); if(!NET.uid){ NET.uid='p'+Math.random().toString(36).slice(2,12)+Date.now().toString(36); localStorage.setItem('birds_pid',NET.uid);} }catch(e){ NET.uid=NET.uid||('p'+Math.random().toString(36).slice(2,12)); } }
+function netReady(){ const box=$('#onlnote'); if(box) box.textContent=''; $('#modeseg').querySelector('[data-v="online"]').disabled=false; try{const c=localStorage.getItem('birds_code'); if(c) $('#jcode').value=c;}catch(e){} }
+// hors de claude.ai (ex. GitHub Pages) : connexion directe entre navigateurs (peerdb.js)
+async function netInitPeer(){ const box=$('#onlnote'); netPid();
+  if(!window.BirdsPeer){ if(box) box.textContent='Mode en ligne indisponible ici.'; return;}
+  const ok=await window.BirdsPeer.loadPeerJS(); if(!ok){ if(box) box.textContent='Mode en ligne indisponible : la connexion directe n\'a pas pu être chargée (vérifiez votre connexion Internet).'; return;}
+  NET.peerMode=true; netReady(); }
+async function netInit(){ const box=$('#onlnote'); if(!window.claude||!window.claude.use){ return netInitPeer(); }
   try{ NET.db=await claude.use('db'); }catch(e){ NET.db=null; }
   try{ NET.user=await claude.use('user'); NET.canWrite=NET.user?await NET.user.can('data.write'):null; }catch(e){ NET.canWrite=null; }
-  // identifiant de joueur propre à cet appareil (gardé dans le navigateur)
-  try{ NET.uid=localStorage.getItem('birds_pid'); if(!NET.uid){ NET.uid='p'+Math.random().toString(36).slice(2,12)+Date.now().toString(36); localStorage.setItem('birds_pid',NET.uid);} }catch(e){ NET.uid=NET.uid||('p'+Math.random().toString(36).slice(2,12)); }
+  netPid();
   if(!NET.db){ if(box) box.textContent='Mode en ligne indisponible : connectez-vous à votre compte Claude pour jouer en ligne.'; return;}
   try{ NET.isOwner=NET.user?await NET.user.isOwner():false; }catch(e){ NET.isOwner=false; }
   window.BirdsNet={db:NET.db,user:NET.user};
   if(NET.canWrite===false){ if(box) box.textContent='Votre accès à l\'appli est en lecture seule : demandez au propriétaire de vous la partager en Contributeur (ou Éditeur) pour jouer en ligne.'; return;}
-  if(box) box.textContent=''; $('#modeseg').querySelector('[data-v="online"]').disabled=false;
-  try{const c=localStorage.getItem('birds_code'); if(c) $('#jcode').value=c;}catch(e){}}
+  netReady(); }
 // écran de configuration
 function setup(){const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'; const L3=(fr,en,it)=>IT?it:EN?en:fr; $('#langseg').querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v===LG); b.onclick=()=>{ if(b.dataset.v!==I18N.lang){I18N.set(b.dataset.v); location.reload();}};});
   let MODE='local', SUB='create'; const ONL=()=>MODE==='online'&&SUB==='create';
@@ -289,9 +298,9 @@ function setup(){const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'
   seg('#modeseg',v=>{MODE=v; applyMode();}); seg('#onlseg',v=>{SUB=v; applyMode();});
   $('#jgo').onclick=async()=>{ $('#jgo').disabled=true; setStatus(''); try{ await netJoin($('#jcode').value,$('#jname').value.trim()); } finally{ $('#jgo').disabled=false; } };
   netInit();
-  $('#go').onclick=async()=>{ if(ONL()){ if(!NET.db) return; $('#go').disabled=true; setStatus('');
+  $('#go').onclick=async()=>{ if(ONL()){ if(!NET.db&&!NET.peerMode) return; $('#go').disabled=true; setStatus('');
       const cfg=[]; for(let i=0;i<+n.value;i++) cfg.push({kind:i===0?'host':(types[i]==='h'?'net':'ai'),name:i===0?((/^(Vous|You|Tu)$/.test($('#nm0').value.trim())?'':$('#nm0').value.trim())||'Hôte'):(types[i]==='h'?'':($('#nm'+i).value||('IA '+i))),color:cols[i],uid:i===0?NET.uid:null});
-      try{ await netCreate(cfg); }catch(e){ console.warn(e); setStatus('Impossible de créer la partie en ligne (accès en écriture refusé ?).'); } finally{ $('#go').disabled=false; } return; }
+      try{ await netCreate(cfg); }catch(e){ console.warn(e); setStatus(NET.peerMode?'Impossible de joindre le service de connexion pour l\'instant. Réessayez.':'Impossible de créer la partie en ligne (accès en écriture refusé ?).'); } finally{ $('#go').disabled=false; } return; }
     const players=[]; for(let i=0;i<+n.value;i++) players.push({name:$('#nm'+i).value||('Joueur '+(i+1)),ai:$('#ty'+i).value==='ai',color:cols[i]}); start({players});};
   if(window.I18N) I18N.start();}
 window.addEventListener('DOMContentLoaded',setup);

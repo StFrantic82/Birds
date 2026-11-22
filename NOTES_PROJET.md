@@ -22,6 +22,7 @@
 | `stats.js` | Onglet Statistiques (localStorage), simulations IA, export JSON et image |
 | `i18n.js` | Traduction FR → EN appliquée à l'affichage, et moteur de traduction commun |
 | `i18n_it.js` | Traduction FR → IT (mêmes motifs que l'anglais) |
+| `peerdb.js` | Jeu en ligne hors de claude.ai : imite l'API « db » au-dessus d'une connexion directe PeerJS |
 | `cards/`, `obj/`, `perso/`, `icons/` | Images des 160 cartes (+ `S1`–`S4` : Mouettes niveaux 1 à 4), tuiles d'objectifs, objectifs personnels, icônes et pions |
 
 ## Vocabulaire (FR / EN / IT)
@@ -96,7 +97,7 @@ Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs
 1. **Ressources de départ des objectifs personnels** : la Mouette de départ vaut à elle seule environ 12 à 15 points de victoire (Magpies 44 %, Swans 42 %, Storks 26 %). La meilleure variante testée, sans Mouette et avec 1 ver + 1 nourriture par famille (graine pour l'Academy et la Court, ver pour la Legion et le Circle, fruit pour la Guild), ramène les victoires entre 29 et 37 %. **À faire** : proposer et simuler une variante qui garde des cases du Chemin des Anciens au départ (demande de l'autrice). Rien n'est encore appliqué dans le jeu.
 2. **Experienced Watchers** : trop facile (toutes les Étoiles prises, vers la manche 10). Seuils suggérés : 7 / 8 / 8 / 9 en 3-4 joueurs, environ 6 / 7 à 2 joueurs. Non appliqué.
 3. **Prairie** : île la moins colonisée (grande île, pas une île de départ, bonus peu attractifs).
-4. **Jeu en ligne entre amis** : fait dans l'artefact claude.ai (voir plus haut). Sur GitHub Pages, le mode en ligne s'affiche comme indisponible.
+4. **Jeu en ligne entre amis** : fait, sur claude.ai (base de l'artefact) **et** sur GitHub Pages (connexion directe entre navigateurs, WebRTC via PeerJS chargé depuis unpkg.com, `peerdb.js` ; le code de partie sert d'adresse `birds-v1-CODE` ; aucun compte ni serveur à gérer). Sur GitHub, une partie se joue entre joueurs passant tous par GitHub ; certains réseaux très fermés (entreprise, certains mobiles) peuvent bloquer la connexion directe. L'envoi des statistiques à l'auteur reste réservé à claude.ai.
 5. **Choix des cartes par l'IA** : c'est son point faible.
 6. **Icône officielle « Déplacer la Nuée »** : en attente, le pion Nuée sert à la place.
 7. **Tutoriel** : prévu (partie guidée avec bulles, FR / EN / IT), pas encore fait.
