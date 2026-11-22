@@ -48,7 +48,7 @@ const PERSONAL=[
   {id:'A07',name:'Falcons',tags:['Legion','Circle'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,seed:1,worm:1,rune:1}},
   {id:'A08',name:'Woodpeckers',tags:['Court','Guild'],res:{elders:1,worm:3},resNew:{elders:2,worm:2,fruit:1}},
   {id:'A09',name:'Owls',tags:['Court','Circle'],res:{worm:2,fruit:1},resNew:{worm:2,seed:1,fruit:1}},
-  {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1,worm:1,seed:1},resNew:{seagull:1}},
+  {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1,worm:1,seed:1},resNew:{chick:1,elders:1,worm:3}},
 ];
 const PERSO_TH=[5,9];
 function resLabel(r){return Object.entries(r).filter(([k,v])=>v).map(([k,v])=>k==='chick'?(v>0?'+':'')+v+' Poussin'+(Math.abs(v)>1?'s':''):v+' '+({worm:'ver',seed:'graine',fruit:'fruit',seagull:'Mouette',elders:'Anciens',rune:'Rune'})[k]+(v>1&&k!=='elders'?'s':'')).join(' + ');}

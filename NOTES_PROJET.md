@@ -85,9 +85,9 @@ Recommandés — tous les joueurs commencent avec 2 Œufs et 3 Poussins ; l'obje
 | Falcons | Legion + Circle | +1 Poussin, 1 graine, 1 ver, 1 Rune |
 | Woodpeckers | Court + Guild | 2 Anciens, 2 vers, 1 fruit |
 | Owls | Court + Circle | 2 vers, 1 graine, 1 fruit |
-| Magpies | Guild + Circle | Mouette |
+| Magpies | Guild + Circle | +1 Poussin, 1 Ancien, 3 vers (sans Mouette) |
 
-Contraintes respectées : même total qu'avant (32 ressources, un Poussin compté comme 3 nourritures), autant de graines que de fruits (6 et 6). Totaux : 12 vers, 6 graines, 6 fruits, 3 Mouettes, 5 Anciens, 3 Runes, Poussins +2 / −3.
+Contraintes respectées : même total qu'avant (32 ressources, un Poussin compté comme 3 nourritures), autant de graines que de fruits (6 et 6). Totaux : 14 vers, 6 graines, 6 fruits, 2 Mouettes, 5 Anciens, 3 Runes, Poussins +3 / −3. Magpies a perdu sa Mouette (une Mouette vaut environ 4 nourritures, surtout grâce à ses améliorations : +12,1 pts, contre +5,4 pts si elle reste bloquée au niveau 1).
 Résultat (18 000 parties IA contre IA à 2 joueurs) : chaque objectif gagne entre 47,6 % et 51,8 % quand il est choisi (avant : 42 % à 62 %). L'écran de choix affiche aussi la ligne « Départ ».
 
 Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs) : Mouette +12,5 pts ; graine +4,2 ; +1 Poussin +4,1 ; case des Anciens +3,5 ; ver +2,2 ; fruit +2,1 ; Rune +1,7 ; −1 Poussin −4,9. Ces valeurs ne s'additionnent qu'approximativement : l'équilibre final a été réglé par simulations successives. Outils : `train/` (non versionné) — `extra.js` (valeur d'une ressource), `pv_run.sh` (équilibre des objectifs).
