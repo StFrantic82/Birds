@@ -58,8 +58,8 @@ const TREES_TOTAL={grey:14,yellow:8,green:8};
 
 function rnd(n){return Math.floor(Math.random()*n);}
 // Poids de l'IA : réglage d'origine, et réglage appris par auto-apprentissage (parties IA contre IA)
-const AIW_CLASSIC={play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1,tempo:1};
-const AIW_TRAINED={"play":0,"play2":0.7,"fx":-0.224,"pres":1.5,"colDone":11,"gp":0.935,"blue":2.145,"red":0.641,"gull":2.399,"shr":1.167,"gctx":1,"brood":-0.277,"bmode":2.047,"b3":1.5,"amu":0.464,"lvl":1,"tempo":1.211};
+const AIW_CLASSIC={play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1,tempo:1,cgoal:1};
+const AIW_TRAINED={"play":0,"play2":0.7,"fx":-0.224,"pres":1.5,"colDone":11,"gp":0.935,"blue":2.145,"red":0.641,"gull":2.399,"shr":1.167,"gctx":1,"brood":-0.277,"bmode":2.047,"b3":1.5,"amu":0.464,"lvl":1,"tempo":1.211,"cgoal":2};
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 function clone(o){return JSON.parse(JSON.stringify(o));}
 
@@ -187,8 +187,8 @@ class Game{
     const pick=await this.ask(p,{title:`Révélez ${x} cartes : gardez-en 1`,cards:true,options:rev.map(id=>({label:this.card(id).name,value:id,card:id,score:this.cardValue(p,id)}))});
     p.hand.push(pick); rev.filter(c=>c!==pick).forEach(c=>this.discardPile.push(c)); this.log(`${p.name} révèle ${rev.length} cartes et en garde 1.`);}
   async seagull(p,n=1){for(let i=0;i<n;i++){ const up=p.seagulls.map((l,k)=>({l,k})).filter(x=>x.l<4);
-      const opts=[{label:'Gagner une Mouette (niveau 1)',value:-1,score:1.3+this.gullGainBonus(p)}];
-      up.forEach(x=>opts.push({label:`Améliorer une Mouette : niveau ${x.l} → ${x.l+1}`,value:x.k,score:[0,1.1,1.2,1.6][x.l]+(this.goal(p,'OR7')?0.8:0)+this.W(p).gull}));
+      const opts=[{label:'Gagner une Mouette (niveau 1)',value:-1,score:1.3+this.gullGainBonus(p)+this.cgB(p,'OR7')}];
+      up.forEach(x=>opts.push({label:`Améliorer une Mouette : niveau ${x.l} → ${x.l+1}`,value:x.k,score:[0,1.1,1.2,1.6][x.l]+(this.W(p).cgoal?this.cgB(p,'OR7'):(this.goal(p,'OR7')?0.8:0))+this.W(p).gull}));
       const k=opts.length>1?await this.ask(p,{title:'Mouette',options:opts}):-1;
       if(k===-1){p.seagulls.push(1); this.log(`${p.name} gagne une Mouette (niveau 1).`);}
       else {p.seagulls[k]++; this.log(`${p.name} améliore une Mouette au niveau ${p.seagulls[k]}.`); if(p.seagulls[k]===4) await this.removeCheapest(p,null);} }}
@@ -209,7 +209,7 @@ class Game{
   dsTargets(p){return p.tableau.filter(e=>this.canHoldDS(e));}
   async placeDSthis(p,e,n){if(n<=0)return; e.ds+=n; this.log(`${p.name} place ${n} Écaille${n>1?'s':''} sur ${this.card(e.id).name}.`);}
   async placeDSany(p,n=1){for(let i=0;i<n;i++){const t=this.dsTargets(p); if(!t.length){this.log('Aucune carte ne peut recevoir d\'Écaille.');return;}
-      const e=await this.ask(p,{title:'Placer 1 Écaille sur…',options:t.map(e=>({label:this.card(e.id).name+` (${e.ds})`,value:e,card:e.id,score:1}))}); e.ds++; this.log(`${p.name} place 1 Écaille sur ${this.card(e.id).name}.`);}}
+      const e=await this.ask(p,{title:'Placer 1 Écaille sur…',options:t.map(e=>({label:this.card(e.id).name+` (${e.ds})`,value:e,card:e.id,score:1+(e.id==='OG6'&&!e.starTaken&&this.W(p).cgoal?3:0)}))}); e.ds++; this.log(`${p.name} place 1 Écaille sur ${this.card(e.id).name}.`);}}
   async moveDS(p,n=2){for(let i=0;i<n;i++){const src=p.tableau.filter(e=>e.ds>0), dst=this.dsTargets(p); if(!src.length||dst.length<2) return;
       const s=await this.ask(p,{title:`Déplacer une Écaille (${i+1}/${n}) depuis…`,options:[{label:'Arrêter',value:null,score:0.5},...src.map(e=>({label:this.card(e.id).name+` (${e.ds})`,value:e,card:e.id,score:0}))]}); if(!s) return;
       const d=await this.ask(p,{title:'…vers',options:dst.filter(e=>e!==s).map(e=>({label:this.card(e.id).name+` (${e.ds})`,value:e,card:e.id,score:1}))}); s.ds--; d.ds++;}}
@@ -434,7 +434,7 @@ class Game{
     const W=this.W(p); if(mine+gain>=6&&others<6) return W.colDone; if(!W.pres) return gain*(0.7+0.15*mine-(others>mine+2?0.4:0)); const race=others>=mine+3?-0.5:(mine>=others?0.4:0); return gain*(0.8+W.pres*0.3*mine+race);}
   islandScore(p,isl){return this.expandTargets(isl).length*0.6+this.gatherTargets(isl).length*0.4+this.presence(isl,p.i)*0.2;}
   bonusValue(b){return ({rune:1.8,reveal3:1.6,reveal2:1.4,seagull:0.8,worm:1,chick:1.6,dragonscale:0.6,elders:1.1,grow:1.3,draw:1.2,seedOrFruit:1.1,buildAny:2,gatherAny:2,expandAny:2,ruinChick:1.5,brood:2.5,play1:1.5,removeCheapest:1.8})[b]||1;}
-  expandScore(p,r){return this.blueBonus(p,r)*this.W(p).blue+1+r.tree.bonus.reduce((s,b)=>s+this.bonusValue(b),0)+this.presenceScore(p,r.island,1)-0.6;}
+  expandScore(p,r){return this.blueBonus(p,r)*this.W(p).blue+1+r.tree.bonus.reduce((s,b)=>s+this.bonusValue(b)+(b==='rune'?this.cgB(p,'OP6'):b==='seagull'?this.cgB(p,'OR7'):0),0)+this.presenceScore(p,r.island,1)-0.6;}
   gatherUnlock(p,r){const W=this.W(p); if(!W.gp) return 0; const before=p.hand.filter(id=>this.payments(p,id,1).length).length; const g={worm:0,seed:0,fruit:0}; g[TREE_FOOD[this.trees[r.id]]]+=2; this.treesOnIsland(r.island).forEach(o=>{if(o.id!==r.id) g[TREE_FOOD[this.trees[o.id]]]++;});
     for(const t in g) p.food[t]+=g[t]; let after=0; try{after=p.hand.filter(id=>this.payments(p,id,1).length).length;} finally {for(const t in g) p.food[t]-=g[t];} return (after-before)*W.gp;}
   gatherScore(p,r){const bb=this.blueBonus(p,r)*this.W(p).blue+this.gatherUnlock(p,r); const n=2+this.treesOnIsland(r.island).length-1; const need=this.foodNeed(p,TREE_FOOD[this.trees[r.id]]); return bb+n*0.9+need+this.presenceScore(p,r.island,1)-0.6;}
@@ -446,9 +446,19 @@ class Game{
   blueBonus0(p,r){const o=this.objs[1]; if(o.claims.includes(p.i)||o.th[o.claims.length]===undefined) return 0; const id=o.d.id, tc=this.trees[r.id]||r.tree.color;
     if((id==='C02'&&tc==='green')||(id==='C03'&&tc==='yellow')||(id==='C04'&&tc==='grey')||(id==='C06'&&r.ruins.length)) return 1.4;
     if(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)<2) return 1.2; return 0;}
-  foodNeed(p,t){let need=0; p.hand.forEach(id=>{const c=this.card(id); if(c.color==='red'&&t==='worm') need+=0.2; if(c.color==='yellow'&&t==='seed') need+=0.15; if(c.color==='green'&&t==='fruit') need+=0.15;}); return need-(p.food[t]>4?0.6:0);}
+  foodNeed(p,t){let need=0; if(this.W(p).cgoal&&this.goal(p,'ON3')&&p.food[t]<2) need+=0.9*this.W(p).cgoal; p.hand.forEach(id=>{const c=this.card(id); if(c.color==='red'&&t==='worm') need+=0.2; if(c.color==='yellow'&&t==='seed') need+=0.15; if(c.color==='green'&&t==='fruit') need+=0.15;}); return need-(p.food[t]>4?0.6:0);}
   buildScore(p,s,b){const o=this.objs[1]; const bb=(o.d.id==='C01'&&!o.claims.includes(p.i)&&!this.islandNests(s.island).some(x=>{const q=this.nestOwner[x.id]; return q&&q.owner===p.i;}))?2:0; return bb+this.buildScore0(p,s,b);}
   goal(p,id){const e=p.tableau.find(x=>x.id===id); return e&&!e.starTaken;}
+  // Étoiles des cartes : écart restant pour la condition d'une Relique (null si sans objet)
+  condGap(p,id){ switch(id){
+      case 'OB7': return 4-p.nests; case 'OR6': return 3-p.built.workshop.length; case 'OY7': return 3-p.built.shrine.length;
+      case 'OP6': return 4-p.runes.length; case 'OR7': return 6-p.seagulls.reduce((a,b)=>a+b,0); case 'OG7': return 4-this.allyCount(p);
+      case 'OY6': return 22-p.tableau.filter(e=>this.card(e.id).type==='bird').reduce((s,e)=>s+this.card(e.id).cost,0);
+      case 'OB6': {const t=this.tags(p); return FAMS.reduce((s,f)=>s+Math.max(0,2-t[f]),0)-this.wild(p);}
+      default: return null; } }
+  // bonus pour avancer d'un pas (ou de d) vers l'étoile d'une Relique déjà posée
+  cgB(p,id,d=1){ const W=this.W(p); if(!W.cgoal||!this.goal(p,id)) return 0; const g=this.condGap(p,id); if(g===null||g<=0) return 0;
+    const left=g-d; const late=this.players.some(q=>q.stars>=4)?1.3:1; return W.cgoal*late*(left<=0?6*W.tempo:left===1?2.6:left===2?1.6:0.9); }
   // valeur de conserver un élément en jeu (pour choisir quoi sacrifier) : on mesure ce qu'on perdrait
   keepValue(p,it){ const was=p.tableau.slice(), wasG=p.seagulls.slice(); let item=null;
     const snap=()=>({tags:this.tags(p),each:this.hasEachTag(p),wild:this.wild(p),perso:this.persoValue(p),b3:this.birds3(p),b4:this.birds4(p),
@@ -480,17 +490,28 @@ class Game{
     const SAC=/sacrifi/i; const needSac=[...p.hand,...p.tableau.map(e=>e.id)].some(id=>{const c=this.card(id); return SAC.test([c.instant,c.brood,c.dragonscale,c.text].join(' '));});
     if(needSac&&!p.seagulls.some(l=>l===1)) b+=1.8; return b;}
   redOn(p,id){const o=this.objs[0]; return o.d.id===id&&!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined;}
-  buildScore0(p,s,b){ const rb0=0; const rb=(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0)+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const lvB=this.W(p).lvl?({nest:[0,0.4,1.2,1.3],shrine:[0,0.3,0.6,0.9],workshop:[0,0.2,0.6,0.7]})[b.type][b.lvl]:0; const relNeed=b.type==='shrine'?(this.redOn(p,'B04')?1:0)+p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length*0.5:0; const lvB2=lvB+relNeed*0.6*b.lvl; const base={nest:3.2+lvB,shrine:1.2+lvB2,workshop:2.8+lvB}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
+  buildScore0(p,s,b){ const rb0=0; const cg=this.W(p).cgoal; const rb=(cg?(b.type==='nest'?this.cgB(p,'OB7'):b.type==='workshop'?this.cgB(p,'OR6'):this.cgB(p,'OY7')):(b.type==='nest'&&this.goal(p,'OB7')?2:0)+(b.type==='workshop'&&this.goal(p,'OR6')?2:0)+(b.type==='shrine'&&this.goal(p,'OY7')?2:0))+(b.type==='nest'&&this.redOn(p,'B05')?2.2:0)+(b.type==='shrine'&&this.redOn(p,'B04')?2.6:0)+(b.type==='shrine'?this.W(p).shr*p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length:0);const lvB=this.W(p).lvl?({nest:[0,0.4,1.2,1.3],shrine:[0,0.3,0.6,0.9],workshop:[0,0.2,0.6,0.7]})[b.type][b.lvl]:0; const relNeed=b.type==='shrine'?(this.redOn(p,'B04')?1:0)+p.hand.filter(id=>this.card(id).type==='relic'&&!this.payments(p,id,1).length).length*0.5:0; const lvB2=lvB+relNeed*0.6*b.lvl; const base={nest:3.2+lvB,shrine:1.2+lvB2,workshop:2.8+lvB}[b.type]; const cost=b.chicks*0.45+Object.values(b.food).reduce((a,x)=>a+x,0)*0.9; return rb+base-cost+this.presenceScore(p,s.island,2)+(b.type==='nest'&&p.eggs>=this.nestCap(p)?1:0);}
   W(p){return Object.assign({},AIW_CLASSIC,AIW_TRAINED,p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Rune/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
     K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
-  playScore(p,id,free){const c=this.card(id); const ob=this.redObj; let objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; objB*=this.W(p).red; const cs=window.COND_STARS&&window.COND_STARS[id]?2.5:0; const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=(c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0);
+  playScore(p,id,free){const c=this.card(id); const ob=this.redObj; let objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; objB*=this.W(p).red; const cs=this.W(p).cgoal?this.starCardValue(p,id,c):(window.COND_STARS&&window.COND_STARS[id]?2.5:0); const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=this.W(p).cgoal?((c.type==='ally'?this.cgB(p,'OG7'):0)+(c.type==='bird'?this.cgB(p,'OY6',c.cost):0)+this.cgB(p,'OB6',this.tagGain(p,c))):((c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0));
     if(c.type!=='bird'){ let t2=0; const W2=this.W(p); if(W2.tempo){const o=this.objs[0]; if(o.d.id==='B04'&&c.type==='relic'&&this.objNear(o,p,1)) t2+=7; if(p.pobj&&p.pClaims<2){const a2=((c.tagMap||{})[p.pobj.tags[0]]||0)+((c.tagMap||{})[p.pobj.tags[1]]||0)+(c.wild||0); if(a2&&this.persoValue(p)+a2>=PERSO_TH[p.pClaims]) t2+=7;} t2*=W2.tempo;} return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB+cs+persoB+gb+t2:-9;} const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);
     const W1=this.W(p); let tempoB=0; if(W1.tempo){ const o=this.objs[0]; const add=({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[o.d.id]?1:0; if(add&&this.objNear(o,p,1)) tempoB+=7;
       if(p.pobj&&p.pClaims<2){const add2=(c.tagMap[p.pobj.tags[0]]||0)+(c.tagMap[p.pobj.tags[1]]||0); if(add2&&this.persoValue(p)+add2>=PERSO_TH[p.pClaims]) tempoB+=7;} tempoB*=W1.tempo;}
     let v=tempoB+this.fxValue(p,c)+gb+(this.redOn(p,'B05')&&/Lay/.test(c.instant||'')?1.6:0)+objB+persoB+1.6+c.cost*0.9-pays[0].cost*0.85+(c.brood?1.2:0)+(c.dragonscale?0.6:0); if(t[c.family]===0) v+=0.6; return v;}
   dsScore(p,e){return 1.2;}
+  tagGain(p,c){ if(!this.goal(p,'OB6')) return 0; const t=this.tags(p); const m=c.tagMap||(c.family?{[c.family]:1}:{}); return FAMS.reduce((s,f)=>s+Math.min(m[f]||0,Math.max(0,2-t[f])),0)+(c.wild||0); }
+  // valeur de poser une carte qui rapporte une Étoile, selon la distance à son Étoile
+  starCardValue(p,id,c){ const W=this.W(p), T=6*W.tempo*W.cgoal, late=this.players.some(q=>q.stars>=4)?1.3:1;
+    if(window.COND_STARS&&window.COND_STARS[id]){ let g=this.condGap(p,id); if(g===null) return 2.5;
+      if(id==='OB6') g-=this.tagGain(p,c)+0;
+      return late*(g<=0?T:g===1?3.5:g===2?2.5:g===3?1.5:0.5); }
+    if(id==='OP8') return T; if(id==='OG6') return 1.5;
+    if(id==='ON3') return late*((p.food.worm>=2&&p.food.seed>=2&&p.food.fruit>=2)?T*0.8:1.5);
+    if(id==='OP7'){ const mx=Math.max(...FAMS.map(f=>p.hand.filter(h=>h!==id&&(this.card(h).tagMap||{})[f]).length)); return late*(mx>=4?T*0.8:mx>=3?2:0.5); }
+    if(id==='A3'){ const s=new Set(); p.hand.filter(h=>h!==id).forEach(h=>Object.keys(this.card(h).tagMap||{}).forEach(t=>s.add(t))); return FAMS.every(f=>s.has(f))?late*T:0; }
+    return 0; }
   // ---------- IA : anticipation par simulations (Monte-Carlo) ----------
   async aiMainLookahead(p,q){ const L=this.io.lookahead; const K=L.k||6, R=L.r||3;
     const all=this.aiMain(p,q,true); if(!all) return undefined; // capacité Écaille prioritaire : comportement habituel

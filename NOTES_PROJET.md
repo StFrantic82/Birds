@@ -117,3 +117,7 @@ Le challenger est adopté s'il gagne nettement plus que sa part attendue (> atte
 - Effet boule de neige : leader unique à mi-partie (étoiles au round floor(manches/2)) → % victoire, % remontées, % sans leader ; écart final 1er-2e.
 - Ouverture : vitesse des étoiles par objectif personnel (1re/3e/6e étoile) ; 1re action et 2 premières actions (p.acts.seq, codes E/G/B/N/P/C) avec % victoires et manche de la 6e étoile.
 - Économie : p.eco {start, harvest, gain, spent} + left (nourriture restante), chicks, supply (réserve), eggs.
+
+### IA : étoiles des cartes (poids `cgoal`, 2 par défaut dans AIW_TRAINED)
+`condGap(p,id)` mesure l'écart à la condition des Reliques à étoile (OB6, OB7, OG7, OP6, OR6, OR7, OY6, OY7) ; `cgB(p,id,d)` donne un bonus aux actions qui rapprochent de l'étoile (constructions, Mouettes, Runes via S'étendre, Alliés, coût des Oiseaux, tags), fort quand l'action la complète. `starCardValue` valorise la pose d'une carte à étoile selon sa faisabilité (Reliques conditionnelles, Soul Reliquary, Provision Cache, Black Codex, Guild Treasury, Ant). Écailles placées en priorité sur Guild Treasury ; besoin de nourriture pour Provision Cache. cgoal:0 = ancien comportement.
+Mesure (IA rapide, 2 j) : étoiles de cartes 0,14 → 0,23 par joueur ; en duel contre l'ancienne IA 52,1 % (2 000 parties, 2 j), 34,6 % à 3 j. Restent difficiles : Master's Diploma (4 Nids), Alliance Charter (4 Alliés), Command Insignia (Mouettes niveau total 6), Soul Reliquary (rarement payable).
