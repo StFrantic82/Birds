@@ -175,7 +175,7 @@ function tr(s){ if(LANG==='fr'||!s||!/[A-Za-zÀ-ÿ]/.test(s)) return s; if(cache
   cache.set(s,out); return out;}
 function trDOM(root){ if(LANG==='fr') return; root=root||document.body;
   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT); const nodes=[]; while(w.nextNode()) nodes.push(w.currentNode);
-  nodes.forEach(n=>{ if(n.parentNode&&/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)) return; const v=n.nodeValue; const t=tr(v); if(t!==v) n.nodeValue=t; });
+  nodes.forEach(n=>{ if(n.parentNode&&(/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)||(n.parentNode.closest&&n.parentNode.closest('.notr')))) return; const v=n.nodeValue; const t=tr(v); if(t!==v) n.nodeValue=t; });
   root.querySelectorAll&&root.querySelectorAll('[title],input[placeholder]').forEach(e=>{ if(e.title){const t=tr(e.title); if(t!==e.title) e.title=t;} if(e.placeholder){const t=tr(e.placeholder); if(t!==e.placeholder) e.placeholder=t;} });}
 let pending=false;
 const obs=new MutationObserver(()=>{ if(LANG==='fr'||pending) return; pending=true; requestAnimationFrame(()=>{pending=false; obs.disconnect(); trDOM(document.body); obs.observe(document.body,{childList:true,subtree:true,characterData:true});}); });

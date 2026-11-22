@@ -25,10 +25,11 @@ function cardHTML(id,cls){const c=G.card(id); if(!c) return '';
   const fx=[c.instant&&`<div class="fx"><b>⚡</b> ${esc(c.instant)}</div>`,c.dragonscale&&`<div class="fx"><b>◈</b> ${esc(c.dragonscale)}</div>`,c.brood&&`<div class="fx"><b>↻</b> ${esc(c.brood)}</div>`].filter(Boolean).join('');
   return `<div class="card ${cls||''}" style="--fam:${fam}" data-card="${id}"><div class="ch"><span class="cost">${c.cost}</span><span class="cn">${esc(c.name)}</span></div><div class="ctag">${FAMI[c.family].repeat(c.tags)} <span>${c.family}</span></div><div class="cfx">${fx}</div><div class="cpay">${PAY[c.color]}</div></div>`;}
 
+const TOFF=(q,o)=>!!(window.BirdsTuto&&window.BirdsTuto.off(q,o));
 const io={
   aiDelay:0,
   sleep:ms=>new Promise(r=>setTimeout(r,ms)),
-  log:m=>{const L=$('#log'); if(!L) return; const d=el('div','',esc(m).replace(/★/g,STAR(13))); if(m.startsWith('—')) d.className='turn'; if(m.startsWith('★')) d.className='star'; L.prepend(d);},
+  log:m=>{ if(window.BirdsTuto) BirdsTuto.log(m); const L=$('#log'); if(!L) return; const d=el('div','',esc(m).replace(/★/g,STAR(13))); if(m.startsWith('—')) d.className='turn'; if(m.startsWith('★')) d.className='star'; L.prepend(d);},
   render:()=>render(),
   ask:(p,q)=>{ if(!p.ai&&U.queue&&U.queue.length){const a=U.queue.shift(); U.hist.push(a); return Promise.resolve(a.c?null:q.options[a.i].value);}
     return new Promise((res,rej)=>{pending={p,q,res,rej}; if(p.remote) NET.qid++; else viewer=p.i; filterTarget=null; render(); if(p.remote) netPublish(true);});},
@@ -44,7 +45,7 @@ function hostCanUndo(){return U.active&&U.hist.length>0&&pending&&!pending.p.ai;
 function canUndo(){ if(NET.role==='guest') return !!(pending&&pending.q.undo); return hostCanUndo()&&mine(pending.p);}
 function undo(){ if(NET.role==='guest'){ if(canUndo()) netAct({undo:1}); return;} if(!hostCanUndo()) return; const rej=pending.rej; const replay=U.hist.slice(0,-1); pending=null; filterTarget=null; rej({undo:true,replay});}
 function answer(v){ if(NET.role==='guest'){ netAct(v===null||v===undefined?{c:1}:{i:v}); pending=null; filterTarget=null; render(); return;}
-  const q=pending.q, r=pending.res; if(U.active&&!pending.p.ai){const i=q.options.findIndex(o=>o.value===v); U.hist.push(i>=0?{i}:{c:1});} pending=null; filterTarget=null; render(); r(v);}
+  const q=pending.q, r=pending.res; if(window.BirdsTuto) BirdsTuto.answered(q,v); if(U.active&&!pending.p.ai){const i=q.options.findIndex(o=>o.value===v); U.hist.push(i>=0?{i}:{c:1});} pending=null; filterTarget=null; render(); r(v);}
 
 function start(opts,before){ opts.persoSet=opts.persoSet||persoSet; $('#setup').style.display='none'; $('#game').style.display='flex'; $('#log').innerHTML='';
   G=new BG.Game(opts,io); io.aiDelay=aiSpeed;
@@ -53,7 +54,7 @@ function start(opts,before){ opts.persoSet=opts.persoSet||persoSet; $('#setup').
   viewer=G.players.findIndex(p=>mine(p)); if(viewer<0) viewer=0; lastHuman=null; render(); G.run();}
 
 function targetKey(t){return t?`${t.kind}:${t.rid??''}:${t.sid??''}:${t.k??''}`:'';}
-function render(){ if(!G) return; renderBoard(); renderPlayers(); renderPrompt(); renderHand(); renderElders(); if(NET.role==='host') netPublish(false);}
+function render(){ if(!G) return; renderBoard(); renderPlayers(); renderPrompt(); renderHand(); renderElders(); if(NET.role==='host') netPublish(false); if(window.BirdsTuto) BirdsTuto.draw();}
 function renderBoard(){const L=$('#overlay'); L.innerHTML=''; const add=(x,y,cls,html,title)=>{const d=el('div','tok '+cls,html||''); d.style.left=x+'%'; d.style.top=y+'%'; if(title) d.title=title; L.appendChild(d); return d;};
   const pc=o=>o==='N'?BG.NEUTRAL:G.players[o].color;
   G.B.regions.forEach(r=>{ if(G.trees[r.id]) add(r.tree.x,r.tree.y,'tree','',`Arbre (${r.tree.color})`).style.setProperty('--c',TREEC[G.trees[r.id]]);
@@ -74,14 +75,14 @@ function renderBoard(){const L=$('#overlay'); L.innerHTML=''; const add=(x,y,cls
       const d=add(t.x,t.y,'objtile',`<img src="obj/${O.d.id}_${G.boardKey==='p2'?'2':'34'}.jpg">`,`${O.d.name} : ${O.d.fr}`); d.style.width=P.tileW+'%';
       P[k].stars.forEach((s,i)=>{ if(i>=O.th.length) return; if(i<O.claims.length){const q=G.players[O.claims[i]]; const x=add(s.x,s.y,'settle taken','',`Étoile prise par ${q.name}`); x.style.setProperty('--c',q.color);} else add(s.x,s.y,'pstar',STAR(30),`Seuil ${O.th[i]}`);});});}
   // cibles
-  if(pending&&mine(pending.p)){const seen={}; pending.q.options.forEach(o=>{ if(!o.target) return; const key=targetKey(o.target); if(seen[key]) return; seen[key]=1; const t=o.target; let x,y,cls='target';
+  if(pending&&mine(pending.p)){const seen={}; pending.q.options.forEach(o=>{ if(!o.target||TOFF(pending.q,o)) return; const key=targetKey(o.target); if(seen[key]) return; seen[key]=1; const t=o.target; let x,y,cls='target';
       if(t.kind==='region'){const r=G.regions[t.rid]; x=r.tree.x; y=r.tree.y; cls+=' big';}
       else if(t.kind==='nest'){const s=G.nestById[t.sid]; x=s.x; y=s.y;}
       else if(t.kind==='flock'){const f=G.B.flock[t.k]; x=f.x; y=f.y; cls+=' big';}
       else if(t.kind==='row'){const c=G.B.cards[t.k]; x=c.x; y=c.y; cls+=' rowt';}
       else if(t.kind==='ruin'){const r=G.regions[t.rid].ruins[t.k]; x=r.x; y=r.y;}
       const d=add(x,y,cls); if(filterTarget===key) d.classList.add('sel');
-      d.onclick=()=>{const same=pending.q.options.filter(o=>targetKey(o.target)===key); if(same.length===1) answer(same[0].value); else {filterTarget=key; render();}};});}
+      d.onclick=()=>{const same=pending.q.options.filter(o=>targetKey(o.target)===key&&!TOFF(pending.q,o)); if(same.length===1) answer(same[0].value); else {filterTarget=key; render();}};});}
 }
 const FI=(t,h)=>`<img class="fdi" src="icons/${t}.png" style="height:${h||17}px" alt="${t}">`;
 function food(f){return `<span class="fd" title="Vers">${FI('worm')} ${f.worm}</span><span class="fd" title="Graines">${FI('seed')} ${f.seed}</span><span class="fd" title="Fruits">${FI('fruit')} ${f.fruit}</span>`;}
@@ -103,7 +104,7 @@ function renderPersonal(){let M=$('#pchoice'); const show=pending&&mine(pending.
   if(!show){if(M) M.remove(); return false;}
   if(!M){M=el('div',''); M.id='pchoice'; $('#boardwrap').appendChild(M);}
   const {p,q}=pending; M.innerHTML=`<div class="pcbox"><div class="pct"><span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — choisissez votre objectif personnel</div><div class="pcsub">L'autre est défaussé. 1 Étoile quand le total des deux tags atteint 5, puis 1 autre à 9. Les ressources du bas sont gagnées tout de suite.</div><div class="pcards"></div><div class="pchint">Votre main est visible plus bas : faites défiler si besoin.</div></div>`;
-  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="${G.persoSet==='new'?'perso2':'perso'}/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}<small>${v.tags.join(' + ')}</small><small class="pres">Départ : ${esc(BG.resLabel?BG.resLabel(G.pres?G.pres(v):(v.res||{})):'')}</small></span>`); b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
+  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="${G.persoSet==='new'?'perso2':'perso'}/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}<small>${v.tags.join(' + ')}</small><small class="pres">Départ : ${esc(BG.resLabel?BG.resLabel(G.pres?G.pres(v):(v.res||{})):'')}</small></span>`); if(TOFF(q,o)) b.disabled=true; else b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
   return true;}
 const BTYPE=l=>{const m=/\b(Nid|Sanctuaire|Atelier)\b/.exec(l||''); return m?{Nid:'nest',Sanctuaire:'shrine',Atelier:'workshop'}[m[1]]:null;};
 const bico=(t,c)=>`<i class="bico wood${String(c).toLowerCase()==='#ffffff'?' wt':''}" style="--c:${c};--ico:${IC(t,c)}"></i>`;
@@ -116,10 +117,10 @@ function renderPrompt(){const Q=$('#prompt'); Q.innerHTML=''; if(renderPersonal(
   const box=el('div','opts');
   const ACT=l=>/^Déplacer la Nuée/.test(l)?'flockmove':/^Jouer jusqu/.test(l)?'play':/^Couvée/.test(l)?'brood':/^S'étendre/.test(l)?'expand':/^Récolter/.test(l)?'gather':/^Construire/.test(l)?'build':null;
   if(q.main){box.className='opts main'; opts.forEach(o=>{const a=o.value&&o.value.ds?null:ACT(o.label); const ic=a==='flockmove'?`<span class="mvic" style="--c:${p.color}"><img src="${IC('flock',p.color).slice(4,-1)}"></span>`:(a?`<img src="icons/act_${a}.png">`:(o.card?`<img src="cards/${o.card}.jpg" class="dsic">`:''));
-      const b=el('button','actb'+(o.disabled?' off':''),`${ic}<span>${esc(o.label)}</span>${o.disabled&&o.why?`<small>${esc(o.why)}</small>`:''}`); if(!o.disabled) b.onclick=()=>answer(o.value); else b.title=o.why||''; box.appendChild(b);}); Q.appendChild(box); undoBtn(Q); return;}
+      const tof=TOFF(q,o); const b=el('button','actb'+(o.disabled||tof?' off':''),`${ic}<span>${esc(o.label)}</span>${o.disabled&&o.why?`<small>${esc(o.why)}</small>`:''}`); if(!o.disabled&&!tof) b.onclick=()=>answer(o.value); else b.title=o.why||''; box.appendChild(b);}); Q.appendChild(box); undoBtn(Q); return;}
   const pick=handPick(); if(pick) opts=opts.filter(o=>!pick.includes(o));
   opts.forEach(o=>{let b; if(o.card){b=el('button','ob cardbtn',cardHTML(o.card,'mid'));} else {{const a=ACT(o.label); const bt=BTYPE(o.label); b=el('button','ob',(bt?bico(bt,p.color):(a&&a!=='flockmove'?`<img class="obi" src="icons/act_${a}.png">`:''))+esc(o.label));} if(o.card) b.title=G.card(o.card).name;}
-    b.onclick=()=>answer(o.value); box.appendChild(b);});
+    if(TOFF(q,o)){b.disabled=true; b.classList.add('off');} else b.onclick=()=>answer(o.value); box.appendChild(b);});
   if(filterTarget){const b=el('button','ob ghost','← Autres choix'); b.onclick=()=>{filterTarget=null; render();}; box.appendChild(b);}
   if(q.cancel){const b=el('button','ob ghost','Retour'); b.onclick=()=>answer(null); box.appendChild(b);}
   if(pick) Q.insertBefore(el('div','pickhint','👉 Cliquez directement sur une carte en surbrillance dans votre main.'),null);
@@ -155,7 +156,7 @@ function pboard(p){const W=el('div','pboard'); W.innerHTML='<img src="pboard.png
 function gullHTML(l){const L=Math.max(1,Math.min(4,l)); return `<div class="card img mid gullc" data-card="S${L}" title="Mouette de niveau ${l} — améliorable jusqu'au niveau 4"><img src="cards/S${L}.jpg" alt="Mouette niveau ${l}" draggable="false"></div>`;}
 function dockPlayer(){ if(NET.role==='guest') return G.players[NET.seat]||null; if(pending&&mine(pending.p)) return pending.p; const c=G.players[G.current]; if(c&&mine(c)) return c;
   if(lastHuman!==null) return G.players[lastHuman]; const h=G.players.find(q=>mine(q)); return h||null;}
-function handPick(){ if(!pending||!mine(pending.p)) return null; const p=pending.p; const o=pending.q.options.filter(o=>o.card&&(o.h||o.value===o.card)&&p.hand.includes(o.card)); return o.length?o:null;}
+function handPick(){ if(!pending||!mine(pending.p)) return null; const p=pending.p; const o=pending.q.options.filter(o=>o.card&&(o.h||o.value===o.card)&&p.hand.includes(o.card)&&!TOFF(pending.q,o)); return o.length?o:null;}
 function renderMyHand(){const M=$('#myhand'); M.innerHTML=''; const p=dockPlayer(); if(!p) return; lastHuman=p.i;
   const pick=pending&&pending.p===p?handPick():null; M.classList.toggle('picking',!!pick);
   M.appendChild(el('div','mh',`<span class="dot" style="background:${p.color}"></span>${esc(p.name)} — main (${p.hand.length})<small>${pick?'cliquez une carte':'survol = zoom'}</small>`));
@@ -186,7 +187,7 @@ function endShare(){ const S=window.BirdsStats, M=$('#modal .mbox'); if(!S||!S.n
 
 document.addEventListener('keydown',e=>{ if(!pending||!mine(pending.p)||/INPUT|TEXTAREA|SELECT/.test((e.target||{}).tagName||'')) return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault(); undo();}
-  else if(e.key==='Enter'&&pending.q.endTurn){e.preventDefault(); answer(null);} });
+  else if(e.key==='Enter'&&pending.q.endTurn&&!pending.q.options.some(o=>TOFF(pending.q,o))&&!(window.BirdsTuto&&BirdsTuto.on&&BirdsTuto.off(pending.q,{}))){e.preventDefault(); answer(null);} });
 // zoom sur une carte au survol
 document.addEventListener('mouseover',e=>{const c=e.target.closest('.card,.relc,.crow'); const Z=$('#zoom'); if(!c||!c.dataset.card){Z.style.display='none';return;} Z.innerHTML=`<div class="card img big"><img src="cards/${c.dataset.card}.jpg"></div>`; Z.style.display='block';});
 document.addEventListener('mousemove',e=>{const Z=$('#zoom'); if(Z.style.display!=='block') return; const w=240; let x=e.clientX+18, y=e.clientY+18; if(x+w>innerWidth) x=e.clientX-w-18; if(y+330>innerHeight) y=innerHeight-340; Z.style.left=x+'px'; Z.style.top=Math.max(4,y)+'px';});
@@ -276,6 +277,9 @@ async function netInit(){ const box=$('#onlnote'); if(!window.claude||!window.cl
   window.BirdsNet={db:NET.db,user:NET.user}; if(window.BirdsStats&&BirdsStats.loadAIW) BirdsStats.loadAIW();
   if(NET.canWrite===false){ if(box) box.textContent='Votre accès à l\'appli est en lecture seule : demandez au propriétaire de vous la partager en Contributeur (ou Éditeur) pour jouer en ligne.'; return;}
   netReady(); }
+function startTuto(){ const IT=window.I18N&&I18N.lang==='it', EN=window.I18N&&I18N.lang==='en';
+  start({players:[{name:IT?'Tu':EN?'You':'Vous',ai:false,color:BG.COLORS[0]},{name:'IA',ai:true,color:BG.COLORS[1]}],persoSet:'new'},g=>{ g.noStats=true; io.lookahead=null; io.aiDelay=650; });
+  window.BirdsTuto.start({get G(){return G;},get pending(){return pending;},render});}
 // écran de configuration
 function setup(){ try{ window.BirdsStats&&BirdsStats.applyAIW&&BirdsStats.applyAIW(BirdsStats.aiwInfo()); }catch(e){}
 const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'; const L3=(fr,en,it)=>IT?it:EN?en:fr; $('#langseg').querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v===LG); b.onclick=()=>{ if(b.dataset.v!==I18N.lang){I18N.set(b.dataset.v); location.reload();}};});
@@ -299,6 +303,7 @@ const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'; const L3=(fr,en
   seg('#modeseg',v=>{MODE=v; applyMode();}); seg('#onlseg',v=>{SUB=v; applyMode();});
   $('#jgo').onclick=async()=>{ $('#jgo').disabled=true; setStatus(''); try{ await netJoin($('#jcode').value,$('#jname').value.trim()); } finally{ $('#jgo').disabled=false; } };
   netInit();
+  {const tb=$('#tutobtn'); if(tb){ tb.innerHTML='🎓 '+L3('Tutoriel : apprendre à jouer','Tutorial: learn to play','Tutorial: impara a giocare'); tb.onclick=startTuto; }}
   $('#go').onclick=async()=>{ if(ONL()){ if(!NET.db&&!NET.peerMode) return; $('#go').disabled=true; setStatus('');
       const cfg=[]; for(let i=0;i<+n.value;i++) cfg.push({kind:i===0?'host':(types[i]==='h'?'net':'ai'),name:i===0?((/^(Vous|You|Tu)$/.test($('#nm0').value.trim())?'':$('#nm0').value.trim())||'Hôte'):(types[i]==='h'?'':($('#nm'+i).value||('IA '+i))),color:cols[i],uid:i===0?NET.uid:null});
       try{ await netCreate(cfg); }catch(e){ console.warn(e); setStatus(NET.peerMode?'Impossible de joindre le service de connexion pour l\'instant. Réessayez.':'Impossible de créer la partie en ligne (accès en écriture refusé ?).'); } finally{ $('#go').disabled=false; } return; }

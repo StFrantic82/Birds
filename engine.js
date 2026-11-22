@@ -419,7 +419,7 @@ class Game{
         builtLv:{nest:p.built.nest.slice(),shrine:p.built.shrine.slice(),workshop:p.built.workshop.slice()},
         runes:p.runes.slice(),seagulls:p.seagulls.slice(),elders:p.eldersTotal||0,chicks:p.chicks,eggs:p.eggs,hand:p.hand.length,acts:p.acts?Object.assign({},p.acts,{seq:(p.acts.seq||[]).slice(),lastSub:undefined}):undefined,eco:p.eco?Object.assign({},p.eco,{left:p.food.worm+p.food.seed+p.food.fruit}):undefined,supply:p.supply}))};}
   finish(){const r=this.players.slice().sort((a,b)=>b.stars-a.stars||b.chicks-a.chicks||b.eggs-a.eggs);
-    try{ if(window.BirdsStats) window.BirdsStats.add(this.statRecord(r)); }catch(e){console.error(e);}
+    try{ if(window.BirdsStats&&!this.noStats) window.BirdsStats.add(this.statRecord(r)); }catch(e){console.error(e);}
     this.ranking=r; this.log(`Fin de partie ! Vainqueur : ${r[0].name} avec ${r[0].stars} Étoiles.`); this.io.render(); this.io.gameOver&&this.io.gameOver(r);}
   // ---------- Décisions ----------
   async ask(p,q){ q.options=q.options.filter(o=>o); if(!q.options.length) return null;
