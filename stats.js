@@ -109,6 +109,31 @@ function compute(f){
   const W=P.filter(p=>p.win), Lo=P.filter(p=>!p.win);
   res.misc=[[L('Cartes jouées','Cards played'),p=>(p.played||[]).length],[L('Mouettes','Seagulls'),p=>p.seagulls.length],[L('Niveau total des Mouettes','Total Seagull level'),p=>p.seagulls.reduce((a,b)=>a+b,0)],
     [L('Runes','Runes'),p=>p.runes.length],[L('Cases du Chemin des Anciens','Elders\' Path spaces'),p=>p.elders],[L('Étoiles','Stars'),p=>p.stars]].map(([l,f])=>({l,w:avg(W,f),lo:avg(Lo,f)}));
+  // durées
+  const rc={}; G.forEach(g=>rc[g.rounds]=(rc[g.rounds]||0)+1); const rs=G.map(g=>g.rounds).sort((a,b)=>a-b);
+  res.dur={hist:rc,min:rs[0],max:rs[rs.length-1],med:rs[Math.floor(rs.length/2)],fast:pct(rs.filter(x=>x<=18).length,rs.length)};
+  // rythme des étoiles : manche moyenne de la k-ième étoile
+  const sr=(arr,k)=>{const x=arr.map(p=>(p.starRounds||[])[k]).filter(Boolean); return {n:x.length,avg:x.length?x.reduce((a,s)=>a+s.round,0)/x.length:null,pct:pct(x.length,arr.length)};};
+  const PW=P.filter(p=>p.win), PL=P.filter(p=>!p.win);
+  res.pace=[0,1,2,3,4,5].map(k=>({k:k+1,all:sr(P,k),win:sr(PW,k),lose:sr(PL,k)}));
+  // boule de neige : leader à mi-partie, écart final
+  let lead=0, leadW=0, behindW=0, tiedMid=0; const margin={0:0,1:0,2:0,3:0};
+  G.forEach(g=>{ const mid=Math.floor(g.rounds/2); const at=g.players.map(p=>(p.starRounds||[]).filter(s=>s.round<=mid).length); const mx=Math.max(...at);
+    const top=at.filter(v=>v===mx).length; const w=g.players.findIndex(p=>p.win);
+    if(top===1&&mx>0){ lead++; if(at[w]===mx) leadW++; else behindW++; } else tiedMid++;
+    const st=g.players.map(p=>p.stars).sort((a,b)=>b-a); const m=Math.min(3,Math.max(0,st[0]-(st[1]||0))); margin[m]++; });
+  res.snow={lead,leadW:pct(leadW,lead),comeback:pct(behindW,lead),tiedMid:pct(tiedMid,G.length),margin:[0,1,2,3].map(k=>({k,p:pct(margin[k],G.length)}))};
+  // ouverture : objectifs personnels (vitesse des étoiles), premières actions
+  res.persoPace=window.BirdsGame.PERSONAL.map(d=>{const x=P.filter(p=>p.pobj===d.id); return {d,n:x.length,s1:sr(x,0).avg,s3:sr(x,2).avg,s6:sr(x,5).avg,s6p:sr(x,5).pct,wr:pct(x.filter(p=>p.win).length,x.length)};}).filter(o=>o.n);
+  const PS=P.filter(p=>p.acts&&p.acts.seq&&p.acts.seq.length);
+  const grp=(f)=>{const m={}; PS.forEach(p=>{const k=f(p); if(!k) return; const o=m[k]||(m[k]={k,n:0,w:0,six:0,sixN:0}); o.n++; if(p.win) o.w++; const r=(p.starRounds||[])[5]; if(r){o.six+=r.round; o.sixN++;}}); return Object.values(m).map(o=>({k:o.k,n:o.n,share:pct(o.n,PS.length),wr:o.w/o.n,six:o.sixN?o.six/o.sixN:null})).sort((a,b)=>b.n-a.n);};
+  res.open1=grp(p=>p.acts.seq[0]); res.open2=grp(p=>p.acts.seq.length>=2?p.acts.seq.slice(0,2).join(''):null).slice(0,10); res.openN=PS.length;
+  // économie
+  const PE=P.filter(p=>p.eco); const ea=(arr,f)=>arr.length?arr.reduce((a,p)=>a+f(p),0)/arr.length:null;
+  const EW=PE.filter(p=>p.win), EL=PE.filter(p=>!p.win);
+  res.ecoN=new Set(PE.map(p=>p.g)).size;
+  res.eco=[['start',p=>p.eco.start||0],['harvest',p=>p.eco.harvest||0],['gain',p=>p.eco.gain||0],['spent',p=>p.eco.spent||0],['left',p=>p.eco.left||0],['chicks',p=>p.chicks||0],['supply',p=>p.supply||0],['eggs',p=>p.eggs||0]]
+    .map(([k,f])=>({k,all:ea(PE,f),win:ea(EW,f),lose:ea(EL,f)}));
   // actions effectuées (parties enregistrées depuis l'ajout du compteur)
   const PA=P.filter(p=>p.acts), WA=PA.filter(p=>p.win), LA=PA.filter(p=>!p.win);
   const am=(arr,k)=>arr.length?arr.reduce((a,p)=>a+(p.acts[k]||0),0)/arr.length:null;
@@ -118,6 +143,46 @@ function compute(f){
   return res;}
 
 // ---------- affichage ----------
+const f1=v=>v===null||v===undefined?'—':v.toFixed(1);
+const wl=(w,l)=>w!==null&&l!==null&&f1(w)!==f1(l)?(w>l?'#2e8b3e':'#c0392b'):'';
+function durTable(r){ const D=r.dur, ks=Object.keys(D.hist).map(Number); const lo=Math.min(...ks), hi=Math.max(...ks); const mx=Math.max(...Object.values(D.hist));
+  let cols=''; for(let k=lo;k<=hi;k++){ const v=D.hist[k]||0; cols+=`<div class="hcol" title="${k} ${L('manches','rounds')} : ${v} ${L('parties','games')} (${pct(v,r.games)}%)"><span>${v?pct(v,r.games)+'%':''}</span><i style="height:${Math.round(100*v/mx)}%;background:${k<=18?'#e0a400':'#4a7fb5'}"></i><b>${k}</b></div>`; }
+  return `<h3>${L3('Durée des parties','Game length','Durata delle partite')}</h3>
+  <div class="hist">${cols}</div>
+  <p class="snote">${L3(`En manches. <b style="color:#b88400">${D.fast}%</b> des parties finies en 18 manches ou moins (en jaune). Médiane : ${D.med} · plus courte : ${D.min} · plus longue : ${D.max}.`,
+   `In rounds. <b style="color:#b88400">${D.fast}%</b> of games ended in 18 rounds or fewer (yellow). Median: ${D.med} · shortest: ${D.min} · longest: ${D.max}.`,
+   `In round. <b style="color:#b88400">${D.fast}%</b> delle partite finite in 18 round o meno (in giallo). Mediana: ${D.med} · più breve: ${D.min} · più lunga: ${D.max}.`)}</p>`;}
+function paceTable(r){ const S='<img class="acti" src="icons/star.png" alt="">';
+  return `<h3>${L3('Rythme des étoiles','Star pace','Ritmo delle stelle')}</h3>
+  <table class="stab"><tr><th></th><th>${L3('Manche moyenne','Average round','Round medio')}</th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th><th>${L3('Écart avec la précédente','Gap from previous','Scarto dalla precedente')}</th><th>${L3('Atteinte par','Reached by','Raggiunta da')}</th></tr>
+   ${r.pace.map((x,i)=>{const prev=i?r.pace[i-1].all.avg:null; const gap=prev!==null&&x.all.avg!==null?x.all.avg-prev:x.all.avg; return `<tr><td>${S}<b>${x.k}${L3(x.k===1?'re':'e',x.k===1?'st':x.k===2?'nd':x.k===3?'rd':'th','ª')} ${L3('étoile','star','stella')}</b></td><td><b>${f1(x.all.avg)}</b></td><td style="color:${wl(-(x.win.avg||0),-(x.lose.avg||0))}">${f1(x.win.avg)}</td><td>${f1(x.lose.avg)}</td><td>${gap!==null?bar(gap,8,'#e0a400')+' +'+f1(gap):''}</td><td>${x.all.pct}%</td></tr>`;}).join('')}</table>
+  <p class="snote">${L3("Manche moyenne où les joueurs obtiennent leur 1re, 2e… 6e étoile (parmi ceux qui l'obtiennent). « Écart » : nombre de manches entre deux étoiles, pour voir où la partie ralentit.","Average round in which players get their 1st, 2nd… 6th star (among those who get it). “Gap”: rounds between two stars, to see where the game slows down.","Round medio in cui i giocatori ottengono la 1ª, 2ª… 6ª stella (tra chi la ottiene). «Scarto»: round tra due stelle, per vedere dove la partita rallenta.")}</p>`;}
+function snowTable(r){ const S=r.snow; const ML=[L3('Égalité (départagée)','Tie (broken)','Parità (spareggio)'),L3("1 étoile d'écart",'1 star ahead','1 stella di scarto'),L3("2 étoiles d'écart",'2 stars ahead','2 stelle di scarto'),L3('3 étoiles ou plus','3 stars or more','3 stelle o più')];
+  return `<h3>${L3('Effet boule de neige','Snowball effect','Effetto valanga')}</h3>
+  <div class="sgrid"><div class="scard"><b>${S.leadW}%</b><span>${L3('des parties gagnées par le joueur seul en tête à mi-partie','of games won by the sole leader at mid-game','delle partite vinte dal giocatore da solo in testa a metà partita')}</span></div>
+   <div class="scard"><b>${S.comeback}%</b><span>${L3('de remontées (parties avec un leader à mi-partie, gagnées par un autre joueur)','comebacks (games with a mid-game leader, won by another player)','di rimonte (partite con un leader a metà partita, vinte da un altro giocatore)')}</span></div>
+   <div class="scard"><b>${S.tiedMid}%</b><span>${L3('des parties sans leader unique à mi-partie','of games with no sole leader at mid-game','delle partite senza un leader unico a metà partita')}</span></div></div>
+  <table class="stab"><tr><th>${L3('Écart final entre le 1er et le 2e','Final gap between 1st and 2nd','Scarto finale tra 1° e 2°')}</th><th></th><th></th></tr>${S.margin.map(m=>`<tr><td>${ML[m.k]}</td><td class="w">${bar(m.p,100,'#7a4fa0')}</td><td>${m.p}%</td></tr>`).join('')}</table>`;}
+function openTable(r){ const A={E:['expand',L3("S'étendre",'Expand','Espandersi')],G:['gather',L3('Récolter','Gather','Raccogliere')],B:['build',L3('Construire','Build','Costruire')],N:[null,L3('Nuée sans action','Flock, no action','Stormo senza azione')],P:['play',L3('Jouer des cartes','Play cards','Giocare carte')],C:['brood',L3('Couvée','Brood','Covata')]};
+  const ic=c=>A[c]&&A[c][0]?`<img class="acti" src="icons/act_${A[c][0]}.png" alt="" title="${A[c][1]}">`:'';
+  const row=o=>`<tr><td>${o.k.length===1?ic(o.k)+A[o.k][1]:o.k.split('').map(c=>ic(c)||A[c][1]).join(' → ')}</td><td>${bar(o.share,100,'#4a7fb5')} ${o.share}%</td><td style="color:${dcol(o.wr-r.baseWin)}"><b>${Math.round(o.wr*100)}%</b> <small>(${o.n})</small></td><td>${f1(o.six)}</td></tr>`;
+  const hd=`<tr><th></th><th>${L3('Choisie','Chosen','Scelta')}</th><th>${L('Victoires','Wins')}</th><th>${L3('6e étoile (manche)','6th star (round)','6ª stella (round)')}</th></tr>`;
+  let h=`<h3>${L3('Ouverture','Opening','Apertura')}</h3>
+  <h4>${L3('Objectifs personnels : vitesse des étoiles','Personal objectives: star speed','Obiettivi personali: velocità delle stelle')}</h4>
+  <table class="stab"><tr><th></th><th>${L3('1re étoile','1st star','1ª stella')}</th><th>${L3('3e étoile','3rd star','3ª stella')}</th><th>${L3('6e étoile','6th star','6ª stella')}</th><th>${L3('6 étoiles atteintes','6 stars reached','6 stelle raggiunte')}</th><th>${L('Victoires','Wins')}</th></tr>
+   ${r.persoPace.map(o=>`<tr><td><b>${o.d.name}</b> <span class="stags">${o.d.tags.map(t=>`<img src="icons/tag_${t}.png" alt="${t}">`).join('+')}</span></td><td>${f1(o.s1)}</td><td>${f1(o.s3)}</td><td><b>${f1(o.s6)}</b></td><td>${o.s6p}%</td><td style="color:${dcol(o.wr/100-r.baseWin)}">${o.wr}% <small>(${o.n})</small></td></tr>`).join('')}</table>
+  <p class="snote">${L3('Manche moyenne de la 1re, 3e et 6e étoile des joueurs ayant choisi cet objectif (ressources de départ comprises).','Average round of the 1st, 3rd and 6th star of players who chose this objective (starting resources included).',"Round medio della 1ª, 3ª e 6ª stella dei giocatori che hanno scelto questo obiettivo (risorse iniziali comprese).")}</p>`;
+  if(!r.openN) return h+`<p class="snote">${L3("Premières actions : pas encore de données (comptées dans les parties jouées ou simulées à partir de maintenant).","First actions: no data yet (counted in games played or simulated from now on).","Prime azioni: ancora nessun dato (contate nelle partite giocate o simulate da ora in poi).")}</p>`;
+  return h+`<h4>${L3('Première action','First action','Prima azione')}</h4><table class="stab">${hd}${r.open1.map(row).join('')}</table>
+  <h4>${L3('Deux premières actions (les plus fréquentes)','First two actions (most common)','Prime due azioni (le più frequenti)')}</h4><table class="stab">${hd}${r.open2.map(row).join('')}</table>`;}
+function ecoTable(r){ const T=L3('Économie (moyenne par joueur et par partie)','Economy (average per player per game)','Economia (media per giocatore e per partita)');
+  if(!r.ecoN) return `<h3>${T}</h3><p class="snote">${L3("Pas encore de données : l'économie est comptée dans les parties jouées ou simulées à partir de maintenant.","No data yet: the economy is counted in games played or simulated from now on.","Ancora nessun dato: l'economia viene contata nelle partite giocate o simulate da ora in poi.")}</p>`;
+  const N={start:L3("Nourritures de départ (objectif perso)",'Starting food (personal objective)','Cibo iniziale (obiettivo personale)'),harvest:L3('Nourritures récoltées (Récolter)','Food gathered (Gather)','Cibo raccolto (Raccogliere)'),gain:L3('Autres nourritures gagnées (bonus, cartes…)','Other food gained (bonuses, cards…)','Altro cibo ottenuto (bonus, carte…)'),
+    spent:L3('Nourritures dépensées','Food spent','Cibo speso'),left:L3('Nourritures restantes en fin de partie','Food left at game end','Cibo rimasto a fine partita'),chicks:L3('Poussins disponibles en fin de partie','Chicks available at game end','Pulcini disponibili a fine partita'),supply:L3('Poussins encore en réserve','Chicks still in reserve','Pulcini ancora in riserva'),eggs:L3('Œufs restants','Eggs left','Uova rimaste')};
+  const I={start:'anyfood',harvest:'anyfood',gain:'anyfood',spent:'anyfood',left:'anyfood',chicks:'chickicon',supply:'chickicon',eggs:'egg_k'};
+  return `<h3>${T}</h3><table class="stab"><tr><th></th><th>${L('Tous','All')}</th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th></tr>
+   ${r.eco.map(e=>`<tr><td><img class="acti" src="icons/${I[e.k]}.png" alt="">${N[e.k]}</td><td><b>${f1(e.all)}</b></td><td style="color:${wl(e.win,e.lose)}">${f1(e.win)}</td><td>${f1(e.lose)}</td></tr>`).join('')}</table>
+  <p class="snote">${L3(`Calculé sur ${r.ecoN} partie(s) enregistrée(s) avec le compteur d'économie. Nourritures = vers + graines + fruits.`,`Based on ${r.ecoN} game(s) recorded with the economy counter. Food = worms + seeds + fruits.`,`Calcolato su ${r.ecoN} partita/e registrata/e con il contatore di economia. Cibo = vermi + semi + frutti.`)}</p>`;}
 function actsTable(r){
   const T=L3('Actions effectuées (moyenne par joueur et par partie)','Actions taken (average per player per game)','Azioni effettuate (media per giocatore e per partita)');
   if(!r.actsN) return `<h3>${T}</h3><p class="snote">${L3("Pas encore de données : le compteur d'actions s'applique aux parties jouées ou simulées à partir de maintenant.","No data yet: actions are counted in games played or simulated from now on.","Ancora nessun dato: le azioni vengono contate nelle partite giocate o simulate da ora in poi.")}</p>`;
@@ -158,6 +223,9 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
    <div class="scard"><b>${Math.round(r.baseWin*100)}%</b><span>${L('taux de victoire de référence (1 / nb joueurs)','baseline win rate (1 / player count)')}</span></div>
    <div class="scard"><span>${L('Victoires par place','Wins by seat')}</span>${r.seatWin.map((s,i)=>s?`<div class="sline">${i+1}${L('er','st').replace('er',i?'e':'er')} ${bar(s.w,100)} ${s.w}%</div>`:'').join('')}</div>
   </div>
+  ${durTable(r)}
+  ${paceTable(r)}
+  ${snowTable(r)}
   <h3>${L('D\'où viennent les Étoiles','Where Stars come from')}</h3>
   <table class="stab">${r.starSrc.map(s=>`<tr><td>${starL[s.k]}</td><td class="w">${bar(s.p,100,'#e0a400')}</td><td>${s.p}%</td></tr>`).join('')}</table>
   <h3>${L('Objectifs rouges','Red objectives')}</h3>${objTable(r.red)}
@@ -166,6 +234,8 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
   <table class="stab"><tr><th></th><th>${L('Choisi quand proposé','Picked when offered')}</th><th>${L('1re Étoile (5)','1st Star (5)')}</th><th>${L('2e Étoile (9)','2nd Star (9)')}</th><th>${L('Victoires','Wins')}</th></tr>
    ${r.perso.map(o=>`<tr><td><b>${o.d.name}</b> <span class="stags" title="${o.d.tags.join(' + ')}">${o.d.tags.map(t=>`<img src="icons/tag_${t}.png" alt="${t}">`).join('+')}</span></td><td>${o.offered?o.picked+'%':'—'}</td><td>${o.n?o.one+'%':'—'}</td><td>${o.n?o.two+'%':'—'}</td><td style="color:${dcol(o.wr/100-r.baseWin)}">${o.n?o.wr+'%':'—'} <small>(${o.n})</small></td></tr>`).join('')}</table>
   ${actsTable(r)}
+  ${openTable(r)}
+  ${ecoTable(r)}
   <h3>${L('Bâtiments','Buildings')}</h3>
   <table class="stab"><tr><th></th><th>${L('Moyenne construite','Average built')}</th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th><th>${L('Niv. 1 / 2 / 3 / 4 construits','Lvl 1 / 2 / 3 / 4 built')}</th></tr>
    ${r.build.map(b=>`<tr><td><i class="bico wood" style="--c:#8a8a8a;--ico:url(icons/${b.t}.png)"></i><b>${({nest:L('Nids','Nests'),shrine:L('Sanctuaires','Shrines'),workshop:L('Ateliers','Workshops')})[b.t]}</b>${b.t==='nest'?` <small>${L('(hors Nid de départ)','(excluding starting nest)')}</small>`:''}</td><td>${b.all}</td><td style="color:${+b.win>+b.lose?'#2e8b3e':'#c0392b'}">${b.win}</td><td>${b.lose}</td><td>${(b.t==='nest'?b.lv.slice(1):b.lv).map(v=>v+'%').join(' / ')}</td></tr>`).join('')}</table>

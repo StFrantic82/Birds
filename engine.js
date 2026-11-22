@@ -132,7 +132,7 @@ class Game{
     this.io.render();}
   // jeu d'objectifs personnels : 'classic' (règle d'origine) ou 'new' (ressources recommandées)
   pres(o){return this.persoSet==='new'&&o.resNew?o.resNew:o.res;}
-  async giveStart(p,res){ for(const [k,v] of Object.entries(res)){ if(!v) continue; if(k==='seagull'){for(let i=0;i<v;i++){p.seagulls.push(1);} this.log(`${p.name} gagne une Mouette (niveau 1).`);} else if(k==='elders') await this.elders(p,v); else if(k==='rune'){ for(let i=0;i<v;i++) await this.rune1(p);} else if(k==='chick'){ const d=Math.max(-p.chicks,Math.min(v,p.supply)); p.chicks+=d; p.supply-=d; if(d>0) this.log(`${p.name} gagne ${d} Poussin${d>1?'s':''}.`);} else p.food[k]+=v; } }
+  async giveStart(p,res){ for(const [k,v] of Object.entries(res)){ if(!v) continue; if(k==='seagull'){for(let i=0;i<v;i++){p.seagulls.push(1);} this.log(`${p.name} gagne une Mouette (niveau 1).`);} else if(k==='elders') await this.elders(p,v); else if(k==='rune'){ for(let i=0;i<v;i++) await this.rune1(p);} else if(k==='chick'){ const d=Math.max(-p.chicks,Math.min(v,p.supply)); p.chicks+=d; p.supply-=d; if(d>0) this.log(`${p.name} gagne ${d} Poussin${d>1?'s':''}.`);} else { p.food[k]+=v; this.eco(p,'start',v); } } }
   async checkObjectives(p){ while(p.pobj&&p.pClaims<PERSO_TH.length&&this.persoValue(p)>=PERSO_TH[p.pClaims]){p.pClaims++; await this.gainStar(p,`Objectif personnel ${p.pobj.name} (${PERSO_TH[p.pClaims-1]})`);}
     for(const o of this.objs){ const next=o.th[o.claims.length]; if(o.claims.includes(p.i)||next===undefined) continue;
     if(o.d.m(this,p)>=next){o.claims.push(p.i); await this.gainStar(p,`Objectif ${o.color==='red'?'rouge':'bleu'} ${o.d.name}`);}}}
@@ -144,14 +144,14 @@ class Game{
     await hook('OP3','Circle','Whispering Totem : défausser 1 carte pour un Poussin sur une Ruine ?',()=>this.ruinChick(p,1),1.2);
     await hook('OR5','Legion','War Drum : défausser 1 carte pour 1 Mouette ?',()=>this.seagull(p,1),0.8);
     await hook('OY2','Court','Royal Decree : défausser 1 carte pour jouer 1 carte ?',()=>this.playOne(p,{}),1);
-    await hook('ON6',null,'Forager\'s Basket : défausser 1 carte pour 1 ver + 1 graine + 1 fruit ?',async()=>{p.food.worm++;p.food.seed++;p.food.fruit++; this.log(`${p.name} gagne 1 ver, 1 graine et 1 fruit.`);},2);}
+    await hook('ON6',null,'Forager\'s Basket : défausser 1 carte pour 1 ver + 1 graine + 1 fruit ?',async()=>{p.food.worm++;p.food.seed++;p.food.fruit++; this.eco(p,'gain',3); this.log(`${p.name} gagne 1 ver, 1 graine et 1 fruit.`);},2);}
   extras(p){const out=[];
     if(this.has(p,'ON3')&&!p.tableau.find(e=>e.id==='ON3').starTaken&&p.food.worm>=2&&p.food.seed>=2&&p.food.fruit>=2) out.push({label:'Provision Cache : payer 2/2/2 pour 1 Étoile',value:{x:'ON3'},card:'ON3',score:5});
     if(this.has(p,'OP8')) out.push({label:'Soul Reliquary : sacrifier pour 1 Étoile',value:{x:'OP8'},card:'OP8',score:5});
     if(this.has(p,'OP7')&&!p.tableau.find(e=>e.id==='OP7').starTaken&&FAMS.some(f=>p.hand.filter(id=>(this.card(id).tagMap||{})[f]).length>=4)) out.push({label:'Black Codex : défausser 4 cartes du même tag pour 1 Étoile',value:{x:'OP7'},card:'OP7',score:4});
     return out;}
   async doExtra(p,x){const e=p.tableau.find(e=>e.id===x);
-    if(x==='ON3'){p.food.worm-=2;p.food.seed-=2;p.food.fruit-=2; e.starTaken=true; await this.gainStar(p,'Provision Cache');}
+    if(x==='ON3'){p.food.worm-=2;p.food.seed-=2;p.food.fruit-=2; this.eco(p,'spent',6); e.starTaken=true; await this.gainStar(p,'Provision Cache');}
     else if(x==='OP8'){p.tableau.splice(p.tableau.indexOf(e),1); this.discardPile.push(x); this.log(`${p.name} sacrifie Soul Reliquary.`); await this.gainStar(p,'Soul Reliquary');}
     else if(x==='OP7'){const f=FAMS.find(f=>p.hand.filter(id=>(this.card(id).tagMap||{})[f]).length>=4); for(let i=0;i<4;i++){const opts=p.hand.filter(id=>(this.card(id).tagMap||{})[f]); const id=await this.ask(p,{title:`Défaussez une carte ${f} (${i+1}/4)`,options:opts.map(id=>({label:this.card(id).name,value:id,card:id,score:0}))}); p.hand.splice(p.hand.indexOf(id),1); this.discardPile.push(id);} e.starTaken=true; await this.gainStar(p,'Black Codex');}
     this.io.render();}
@@ -179,7 +179,8 @@ class Game{
   async layEgg(p,n=1){let k=0; for(let i=0;i<n;i++){ if(p.supply<=0||p.eggs>=this.nestCap(p)) break; p.supply--; p.eggs++; k++;} if(k){this.log(`${p.name} pond ${k} Œuf${k>1?'s':''}.`); await this.checkObjectives(p);} else if(n>0) this.log(`${p.name} ne peut pas pondre (Nids pleins ou réserve vide).`);}
   async gainChick(p,n=1){let k=Math.min(n,p.supply); p.supply-=k; p.chicks+=k; if(k) this.log(`${p.name} gagne ${k} Poussin${k>1?'s':''}.`);}
   async growEgg(p,n=1){let k=Math.min(n,p.eggs); p.eggs-=k; p.chicks+=k; if(k) this.log(`${p.name} fait éclore ${k} Œuf${k>1?'s':''}.`);}
-  async gainFood(p,type,n=1){if(n<=0)return; p.food[type]+=n; this.log(`${p.name} gagne ${n} ${FOOD_FR[type]}${n>1&&type!=='fruit'?'s':''}${n>1&&type==='fruit'?'s':''}.`);}
+  eco(p,k,n){ if(!n) return; const E=p.eco||(p.eco={harvest:0,gain:0,start:0,spent:0}); E[k]+=n; }
+  async gainFood(p,type,n=1){if(n<=0)return; p.food[type]+=n; this.eco(p,'gain',n); this.log(`${p.name} gagne ${n} ${FOOD_FR[type]}${n>1&&type!=='fruit'?'s':''}${n>1&&type==='fruit'?'s':''}.`);}
   async gainAnyFood(p,n=1,types=['worm','seed','fruit']){for(let i=0;i<n;i++){const t=await this.ask(p,{title:'Choisissez une nourriture',options:types.map(x=>({label:'+1 '+FOOD_FR[x],value:x,score:x==='worm'?1.2:1}))}); await this.gainFood(p,t,1);}}
   async draw(p,n=1){let k=0; for(let i=0;i<n;i++){const c=this.drawFromDeck(); if(c){p.hand.push(c);k++;}} if(k) this.log(`${p.name} pioche ${k} carte${k>1?'s':''}.`);}
   async search(p,x){x+=this.has(p,'OB8')?2:0; const rev=[]; for(let i=0;i<x;i++){const c=this.drawFromDeck(); if(c) rev.push(c);} if(!rev.length) return;
@@ -195,7 +196,7 @@ class Game{
   rm(p,k){return p.runes.includes(k)?(this.has(p,'OP2')?2:1):0;}
   async rune1(p){const free=[0,1,2,3,4].filter(k=>!p.runes.includes(k)&&(k!==0||p.food.seed+p.food.fruit>0)); if(!free.length){this.log(`${p.name} n'a plus de place pour une Rune.`);return;}
     const k=await this.ask(p,{title:'Placez votre Rune',options:free.map(k=>({label:RUNES[k],value:k,score:this.amuletScore(p,k)}))});
-    if(k===0){const t=p.food.seed>0&&p.food.fruit>0?await this.ask(p,{title:'Payer la Rune',options:[{label:'1 graine',value:'seed',score:1},{label:'1 fruit',value:'fruit',score:1}]}):(p.food.seed>0?'seed':'fruit'); p.food[t]--;}
+    if(k===0){const t=p.food.seed>0&&p.food.fruit>0?await this.ask(p,{title:'Payer la Rune',options:[{label:'1 graine',value:'seed',score:1},{label:'1 fruit',value:'fruit',score:1}]}):(p.food.seed>0?'seed':'fruit'); p.food[t]--; this.eco(p,'spent',1);}
     p.runes.push(k); this.log(`${p.name} gagne une Rune : ${RUNES[k]}.`);}
   async gainStar(p,why){p.stars++; p.starLog.push(why); (p.starRounds=p.starRounds||[]).push({why,round:this.round}); this.log(`★ ${p.name} gagne une Étoile (${why}) — ${p.stars}/6.`); if(p.stars>=6&&!this.endTriggered){this.endTriggered=true; this.log(`${p.name} atteint 6 Étoiles : la fin de partie est déclenchée, on termine le tour.`);}
     if(this.has(p,'OB2')) await this.layEgg(p,1); if(this.has(p,'OG4')) await this.placeDSany(p,1); if(this.has(p,'ON5')) await this.draw(p,2);
@@ -252,9 +253,9 @@ class Game{
   async doGather(p,r){const k=this.freeSlot(r.id); this.slots[r.id][k]=p.i; p.chicks--; const f=TREE_FOOD[this.trees[r.id]];
     const gain={worm:0,seed:0,fruit:0}; gain[f]+=2; this.treesOnIsland(r.island).forEach(o=>{if(o.id!==r.id) gain[TREE_FOOD[this.trees[o.id]]]++;});
     this.log(`${p.name} récolte en ${ISL_FR[r.island]} : ${Object.entries(gain).filter(x=>x[1]).map(([t,n])=>n+' '+FOOD_FR[t]).join(', ')}.`);
-    for(const t in gain) p.food[t]+=gain[t]; this.io.render(); await this.checkSettlements();}
+    for(const t in gain){ p.food[t]+=gain[t]; this.eco(p,'harvest',gain[t]); } this.io.render(); await this.checkSettlements();}
   async doBuild(p,sid,type,free,lvl){const opt=this.buildOptions(p,sid,free).find(o=>o.type===type&&(lvl===undefined||o.lvl===lvl)); if(!opt||!opt.ok) return false;
-    p.chicks-=opt.chicks; p.supply+=opt.chicks; for(const t in opt.food) p.food[t]-=opt.food[t];
+    p.chicks-=opt.chicks; p.supply+=opt.chicks; for(const t in opt.food){ p.food[t]-=opt.food[t]; this.eco(p,'spent',opt.food[t]); }
     p.left[type].splice(p.left[type].indexOf(opt.lvl),1); p.built[type].push(opt.lvl); this.nestOwner[sid]={owner:p.i,type,lvl:opt.lvl}; if(type==='nest') p.nests++;
     const s=this.nestById[sid]; this.log(`${p.name} construit ${type==='nest'?'un':'un'} ${BUILD_FR[type]} en ${ISL_FR[s.island]}${free?' (gratuitement)':''}.`);
     this.io.render(); await this.buildingImmediate(p,type,opt.lvl); if(type==='workshop'&&this.has(p,'OR1')) await this.workshopEffect(p,opt.lvl);
@@ -327,9 +328,9 @@ class Game{
   async playCard(p,id,free){const c=this.card(id);
     if(!free){const pays=this.payments(p,id); if(!pays.length) return false;
       const pay=pays.length===1?pays[0]:await this.ask(p,{title:`Payer ${c.name} (coût ${c.type==='bird'?this.birdCost(p,c):c.cost})`,options:pays.map(o=>({label:this.payLabel(o),value:o,score:-o.cost}))});
-      p.hand.splice(p.hand.indexOf(id),1); p.food.worm-=pay.worm; p.food.seed-=pay.seed; p.food.fruit-=pay.fruit;
+      p.hand.splice(p.hand.indexOf(id),1); p.food.worm-=pay.worm; p.food.seed-=pay.seed; p.food.fruit-=pay.fruit; this.eco(p,'spent',pay.worm+pay.seed+pay.fruit);
       for(let i=0;i<pay.cards;i++){const d=await this.ask(p,{title:`Défaussez une carte pour payer (${i+1}/${pay.cards})`,options:p.hand.map(h=>({label:this.card(h).name,value:h,card:h,score:-this.cardValue(p,h)}))}); p.hand.splice(p.hand.indexOf(d),1); this.discardPile.push(d);}
-      if(pay.crate){p.food[pay.crate]--;} if(c.type==='ally'&&!c.req.every(r=>r.f(this,p))) p.allyDiscount=Math.max(0,(p.allyDiscount||0)-1); this.log(`${p.name} joue ${c.name}${c.type==='bird'?` (${this.payLabel(pay)})`:''}.`);
+      if(pay.crate){p.food[pay.crate]--; this.eco(p,'spent',1);} if(c.type==='ally'&&!c.req.every(r=>r.f(this,p))) p.allyDiscount=Math.max(0,(p.allyDiscount||0)-1); this.log(`${p.name} joue ${c.name}${c.type==='bird'?` (${this.payLabel(pay)})`:''}.`);
     } else { p.hand.splice(p.hand.indexOf(id),1); this.log(`${p.name} joue ${c.name} gratuitement.`);}
     const e={id,ds:0,justPlayed:true}; (p.played=p.played||[]).push({id,round:this.round,free:!!free});
     if(c.type==='relic'){const sh=this.shrineFree(p).filter(s=>s.free>=this.relicSpace(p,c)); const l=sh.length===1?sh[0].l:await this.ask(p,{title:`Dans quel Sanctuaire ranger ${c.name} ?`,options:sh.map(s=>({label:`Sanctuaire ${s.l+1} (${s.free} place${s.free>1?'s':''} libre${s.free>1?'s':''})`,value:s.l,score:-s.free}))}); e.shrine=l;}
@@ -380,9 +381,9 @@ class Game{
       this.dsReady(p).forEach(e=>opts.push({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:0})); this.extras(p).forEach(o=>opts.push(o));
       const ch=await this.ask(p,{title:'Votre tour : que faites-vous ?',main:true,options:opts});
       if(ch&&ch.ds){A.ds++; await this.useDS(p,ch.ds); continue;} if(ch&&ch.x){await this.doExtra(p,ch.x); continue;}
-      if(ch==='move'){ const ok=await this.turnMove(p); if(ok===false) continue; A.move++; }
-      else if(ch==='play'){ A.play++; const N=2+(this.has(p,'OY4')?1:0); for(let k=0;k<N;k++){ if(k>0&&!p.ai&&!(await this.midPlay(p,k,N))) break; if(k>0&&!p.hand.some(id=>this.payments(p,id,1).length)) break; const ok=await this.playOne(p,{title:`Jouer une carte (${k+1}/${N})`}); if(!ok) break; A.cards++; } }
-      else if(ch==='brood'){ A.brood++; await this.brood(p); }
+      if(ch==='move'){ const ok=await this.turnMove(p); if(ok===false) continue; A.move++; if((A.seq||(A.seq=[])).length<3) A.seq.push(A.lastSub||'N'); }
+      else if(ch==='play'){ A.play++; if((A.seq||(A.seq=[])).length<3) A.seq.push('P'); const N=2+(this.has(p,'OY4')?1:0); for(let k=0;k<N;k++){ if(k>0&&!p.ai&&!(await this.midPlay(p,k,N))) break; if(k>0&&!p.hand.some(id=>this.payments(p,id,1).length)) break; const ok=await this.playOne(p,{title:`Jouer une carte (${k+1}/${N})`}); if(!ok) break; A.cards++; } }
+      else if(ch==='brood'){ A.brood++; if((A.seq||(A.seq=[])).length<3) A.seq.push('C'); await this.brood(p); }
       done=true;}
     // capacité Écaille après l'action
     while(this.dsReady(p).length||this.extras(p).length||(!p.ai&&this.io.undoable)){const r=this.dsReady(p); const more=r.length||this.extras(p).length; const ch=await this.ask(p,{title:more?'Autre chose avant de finir ?':'Fin de votre tour',endTurn:true,options:[{label:'Finir le tour',value:null,score:0.3},...r.map(e=>({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:this.dsScore(p,e)})),...this.extras(p)]}); if(!ch) break; if(ch.x) await this.doExtra(p,ch.x); else { A.ds++; await this.useDS(p,ch.ds); } }
@@ -400,7 +401,7 @@ class Game{
     const a=await this.ask(p,{title:`Action en ${ISL_FR[ISLANDS[d]]} : cliquez une région (S'étendre / Récolter) ou un emplacement (Construire)`,cancel:true,options:[...acts,{label:'Aucune action',value:'none',score:-5}]});
     if(a===undefined||a===null) return false;
     p.hand.push(id); this.row[k]=null; p.flock=d; this.log(`${p.name} prend ${this.card(id).name} et déplace sa Nuée en ${ISL_FR[ISLANDS[d]]}.`); this.io.render();
-    if(p.acts){ const k=a==='none'?'none':a.kind; p.acts[k]=(p.acts[k]||0)+1; }
+    if(p.acts){ const k=a==='none'?'none':a.kind; p.acts[k]=(p.acts[k]||0)+1; p.acts.lastSub=({expand:'E',gather:'G',build:'B'})[k]||'N'; }
     if(a!=='none') await this.applyBoardAction(p,a);
     this.row[k]=this.drawFromDeck(); this.io.render(); return true;}
   async run(){ for(const p of this.players) await this.choosePersonal(p);
@@ -416,7 +417,7 @@ class Game{
         pobj:p.pobj&&p.pobj.id,pClaims:p.pClaims,pOffer:(p.pOffer||[]).map(o=>o.id),played:(p.played||[]).map(x=>x.id),
         tableau:p.tableau.map(e=>e.id),built:{nest:p.built.nest.length,shrine:p.built.shrine.length,workshop:p.built.workshop.length},
         builtLv:{nest:p.built.nest.slice(),shrine:p.built.shrine.slice(),workshop:p.built.workshop.slice()},
-        runes:p.runes.slice(),seagulls:p.seagulls.slice(),elders:p.eldersTotal||0,chicks:p.chicks,eggs:p.eggs,hand:p.hand.length,acts:p.acts?Object.assign({},p.acts):undefined}))};}
+        runes:p.runes.slice(),seagulls:p.seagulls.slice(),elders:p.eldersTotal||0,chicks:p.chicks,eggs:p.eggs,hand:p.hand.length,acts:p.acts?Object.assign({},p.acts,{seq:(p.acts.seq||[]).slice(),lastSub:undefined}):undefined,eco:p.eco?Object.assign({},p.eco,{left:p.food.worm+p.food.seed+p.food.fruit}):undefined,supply:p.supply}))};}
   finish(){const r=this.players.slice().sort((a,b)=>b.stars-a.stars||b.chicks-a.chicks||b.eggs-a.eggs);
     try{ if(window.BirdsStats) window.BirdsStats.add(this.statRecord(r)); }catch(e){console.error(e);}
     this.ranking=r; this.log(`Fin de partie ! Vainqueur : ${r[0].name} avec ${r[0].stars} Étoiles.`); this.io.render(); this.io.gameOver&&this.io.gameOver(r);}

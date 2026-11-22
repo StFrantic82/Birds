@@ -110,3 +110,10 @@ Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs
 
 ### Critère d'adoption de l'entraînement (objectif : finir vite)
 Le challenger est adopté s'il gagne nettement plus que sa part attendue (> attendu + max(4 %, 1,6 σ)), OU s'il est aussi fort (≥ attendu − 2 %) et atteint ses 6 étoiles au moins 1/3 de manche plus tôt que l'IA actuelle dans les mêmes parties (6 étoiles non atteintes = fin de partie + 3). Pas d'option « Parties rapides » : la vitesse fait toujours partie du critère. Le journal affiche « 6 étoiles : challenger / actuelle ».
+
+### Statistiques : durée, rythme, boule de neige, ouverture, économie
+- Durée des parties : histogramme des manches, % ≤ 18 manches (jaune), médiane/min/max.
+- Rythme des étoiles : manche moyenne de la k-ième étoile (tous/gagnants/perdants), écart avec la précédente, % qui l'atteignent.
+- Effet boule de neige : leader unique à mi-partie (étoiles au round floor(manches/2)) → % victoire, % remontées, % sans leader ; écart final 1er-2e.
+- Ouverture : vitesse des étoiles par objectif personnel (1re/3e/6e étoile) ; 1re action et 2 premières actions (p.acts.seq, codes E/G/B/N/P/C) avec % victoires et manche de la 6e étoile.
+- Économie : p.eco {start, harvest, gain, spent} + left (nourriture restante), chicks, supply (réserve), eggs.
