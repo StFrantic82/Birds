@@ -168,7 +168,7 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
   ${actsTable(r)}
   <h3>${L('Bâtiments','Buildings')}</h3>
   <table class="stab"><tr><th></th><th>${L('Moyenne construite','Average built')}</th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th><th>${L('Niv. 1 / 2 / 3 / 4 construits','Lvl 1 / 2 / 3 / 4 built')}</th></tr>
-   ${r.build.map(b=>`<tr><td><b>${({nest:L('Nids','Nests'),shrine:L('Sanctuaires','Shrines'),workshop:L('Ateliers','Workshops')})[b.t]}</b>${b.t==='nest'?` <small>${L('(hors Nid de départ)','(excluding starting nest)')}</small>`:''}</td><td>${b.all}</td><td style="color:${+b.win>+b.lose?'#2e8b3e':'#c0392b'}">${b.win}</td><td>${b.lose}</td><td>${(b.t==='nest'?b.lv.slice(1):b.lv).map(v=>v+'%').join(' / ')}</td></tr>`).join('')}</table>
+   ${r.build.map(b=>`<tr><td><i class="bico wood" style="--c:#8a8a8a;--ico:url(icons/${b.t}.png)"></i><b>${({nest:L('Nids','Nests'),shrine:L('Sanctuaires','Shrines'),workshop:L('Ateliers','Workshops')})[b.t]}</b>${b.t==='nest'?` <small>${L('(hors Nid de départ)','(excluding starting nest)')}</small>`:''}</td><td>${b.all}</td><td style="color:${+b.win>+b.lose?'#2e8b3e':'#c0392b'}">${b.win}</td><td>${b.lose}</td><td>${(b.t==='nest'?b.lv.slice(1):b.lv).map(v=>v+'%').join(' / ')}</td></tr>`).join('')}</table>
   <h3>${L('Gagnants vs perdants','Winners vs losers')}</h3>
   <table class="stab"><tr><th></th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th></tr>${r.misc.map(m=>`<tr><td>${m.l}</td><td style="color:${+m.w>+m.lo?'#2e8b3e':'#c0392b'}"><b>${m.w}</b></td><td>${m.lo}</td></tr>`).join('')}</table>
   <h3>${L('Runes','Runes')}</h3>
