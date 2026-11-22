@@ -109,10 +109,29 @@ function compute(f){
   const W=P.filter(p=>p.win), Lo=P.filter(p=>!p.win);
   res.misc=[[L('Cartes jouées','Cards played'),p=>(p.played||[]).length],[L('Mouettes','Seagulls'),p=>p.seagulls.length],[L('Niveau total des Mouettes','Total Seagull level'),p=>p.seagulls.reduce((a,b)=>a+b,0)],
     [L('Runes','Runes'),p=>p.runes.length],[L('Cases du Chemin des Anciens','Elders\' Path spaces'),p=>p.elders],[L('Étoiles','Stars'),p=>p.stars]].map(([l,f])=>({l,w:avg(W,f),lo:avg(Lo,f)}));
+  // actions effectuées (parties enregistrées depuis l'ajout du compteur)
+  const PA=P.filter(p=>p.acts), WA=PA.filter(p=>p.win), LA=PA.filter(p=>!p.win);
+  const am=(arr,k)=>arr.length?arr.reduce((a,p)=>a+(p.acts[k]||0),0)/arr.length:null;
+  res.actsN=PA.length; res.actsG=new Set(PA.map(p=>p.g)).size;
+  res.acts=['turns','move','expand','gather','build','none','play','cards','brood','ds'].map(k=>{const all=am(PA,k), t=am(PA,'turns'); return {k,all,win:am(WA,k),lose:am(LA,k),share:t&&['move','play','brood'].includes(k)?Math.round(100*all/t):null};});
   const isl={}; G.forEach(g=>Object.keys(g.settled).forEach(k=>isl[k]=(isl[k]||0)+1)); res.islands=Object.entries(isl).map(([k,v])=>({k,p:pct(v,G.length)})).sort((a,b)=>b.p-a.p);
   return res;}
 
 // ---------- affichage ----------
+function actsTable(r){
+  const T=L3('Actions effectuées (moyenne par joueur et par partie)','Actions taken (average per player per game)','Azioni effettuate (media per giocatore e per partita)');
+  if(!r.actsN) return `<h3>${T}</h3><p class="snote">${L3("Pas encore de données : le compteur d'actions s'applique aux parties jouées ou simulées à partir de maintenant.","No data yet: actions are counted in games played or simulated from now on.","Ancora nessun dato: le azioni vengono contate nelle partite giocate o simulate da ora in poi.")}</p>`;
+  const N={turns:L3('Tours joués','Turns played','Turni giocati'),move:L3('Déplacer la Nuée puis agir','Move Flock then act','Muovi lo Stormo poi agisci'),
+    expand:L3("S'étendre",'Expand','Espandersi'),gather:L3('Récolter','Gather','Raccogliere'),build:L3('Construire','Build','Costruire'),none:L3('Aucune action','No action','Nessuna azione'),
+    play:L3("Jouer jusqu'à 2 cartes",'Play up to 2 cards','Gioca fino a 2 carte'),cards:L3('cartes posées','cards played','carte giocate'),brood:L3('Couvée','Brood','Covata'),ds:L3('Capacités Écaille','Dragonscale abilities','Abilità Scaglia')};
+  const sub=k=>['expand','gather','build','none','cards'].includes(k);
+  const f=v=>v===null?'—':v.toFixed(1);
+  return `<h3>${T}</h3>
+  <table class="stab"><tr><th></th><th>${L('Tous','All')}</th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th><th>${L3('% des tours','% of turns','% dei turni')}</th></tr>
+   ${r.acts.map(a=>`<tr><td>${sub(a.k)?'&nbsp;&nbsp;&nbsp;↳ ':''}${a.k==='turns'||sub(a.k)?N[a.k]:'<b>'+N[a.k]+'</b>'}</td><td><b>${f(a.all)}</b></td><td style="color:${a.win!==null&&a.lose!==null&&f(a.win)!==f(a.lose)?(a.win>a.lose?'#2e8b3e':'#c0392b'):''}">${f(a.win)}</td><td>${f(a.lose)}</td><td>${a.share!==null?bar(a.share,100,'#4a7fb5')+' '+a.share+'%':''}</td></tr>`).join('')}</table>
+  <p class="snote">${L3(`Calculé sur ${r.actsG} partie(s) enregistrée(s) avec le compteur d'actions. « Tours joués » : tours de ce joueur. Les « ↳ » détaillent l'action au-dessus (action faite après le déplacement de la Nuée ; cartes posées avec « Jouer jusqu'à 2 cartes »).`,
+    `Based on ${r.actsG} game(s) recorded with the action counter. “Turns played”: that player's turns. “↳” rows detail the action above (action taken after moving the Flock; cards played with “Play up to 2 cards”).`,
+    `Calcolato su ${r.actsG} partita/e registrata/e con il contatore di azioni. «Turni giocati»: turni di quel giocatore. Le righe «↳» dettagliano l'azione sopra (azione dopo lo spostamento dello Stormo; carte giocate con «Gioca fino a 2 carte»).`)}</p>`;}
 const ISL={meadow:['Prairie','Meadow','Prateria'],jungle:['Jungle','Jungle','Giungla'],desert:['Désert','Desert','Deserto'],mountain:['Montagne','Mountain','Montagna'],tundra:['Toundra','Tundra','Tundra'],marsh:['Marais','Marsh','Palude']};
 const FAMC={Academy:'#1f80b0',Legion:'#d23c32',Court:'#e2a800',Guild:'#4f9a3a',Circle:'#6c3a8e',Ally:'#8a6a3a',Relic:'#7a7a7a'};
 const FAMI=f=>/^(Academy|Legion|Court|Guild|Circle)$/.test(f)?`<img class="ftag" src="icons/tag_${f}.png" alt="${f}" title="${f}">`:`<span class="dot" style="background:${FAMC[f]}" title="${f}"></span>`;
@@ -144,6 +163,7 @@ function render(){ const B=document.getElementById('statsbody'); const r=compute
   <h3>${L('Objectifs personnels','Personal objectives')}</h3>
   <table class="stab"><tr><th></th><th>${L('Choisi quand proposé','Picked when offered')}</th><th>${L('1re Étoile (5)','1st Star (5)')}</th><th>${L('2e Étoile (9)','2nd Star (9)')}</th><th>${L('Victoires','Wins')}</th></tr>
    ${r.perso.map(o=>`<tr><td><b>${o.d.name}</b> <span class="stags" title="${o.d.tags.join(' + ')}">${o.d.tags.map(t=>`<img src="icons/tag_${t}.png" alt="${t}">`).join('+')}</span></td><td>${o.offered?o.picked+'%':'—'}</td><td>${o.n?o.one+'%':'—'}</td><td>${o.n?o.two+'%':'—'}</td><td style="color:${dcol(o.wr/100-r.baseWin)}">${o.n?o.wr+'%':'—'} <small>(${o.n})</small></td></tr>`).join('')}</table>
+  ${actsTable(r)}
   <h3>${L('Bâtiments','Buildings')}</h3>
   <table class="stab"><tr><th></th><th>${L('Moyenne construite','Average built')}</th><th>${L('Gagnants','Winners')}</th><th>${L('Perdants','Losers')}</th><th>${L('Niv. 1 / 2 / 3 / 4 construits','Lvl 1 / 2 / 3 / 4 built')}</th></tr>
    ${r.build.map(b=>`<tr><td><b>${({nest:L('Nids','Nests'),shrine:L('Sanctuaires','Shrines'),workshop:L('Ateliers','Workshops')})[b.t]}</b>${b.t==='nest'?` <small>${L('(hors Nid de départ)','(excluding starting nest)')}</small>`:''}</td><td>${b.all}</td><td style="color:${+b.win>+b.lose?'#2e8b3e':'#c0392b'}">${b.win}</td><td>${b.lose}</td><td>${(b.t==='nest'?b.lv.slice(1):b.lv).map(v=>v+'%').join(' / ')}</td></tr>`).join('')}</table>

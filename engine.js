@@ -371,7 +371,7 @@ class Game{
   adjacentRowSlots(k){return [(k+5)%6,k];}
   moveDests(p,cost){const out=[]; let pos=p.flock, steps=0; const max=cost+this.rm(p,1)+(this.has(p,'ON8')?1:0); let guard=0;
     while(steps<max&&guard<12){guard++; pos=(pos+1)%6; if(this.islandFull(ISLANDS[pos])) continue; steps++; out.push(pos);} return out;}
-  async takeTurn(){const p=this.players[this.current]; p.dsUsed=0; p.crateUsed=false; this.log(`— Tour de ${p.name} —`); this.io.render();
+  async takeTurn(){const p=this.players[this.current]; const A=p.acts||(p.acts={turns:0,move:0,expand:0,gather:0,build:0,none:0,play:0,cards:0,brood:0,ds:0}); A.turns++; p.dsUsed=0; p.crateUsed=false; this.log(`— Tour de ${p.name} —`); this.io.render();
     let done=false;
     while(!done){ const opts=[];
       opts.push({label:'Déplacer la Nuée puis agir',value:'move',score:0,disabled:p.chicks<=0,why:p.chicks<=0?'Vous n\'avez plus de Poussin disponible':''});
@@ -379,13 +379,13 @@ class Game{
       opts.push({label:'Couvée',value:'brood',score:0});
       this.dsReady(p).forEach(e=>opts.push({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:0})); this.extras(p).forEach(o=>opts.push(o));
       const ch=await this.ask(p,{title:'Votre tour : que faites-vous ?',main:true,options:opts});
-      if(ch&&ch.ds){await this.useDS(p,ch.ds); continue;} if(ch&&ch.x){await this.doExtra(p,ch.x); continue;}
-      if(ch==='move'){ const ok=await this.turnMove(p); if(ok===false) continue; }
-      else if(ch==='play'){ const N=2+(this.has(p,'OY4')?1:0); for(let k=0;k<N;k++){ if(k>0&&!p.ai&&!(await this.midPlay(p,k,N))) break; if(k>0&&!p.hand.some(id=>this.payments(p,id,1).length)) break; const ok=await this.playOne(p,{title:`Jouer une carte (${k+1}/${N})`}); if(!ok) break; } }
-      else if(ch==='brood') await this.brood(p);
+      if(ch&&ch.ds){A.ds++; await this.useDS(p,ch.ds); continue;} if(ch&&ch.x){await this.doExtra(p,ch.x); continue;}
+      if(ch==='move'){ const ok=await this.turnMove(p); if(ok===false) continue; A.move++; }
+      else if(ch==='play'){ A.play++; const N=2+(this.has(p,'OY4')?1:0); for(let k=0;k<N;k++){ if(k>0&&!p.ai&&!(await this.midPlay(p,k,N))) break; if(k>0&&!p.hand.some(id=>this.payments(p,id,1).length)) break; const ok=await this.playOne(p,{title:`Jouer une carte (${k+1}/${N})`}); if(!ok) break; A.cards++; } }
+      else if(ch==='brood'){ A.brood++; await this.brood(p); }
       done=true;}
     // capacité Écaille après l'action
-    while(this.dsReady(p).length||this.extras(p).length||(!p.ai&&this.io.undoable)){const r=this.dsReady(p); const more=r.length||this.extras(p).length; const ch=await this.ask(p,{title:more?'Autre chose avant de finir ?':'Fin de votre tour',endTurn:true,options:[{label:'Finir le tour',value:null,score:0.3},...r.map(e=>({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:this.dsScore(p,e)})),...this.extras(p)]}); if(!ch) break; if(ch.x) await this.doExtra(p,ch.x); else await this.useDS(p,ch.ds);}
+    while(this.dsReady(p).length||this.extras(p).length||(!p.ai&&this.io.undoable)){const r=this.dsReady(p); const more=r.length||this.extras(p).length; const ch=await this.ask(p,{title:more?'Autre chose avant de finir ?':'Fin de votre tour',endTurn:true,options:[{label:'Finir le tour',value:null,score:0.3},...r.map(e=>({label:'Capacité Écaille : '+this.card(e.id).name,value:{ds:e},card:e.id,score:this.dsScore(p,e)})),...this.extras(p)]}); if(!ch) break; if(ch.x) await this.doExtra(p,ch.x); else { A.ds++; await this.useDS(p,ch.ds); } }
     await this.checkCondStars(p);
     await this.checkSettlements(); p.plan=[];
     this.io.render();}
@@ -400,6 +400,7 @@ class Game{
     const a=await this.ask(p,{title:`Action en ${ISL_FR[ISLANDS[d]]} : cliquez une région (S'étendre / Récolter) ou un emplacement (Construire)`,cancel:true,options:[...acts,{label:'Aucune action',value:'none',score:-5}]});
     if(a===undefined||a===null) return false;
     p.hand.push(id); this.row[k]=null; p.flock=d; this.log(`${p.name} prend ${this.card(id).name} et déplace sa Nuée en ${ISL_FR[ISLANDS[d]]}.`); this.io.render();
+    if(p.acts){ const k=a==='none'?'none':a.kind; p.acts[k]=(p.acts[k]||0)+1; }
     if(a!=='none') await this.applyBoardAction(p,a);
     this.row[k]=this.drawFromDeck(); this.io.render(); return true;}
   async run(){ for(const p of this.players) await this.choosePersonal(p);
@@ -415,7 +416,7 @@ class Game{
         pobj:p.pobj&&p.pobj.id,pClaims:p.pClaims,pOffer:(p.pOffer||[]).map(o=>o.id),played:(p.played||[]).map(x=>x.id),
         tableau:p.tableau.map(e=>e.id),built:{nest:p.built.nest.length,shrine:p.built.shrine.length,workshop:p.built.workshop.length},
         builtLv:{nest:p.built.nest.slice(),shrine:p.built.shrine.slice(),workshop:p.built.workshop.slice()},
-        runes:p.runes.slice(),seagulls:p.seagulls.slice(),elders:p.eldersTotal||0,chicks:p.chicks,eggs:p.eggs,hand:p.hand.length}))};}
+        runes:p.runes.slice(),seagulls:p.seagulls.slice(),elders:p.eldersTotal||0,chicks:p.chicks,eggs:p.eggs,hand:p.hand.length,acts:p.acts?Object.assign({},p.acts):undefined}))};}
   finish(){const r=this.players.slice().sort((a,b)=>b.stars-a.stars||b.chicks-a.chicks||b.eggs-a.eggs);
     try{ if(window.BirdsStats) window.BirdsStats.add(this.statRecord(r)); }catch(e){console.error(e);}
     this.ranking=r; this.log(`Fin de partie ! Vainqueur : ${r[0].name} avec ${r[0].stars} Étoiles.`); this.io.render(); this.io.gameOver&&this.io.gameOver(r);}
