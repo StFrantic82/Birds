@@ -415,11 +415,12 @@ class Game{
       const left=offer.filter(x=>!x.taken);
       const ch=await this.ask(p,{personal:true,adv:true,title:'Choisissez votre objectif personnel (draft)',options:left.map(x=>({label:`${x.o.name} — ${x.o.tags.join(' + ')} · départ : ${resLabel(this.pres(x.o))}`,value:offer.indexOf(x),pv:x.o,score:t[x.o.tags[0]]+t[x.o.tags[1]]+Math.random()*1.5}))});
       const x=offer[ch]; x.taken=true; p.pobj=x.o;
-      this.log(`${p.name} choisit l'objectif personnel ${x.o.name} (${x.o.tags.join(' + ')}).`); this.io.render(); }
+      this.log(`${p.name} choisit l'objectif personnel ${x.o.name} (${x.o.tags.join(' + ')}).`);
+      await this.giveStart(p,this.pres(x.o)); this.io.render(); } // ressources de départ tout de suite, dans l'ordre du draft
     // chacun garde 4 de ses 8 cartes
     for(const p of this.players){ for(let i=0;i<4;i++){ const c=await this.ask(p,{title:`Gardez 4 cartes : défaussez-en 4 (${i+1}/4)`,cards:true,options:p.hand.map(id=>({label:this.card(id).name,value:id,card:id,score:-this.cardValue(p,id)}))}); p.hand.splice(p.hand.indexOf(c),1); this.discardPile.push(c); }
       this.log(`${p.name} garde 4 cartes et en défausse 4.`); }
-    for(const p of this.players){ await this.giveStart(p,this.pres(p.pobj)); } this.io.render(); }
+    this.io.render(); }
   async run(){ if(this.advanced) await this.advancedSetup(); else for(const p of this.players) await this.choosePersonal(p);
     while(!this.over){ await this.takeTurnUndoable();
       this.current=(this.current+1)%this.players.length;
