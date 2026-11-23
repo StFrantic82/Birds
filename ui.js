@@ -25,11 +25,20 @@ function cardHTML(id,cls){const c=G.card(id); if(!c) return '';
   const fx=[c.instant&&`<div class="fx"><b>⚡</b> ${esc(c.instant)}</div>`,c.dragonscale&&`<div class="fx"><b>◈</b> ${esc(c.dragonscale)}</div>`,c.brood&&`<div class="fx"><b>↻</b> ${esc(c.brood)}</div>`].filter(Boolean).join('');
   return `<div class="card ${cls||''}" style="--fam:${fam}" data-card="${id}"><div class="ch"><span class="cost">${c.cost}</span><span class="cn">${esc(c.name)}</span></div><div class="ctag">${FAMI[c.family].repeat(c.tags)} <span>${c.family}</span></div><div class="cfx">${fx}</div><div class="cpay">${PAY[c.color]}</div></div>`;}
 
+// texte du jeu : traduit, puis îles et ressources remplacées par leurs icônes
+const ISLW={fr:{Prairie:'meadow',Jungle:'jungle','Désert':'desert',Montagne:'mountain',Toundra:'tundra',Marais:'marsh'},en:{Meadow:'meadow',Jungle:'jungle',Desert:'desert',Mountain:'mountain',Tundra:'tundra',Marsh:'marsh'},it:{Prateria:'meadow',Giungla:'jungle',Deserto:'desert',Montagna:'mountain',Tundra:'tundra',Palude:'marsh'}};
+const FOODW=[[/^(vers?|worms?|verm[ei])$/i,'worm'],[/^(graines?|seeds?|sem[ei])$/i,'seed'],[/^(fruits?|frutt[oi])$/i,'fruit'],[/^(poussins?|chicks?|pulcin[oi])$/i,'chickicon'],[/^(œufs?|eggs?|uov[oa])$/i,'egg_k']];
+function iconify(h){ const lg=window.I18N?I18N.lang:'fr'; const W=ISLW[lg]||ISLW.fr;
+  h=h.replace(new RegExp('(^|[^\\wÀ-ÿ])('+Object.keys(W).join('|')+')(?![\\wÀ-ÿ])','g'),(m,a,n)=>`${a}<img class="isli" src="icons/isl_${W[n]}.png" alt="${n}" title="${n}">`);
+  h=h.replace(/(\d+)\s+([A-Za-zÀ-ÿœŒ]+)(?![\wÀ-ÿ])/g,(m,n,w)=>{ const f=FOODW.find(([re])=>re.test(w)); return f?`${n}<img class="fdi" src="icons/${f[1]}.png" alt="${w}" title="${w}">`:m; });
+  h=h.replace(/1 (nourriture au choix|food of your choice|cibo a scelta)/g,'1<img class="fdi" src="icons/anyfood.png" alt="$1" title="$1">');
+  return h; }
+const FMT=s=>`<span class="notr">${iconify(esc(window.I18N?I18N.tr(String(s)):String(s)))}</span>`;
 const TOFF=(q,o)=>!!(window.BirdsTuto&&window.BirdsTuto.off(q,o));
 const io={
   aiDelay:0,
   sleep:ms=>new Promise(r=>setTimeout(r,ms)),
-  log:m=>{ if(window.BirdsTuto) BirdsTuto.log(m); const L=$('#log'); if(!L) return; const d=el('div','',esc(m).replace(/★/g,STAR(13))); if(m.startsWith('—')) d.className='turn'; if(m.startsWith('★')) d.className='star'; L.prepend(d);},
+  log:m=>{ if(window.BirdsTuto) BirdsTuto.log(m); const L=$('#log'); if(!L) return; const d=el('div','',`<span class="notr">${iconify(esc(window.I18N?I18N.tr(m):m)).replace(/★/g,STAR(13))}</span>`); if(m.startsWith('—')) d.className='turn'; if(m.startsWith('★')) d.className='star'; L.prepend(d);},
   render:()=>render(),
   ask:(p,q)=>{ if(!p.ai&&U.queue&&U.queue.length){const a=U.queue.shift(); U.hist.push(a); return Promise.resolve(a.c?null:q.options[a.i].value);}
     return new Promise((res,rej)=>{pending={p,q,res,rej}; if(p.remote) NET.qid++; else viewer=p.i; filterTarget=null; render(); if(p.remote) netPublish(true);});},
@@ -112,14 +121,14 @@ function undoBtn(Q){ if(!canUndo()) return; const b=el('button','ob undo','↶ A
 function renderPrompt(){const Q=$('#prompt'); Q.innerHTML=''; if(renderPersonal()){Q.innerHTML=`<div class="qt">Choisissez votre objectif personnel sur le plateau.</div>`; return;}
   if(G.over){Q.innerHTML='<div class="qt">Partie terminée</div>'; return;}
   if(!pending||!mine(pending.p)){const p=pending?pending.p:G.players[G.current]; Q.innerHTML=`<div class="qt wait" style="--c:${p.color}">${esc(p.name)} réfléchit…${p.remote?' <small class="onl">en ligne</small>':''}</div>`; return;}
-  const {p,q}=pending; const h=el('div','qt',`<span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — <span>${esc(q.title)}</span>`); Q.appendChild(h);
+  const {p,q}=pending; const h=el('div','qt',`<span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — <span>${FMT(q.title)}</span>`); Q.appendChild(h);
   let opts=q.options; if(filterTarget) opts=opts.filter(o=>targetKey(o.target)===filterTarget);
   const box=el('div','opts');
   const ACT=l=>/^Déplacer la Nuée/.test(l)?'flockmove':/^Jouer jusqu/.test(l)?'play':/^Couvée/.test(l)?'brood':/^S'étendre/.test(l)?'expand':/^Récolter/.test(l)?'gather':/^Construire/.test(l)?'build':null;
   if(q.main){box.className='opts main'; opts.forEach(o=>{const a=o.value&&o.value.ds?null:ACT(o.label); const ic=a==='flockmove'?`<span class="mvic" style="--c:${p.color}"><img src="${IC('flock',p.color).slice(4,-1)}"></span>`:(a?`<img src="icons/act_${a}.png">`:(o.card?`<img src="cards/${o.card}.jpg" class="dsic">`:''));
       const tof=TOFF(q,o); const b=el('button','actb'+(o.disabled||tof?' off':''),`${ic}<span>${esc(o.label)}</span>${o.disabled&&o.why?`<small>${esc(o.why)}</small>`:''}`); if(!o.disabled&&!tof) b.onclick=()=>answer(o.value); else b.title=o.why||''; box.appendChild(b);}); Q.appendChild(box); undoBtn(Q); return;}
   const pick=handPick(); if(pick) opts=opts.filter(o=>!pick.includes(o));
-  opts.forEach(o=>{let b; if(o.card){b=el('button','ob cardbtn',cardHTML(o.card,'mid'));} else {{const a=ACT(o.label); const bt=BTYPE(o.label); b=el('button','ob',(bt?bico(bt,p.color):(a&&a!=='flockmove'?`<img class="obi" src="icons/act_${a}.png">`:''))+esc(o.label));} if(o.card) b.title=G.card(o.card).name;}
+  opts.forEach(o=>{let b; if(o.card){b=el('button','ob cardbtn',cardHTML(o.card,'mid'));} else {{const a=ACT(o.label); const bt=BTYPE(o.label); b=el('button','ob',(bt?bico(bt,p.color):(a&&a!=='flockmove'?`<img class="obi" src="icons/act_${a}.png">`:''))+FMT(o.label));} if(o.card) b.title=G.card(o.card).name;}
     if(TOFF(q,o)){b.disabled=true; b.classList.add('off');} else b.onclick=()=>answer(o.value); box.appendChild(b);});
   if(filterTarget){const b=el('button','ob ghost','← Autres choix'); b.onclick=()=>{filterTarget=null; render();}; box.appendChild(b);}
   if(q.cancel){const b=el('button','ob ghost','Retour'); b.onclick=()=>answer(null); box.appendChild(b);}
@@ -149,7 +158,7 @@ function pboard(p){const W=el('div','pboard'); W.innerHTML='<img src="pboard.png
   let anyRel=false;
   p.built.shrine.forEach(l=>{const rel=p.tableau.filter(e=>e.shrine===l); const free=(G.shrineFree(p).find(s=>s.l===l)||{}).free;
     const z=el('div','pbrel'); z.style.left=PB.sh[l][0]+'%';
-    z.innerHTML=rel.map(e=>`<div class="relc" data-card="${e.id}" title="${esc(G.card(e.id).name)}"><img src="cards/${e.id}.jpg">${window.COND_STARS[e.id]&&!e.starTaken?`<span class="cstar" title="Étoile en attente : condition non remplie">${STAR(26)}</span>`:''}${e.ds?`<div class="ds">${'<img src="icons/scale.png">'.repeat(Math.min(e.ds,4))}</div>`:''}</div>`).join('')+`<div class="relfree">Sanctuaire ${l+1} · ${free} place${free>1?'s':''} libre${free>1?'s':''}</div>`;
+    z.innerHTML=rel.map(e=>`<div class="relc" data-card="${e.id}" title="${esc(G.card(e.id).name)}"><img src="cards/${e.id}.jpg">${window.COND_STARS[e.id]&&!e.starTaken?`<span class="cstar" title="Étoile en attente : condition non remplie">${STAR(26)}</span>`:''}${e.ds?`<div class="ds" title="${e.ds} Écaille${e.ds>1?'s':''} de dragon"><img src="icons/scale.png"><b>${e.ds}</b></div>`:''}</div>`).join('')+`<div class="relfree">Sanctuaire ${l+1} · ${free} place${free>1?'s':''} libre${free>1?'s':''}</div>`;
     if(rel.length) anyRel=true; W.appendChild(z);});
   if(p.built.shrine.length) W.classList.add('hasrel');
   return W;}
@@ -171,7 +180,7 @@ function renderHand(){renderMyHand(); const H=$('#hand'); H.innerHTML=''; const 
   const free=p.tableau.filter(e=>e.shrine===undefined);
   const sec=el('div','psec'); const n=free.length+p.seagulls.length;
   sec.innerHTML=`<h4>Cartes en jeu <small>${free.length} carte${free.length>1?'s':''}${p.seagulls.length?` · ${p.seagulls.length} Mouette${p.seagulls.length>1?'s':''}`:''}${p.runes.length?` · Runes : ${p.runes.map(k=>BG.RUNES[k]).join(' ; ')}`:''}</small></h4>`;
-  const tr=el('div','tcards'); free.forEach(e=>{tr.insertAdjacentHTML('beforeend',cardHTML(e.id,'mid'+(e.ds?' hasds':''))); if(e.ds){const last=tr.lastElementChild; last.insertAdjacentHTML('beforeend',`<div class="ds" title="${e.ds} Écaille${e.ds>1?'s':''} de dragon">${'<img src="icons/scale.png">'.repeat(Math.min(e.ds,6))}${e.ds>6?`<b>×${e.ds}</b>`:''}</div>`);}});
+  const tr=el('div','tcards'); free.forEach(e=>{tr.insertAdjacentHTML('beforeend',cardHTML(e.id,'mid'+(e.ds?' hasds':''))); if(e.ds){const last=tr.lastElementChild; last.insertAdjacentHTML('beforeend',`<div class="ds" title="${e.ds} Écaille${e.ds>1?'s':''} de dragon"><img src="icons/scale.png"><b>${e.ds}</b></div>`);}});
   p.seagulls.forEach(l=>tr.insertAdjacentHTML('beforeend',gullHTML(l)));
   if(!n) tr.appendChild(el('div','pnone','Aucune carte en jeu pour l\'instant.'));
   sec.appendChild(tr); H.appendChild(sec);
@@ -277,6 +286,7 @@ async function netInit(){ const box=$('#onlnote'); if(!window.claude||!window.cl
   window.BirdsNet={db:NET.db,user:NET.user}; if(window.BirdsStats&&BirdsStats.loadAIW) BirdsStats.loadAIW();
   if(NET.canWrite===false){ if(box) box.textContent='Votre accès à l\'appli est en lecture seule : demandez au propriétaire de vous la partager en Contributeur (ou Éditeur) pour jouer en ligne.'; return;}
   netReady(); }
+window.BirdsUI={get G(){return G;},render:()=>render()};
 function startTuto(){ const IT=window.I18N&&I18N.lang==='it', EN=window.I18N&&I18N.lang==='en';
   start({players:[{name:IT?'Tu':EN?'You':'Vous',ai:false,color:BG.COLORS[0]},{name:'IA',ai:true,color:BG.COLORS[1]}],persoSet:'new'},g=>{ g.noStats=true; io.lookahead=null; io.aiDelay=650; });
   window.BirdsTuto.start({get G(){return G;},get pending(){return pending;},render});}

@@ -73,7 +73,7 @@ const S=[
  {id:'brood',ask:A.main,blk:4,off:mainOnly('brood'),sel:'#prompt',txt:()=>T("Tu commences à manquer de Poussins ? C'est le moment de la <b>Couvée</b>. Tes Œufs éclosent en Poussins, chaque Nid pond 1 Œuf, tu peux défausser 1 carte pour avancer sur le Chemin des Anciens (et déclencher tes Ateliers), puis tes Mouettes et les cartes avec <b>↻</b> s'activent.<br>Pense à la faire quand tu n'as plus beaucoup de Poussins !",
    "Running low on Chicks? Time for a <b>Brood</b>. Your Eggs hatch into Chicks, each Nest lays 1 Egg, you may discard 1 card to advance on the Elders' Path (and trigger your Workshops), then your Seagulls and cards with <b>↻</b> activate.<br>Do it when you're running low on Chicks!",
    "Ti mancano Pulcini? È il momento della <b>Covata</b>. Le tue Uova si schiudono in Pulcini, ogni Nido depone 1 Uovo, puoi scartare 1 carta per avanzare sul Sentiero degli Antichi (e attivare i tuoi Laboratori), poi si attivano i tuoi Gabbiani e le carte con <b>↻</b>.<br>Falla quando ti restano pochi Pulcini!")},
- {id:'work',ask:A.work,blk:4,sel:'#prompt',txt:()=>T("Défausser une carte ici te fait avancer d'1 case sur le Chemin des Anciens et déclenche tes Ateliers. À toi de voir !","Discarding a card here moves you 1 space on the Elders' Path and triggers your Workshops. Your call!","Scartare una carta qui ti fa avanzare di 1 casella sul Sentiero degli Antichi e attiva i tuoi Laboratori. Decidi tu!")},
+ {id:'work',ask:A.work,blk:4,sel:'#prompt',txt:()=>T("Pendant la Couvée, tu peux <b>défausser 1 carte</b> (réponds « Oui », puis clique la carte dans ta main) : tu avances d'1 case sur le Chemin des Anciens, et <b>chaque Atelier construit</b> déclenche son effet, de gauche à droite : piocher 1 carte, 1 Écaille, +1 case sur le Chemin, 1 Poussin sur une ruine.","During the Brood, you may <b>discard 1 card</b> (answer “Yes”, then click the card in your hand): you move 1 space on the Elders' Path, and <b>each Workshop you built</b> triggers its effect, from left to right: draw 1 card, 1 Dragonscale, +1 space on the Path, 1 Chick on a ruin.","Durante la Covata puoi <b>scartare 1 carta</b> (rispondi «Sì», poi clicca la carta nella tua mano): avanzi di 1 casella sul Sentiero degli Antichi e <b>ogni Laboratorio costruito</b> attiva il suo effetto, da sinistra a destra: pescare 1 carta, 1 Scaglia, +1 casella sul Sentiero, 1 Pulcino su una rovina.")},
  {id:'end5',ask:A.end,adv:true,sel:'#prompt',txt:()=>T("Clique <b>« Finir le tour »</b>.","Click <b>“End turn”</b>.","Clicca <b>«Fine turno»</b>.")},
  {id:'ai4',wait:true,sel:'#log',txt:()=>T("L'IA joue…","The AI is playing…","L'IA sta giocando…")},
  {id:'build',ask:A.main,blk:5,off:mainOnly('move'),sel:'#prompt',txt:q=>(q&&(q.options.find(o=>o.value==='move')||{}).disabled?T("Tu n'as plus de Poussin disponible pour déplacer ta Nuée : fais plutôt une <b>Couvée</b> (ou joue des cartes), on construira au tour suivant.<br><br>","You have no Chick left to move your Flock: do a <b>Brood</b> instead (or play cards), we'll build next turn.<br><br>","Non hai più Pulcini per muovere lo Stormo: fai piuttosto una <b>Covata</b> (o gioca carte), costruiremo al prossimo turno.<br><br>"):'')+T("Dernière action à découvrir : <b>construire</b> ! Choisis <b>« Déplacer la Nuée puis agir »</b>.","Last action to discover: <b>build</b>! Choose <b>“Move Flock then act”</b>.","Ultima azione da scoprire: <b>costruire</b>! Scegli <b>«Muovi lo Stormo poi agisci»</b>.")},
@@ -112,6 +112,14 @@ const TIPS={
   rune:()=>T("Une <b>Rune</b> ! Son effet est permanent : survole-la sur ton plateau joueur pour le relire.","A <b>Rune</b>! Its effect is permanent: hover over it on your player board to read it again.","Una <b>Runa</b>! Il suo effetto è permanente: passaci sopra sulla tua plancia per rileggerlo.")
 };
 
+// zoom sur une zone du plateau joueur (pboard.png 1704×723) : x,y,w,h en pixels
+const ZOOM=(x,y,w,h,ht)=>`<div class="tzoom" style="height:${ht||110}px;aspect-ratio:${w}/${h};background-image:url(pboard.png);background-size:${(1704/w*100).toFixed(1)}% auto;background-position:${(x/(1704-w)*100).toFixed(1)}% ${(y/(723-h)*100).toFixed(1)}%"></div>`;
+const VIS={
+  work:()=>ZOOM(240,240,790,265,112),
+  brood:()=>ZOOM(680,128,292,112,70),
+  gulls:()=>`<div class="tvis">${[1,2,3,4].map(l=>`<img class="tcard" src="cards/S${l}.jpg" alt="">`).join('')}</div>`,
+  scales:()=>`<div class="tvis"><div class="tscale"><img class="tcard" src="cards/OG6.jpg" alt=""><div class="ds"><img src="icons/scale.png"><b>2</b></div></div><div class="tsx">→</div><div class="tscale"><img class="tcard" src="cards/OG6.jpg" alt=""><div class="ds"><img src="icons/scale.png"><b>4</b></div></div></div>`
+};
 function step(){return S[cur];}
 function pend(){return UI&&UI.pending&&UI.pending.p&&!UI.pending.p.ai?UI.pending:null;}
 function blockStart(i){const b=S[i].blk; if(!b) return i; let j=i; while(j>0&&S[j-1].blk===b) j--; return j;}
@@ -151,25 +159,30 @@ function draw(){ if(!UI) return;
   // question hors scénario (bonus, paiement, carte…) : on laisse répondre librement
   const other=!s.btn&&P&&!(s.ask&&s.ask(q))&&!P.q.personal;
   const txt=other?T("Réponds d'abord à cette question (elle vient d'un bonus, d'une carte ou d'un paiement), puis on continue.","First answer this question (it comes from a bonus, a card or a payment), then we'll carry on.","Prima rispondi a questa domanda (viene da un bonus, da una carta o da un pagamento), poi continuiamo."):s.txt(q);
-  box.innerHTML=`<div class="tg"><img src="icons/seagull.png" alt=""><div class="tt">${txt}</div></div><div class="tb">${s.btn?`<button class="ob tnext">${s.ok?s.ok():T('Suivant','Next','Avanti')} →</button>`:''}<button class="ob ghost tquit">${T('Quitter le tutoriel','Leave the tutorial','Esci dal tutorial')}</button><span class="tstep">${cur+1}/${S.length}</span></div>`;
+  const vis=!other&&VIS[s.id]?VIS[s.id]():'';
+  box.innerHTML=`<div class="tg"><img src="icons/seagull.png" alt=""><div class="tt">${txt}${vis}</div></div><div class="tb">${s.btn?`<button class="ob tnext">${s.ok?s.ok():T('Suivant','Next','Avanti')} →</button>`:''}<button class="ob ghost tquit">${T('Quitter le tutoriel','Leave the tutorial','Esci dal tutorial')}</button><span class="tstep">${cur+1}/${S.length}</span></div>`;
   const nb=box.querySelector('.tnext'); if(nb) nb.onclick=next; box.querySelector('.tquit').onclick=stop;
   box.dataset.sel=other?'#prompt':(s.sel||'');
   if(s.btn){ if(!block){ block=document.createElement('div'); block.className='tblock'; document.body.appendChild(block);} } else clearBlock();
   const t=s.sel&&document.querySelector(s.sel); if(t&&box.dataset.last!==s.id){ box.dataset.last=s.id; try{ t.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){} }
   place(); }
-function place(){ if(!box) return; const sel=box.dataset.sel; const t=sel&&document.querySelector(sel); const W=innerWidth, H=innerHeight; const bw=Math.min(380,W-20); box.style.width=bw+'px';
-  const bh=box.offsetHeight||160; let x,y;
-  if(t&&t.offsetParent!==null){ const r=t.getBoundingClientRect(); const pad=6;
-    spot.style.display='block'; spot.style.left=(r.left-pad)+'px'; spot.style.top=(r.top-pad)+'px'; spot.style.width=(r.width+2*pad)+'px'; spot.style.height=(r.height+2*pad)+'px'; spot.classList.toggle('dim',!!block);
-    // à droite, à gauche, au-dessus ou en dessous de la cible
-    if(r.right+12+bw<W){x=r.right+12; y=Math.max(10,Math.min(H-bh-10,r.top));}
-    else if(r.left-12-bw>0){x=r.left-12-bw; y=Math.max(10,Math.min(H-bh-10,r.top));}
-    else if(!(W-bw-10<r.right&&H-bh-10<r.bottom)){x=W-bw-10; y=H-bh-10;}
-    else if(r.top-12-bh>0){x=Math.max(10,Math.min(W-bw-10,r.left)); y=r.top-12-bh;}
-    else {x=Math.max(10,Math.min(W-bw-10,r.left)); y=Math.min(H-bh-10,r.bottom+12);} }
-  else { if(spot) spot.style.display='none'; x=(W-bw)/2; y=Math.max(10,(H-bh)/2-60); }
-  if(block) block.style.background=(t&&t.offsetParent!==null)?'transparent':'#0005';
-  box.style.left=x+'px'; box.style.top=y+'px'; }
+function rectOf(sel){ const e=sel&&document.querySelector(sel); if(!e||e.offsetParent===null) return null; const r=e.getBoundingClientRect(); return r.width&&r.height?r:null; }
+function place(){ if(!box) return; const sel=box.dataset.sel; const W=innerWidth, H=innerHeight; const bw=Math.min(390,W-20); box.style.width=bw+'px';
+  const bh=box.offsetHeight||170; const r=rectOf(sel);
+  if(r){ spot.style.display='block'; spot.style.left=r.left+'px'; spot.style.top=r.top+'px'; spot.style.width=r.width+'px'; spot.style.height=r.height+'px'; spot.classList.toggle('dim',!!block); }
+  else if(spot) spot.style.display='none';
+  if(block) block.style.background=r?'transparent':'#0005';
+  // zones à ne pas couvrir : la cible, et pendant une question les zones cliquables (choix, main, plateau)
+  const avoid=[r]; if(!block&&!tip&&pend()) ['#prompt','#myhand','#boardwrap'].forEach(q=>avoid.push(rectOf(q)));
+  const A=avoid.filter(Boolean), m=10;
+  const C=[[W-bw-m,H-bh-m],[W-bw-m,m]];
+  if(r){ C.push([r.right+12,r.top],[r.left-12-bw,r.top],[r.left,r.top-12-bh],[r.left,r.bottom+12]); }
+  C.push([m,H-bh-m],[m,m],[(W-bw)/2,(H-bh)/2]);
+  let best=null,bs=1e18;
+  C.forEach(([x,y])=>{ x=Math.max(m,Math.min(W-bw-m,x)); y=Math.max(m,Math.min(H-bh-m,y));
+    let ov=0; A.forEach((a,i)=>{ const w=Math.max(0,Math.min(x+bw,a.right)-Math.max(x,a.left)), h=Math.max(0,Math.min(y+bh,a.bottom)-Math.max(y,a.top)); ov+=w*h*(i===0?3:1); });
+    if(ov<bs-1){bs=ov; best=[x,y];} });
+  box.style.left=best[0]+'px'; box.style.top=best[1]+'px'; }
 addEventListener('resize',place);
 window.BirdsTuto=API;
 })();
