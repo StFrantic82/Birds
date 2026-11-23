@@ -9,6 +9,7 @@ const PAY={blue:'n\'importe quelle nourriture',red:'vers uniquement',yellow:'ver
 const TREEC={grey:'#7d7d7d',yellow:'#e8b923',green:'#3d9a3d'};
 const BON_FR={rune:'Rune',reveal3:'Révéler 3',reveal2:'Révéler 2',seagull:'Mouette',worm:'1 ver',chick:'1 Poussin',dragonscale:'1 Écaille',elders:'Anciens +1',grow:'Éclore 1 Œuf',draw:'Piocher 1',seedOrFruit:'Graine ou fruit',buildAny:'Construire (toute île)',gatherAny:'Récolter (toute île)',expandAny:'S\'étendre (toute île)',ruinChick:'Poussin sur Ruine',brood:'Couvée',play1:'Jouer 1 carte',removeCheapest:'Retirer bâtiment'};
 let persoSet='new'; try{persoSet=localStorage.getItem('birds_pset')||'new';}catch(e){} window.BirdsPersoSet=persoSet;
+let advSetup='std'; try{advSetup=localStorage.getItem('birds_adv')||'std';}catch(e){}
 let G=null, pending=null, aiSpeed=0, viewer=0, filterTarget=null, lastHuman=null;
 // Partie en ligne : role 'host' (fait tourner le moteur) ou 'guest' (affiche l'état reçu et envoie ses choix)
 const NET={role:null,db:null,user:null,uid:null,code:null,seat:-1,seats:[],gref:null,qid:0,status:'lobby',ranking:null,writing:false,dirty:false,timer:null,lastAct:{},unsub:[],canWrite:null};
@@ -56,7 +57,7 @@ function undo(){ if(NET.role==='guest'){ if(canUndo()) netAct({undo:1}); return;
 function answer(v){ if(NET.role==='guest'){ netAct(v===null||v===undefined?{c:1}:{i:v}); pending=null; filterTarget=null; render(); return;}
   const q=pending.q, r=pending.res; if(window.BirdsTuto) BirdsTuto.answered(q,v); if(U.active&&!pending.p.ai){const i=q.options.findIndex(o=>o.value===v); U.hist.push(i>=0?{i}:{c:1});} pending=null; filterTarget=null; render(); r(v);}
 
-function start(opts,before){ opts.persoSet=opts.persoSet||persoSet; $('#setup').style.display='none'; $('#game').style.display='flex'; $('#log').innerHTML='';
+function start(opts,before){ opts.persoSet=opts.persoSet||persoSet; if(opts.advanced===undefined) opts.advanced=advSetup==='adv'; $('#setup').style.display='none'; $('#game').style.display='flex'; $('#log').innerHTML='';
   G=new BG.Game(opts,io); io.aiDelay=aiSpeed;
   io.lookahead={k:6,r:3,yield:true}; // IA la plus forte : poids appris + anticipation par simulations
   $('#boardimg').src=G.boardKey==='p2'?'board2p.jpg':'board34p.jpg'; if(before) before(G);
@@ -112,8 +113,8 @@ function renderElders(){const E=$('#elders'); E.innerHTML='<div class="eh">Chemi
 function renderPersonal(){let M=$('#pchoice'); const show=pending&&mine(pending.p)&&pending.q.personal;
   if(!show){if(M) M.remove(); return false;}
   if(!M){M=el('div',''); M.id='pchoice'; $('#boardwrap').appendChild(M);}
-  const {p,q}=pending; M.innerHTML=`<div class="pcbox"><div class="pct"><span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — choisissez votre objectif personnel</div><div class="pcards"></div><div class="pchint">Votre main est visible plus bas : faites défiler si besoin.</div></div>`;
-  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="${G.persoSet==='new'?'perso2':'perso'}/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}</span>`); if(TOFF(q,o)) b.disabled=true; else b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
+  const {p,q}=pending; M.innerHTML=`<div class="pcbox"><div class="pct"><span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — ${q.adv?'choisissez votre objectif personnel et votre île de départ':'choisissez votre objectif personnel'}</div><div class="pcards"></div><div class="pchint">Votre main est visible plus bas : faites défiler si besoin.</div></div>`;
+  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="${G.persoSet==='new'?'perso2':'perso'}/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}</span>${o.isl?`<span class="pcisl"><img src="icons/isl_${o.isl}.png" alt=""><b>${esc(BG.ISL_FR?BG.ISL_FR[o.isl]:o.isl)}</b></span>`:''}`); if(TOFF(q,o)) b.disabled=true; else b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
   return true;}
 const BTYPE=l=>{const m=/\b(Nid|Sanctuaire|Atelier)\b/.exec(l||''); return m?{Nid:'nest',Sanctuaire:'shrine',Atelier:'workshop'}[m[1]]:null;};
 const bico=(t,c)=>`<i class="bico wood${String(c).toLowerCase()==='#ffffff'?' wt':''}" style="--c:${c};--ico:${IC(t,c)}"></i>`;
@@ -288,7 +289,7 @@ async function netInit(){ const box=$('#onlnote'); if(!window.claude||!window.cl
   netReady(); }
 window.BirdsUI={get G(){return G;},render:()=>render()};
 function startTuto(){ const IT=window.I18N&&I18N.lang==='it', EN=window.I18N&&I18N.lang==='en';
-  start({players:[{name:IT?'Tu':EN?'You':'Vous',ai:false,color:BG.COLORS[0]},{name:'IA',ai:true,color:BG.COLORS[1]}],persoSet:'new'},g=>{ g.noStats=true; io.lookahead=null; io.aiDelay=650; });
+  start({players:[{name:IT?'Tu':EN?'You':'Vous',ai:false,color:BG.COLORS[0]},{name:'IA',ai:true,color:BG.COLORS[1]}],persoSet:'new',advanced:false},g=>{ g.noStats=true; io.lookahead=null; io.aiDelay=650; });
   window.BirdsTuto.start({get G(){return G;},get pending(){return pending;},render});}
 // écran de configuration
 function setup(){ try{ window.BirdsStats&&BirdsStats.applyAIW&&BirdsStats.applyAIW(BirdsStats.aiwInfo()); }catch(e){}
@@ -310,6 +311,7 @@ const LG=window.I18N?I18N.lang:'fr', EN=LG==='en', IT=LG==='it'; const L3=(fr,en
   const applyMode=()=>{ const on=MODE==='online'; if(ONL()&&types.slice(1,+n.value).every(t=>t==='ai')){types[1]='h'; autoNet=true;} else if(!on&&autoNet){ if(types[1]==='h') types[1]='ai'; autoNet=false; } $('#onlpick').hidden=!on; $('#onljoin').hidden=!(on&&SUB==='join'); $('#cfg').hidden=on&&SUB==='join'; $('#go').hidden=on&&SUB==='join';
     $('#go').textContent=ONL()?'Créer la partie en ligne':'Lancer la partie'; draw();};
   $('#psseg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===persoSet)); seg('#psseg',v=>{persoSet=v; window.BirdsPersoSet=v; try{localStorage.setItem('birds_pset',v);}catch(e){}});
+  $('#advseg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===advSetup)); seg('#advseg',v=>{advSetup=v; try{localStorage.setItem('birds_adv',v);}catch(e){}});
   seg('#modeseg',v=>{MODE=v; applyMode();}); seg('#onlseg',v=>{SUB=v; applyMode();});
   $('#jgo').onclick=async()=>{ $('#jgo').disabled=true; setStatus(''); try{ await netJoin($('#jcode').value,$('#jname').value.trim()); } finally{ $('#jgo').disabled=false; } };
   netInit();
