@@ -89,8 +89,8 @@ class Game{
     this.objs=[RED_OBJ[rnd(6)],BLUE_OBJ[rnd(6)]].map((d,k)=>({d,color:k?'blue':'red',th:n===2?d.p2:d.p34.slice(0,n),claims:[]})); this.redObj=this.objs[0].d; this.redThresholds=this.objs[0].th; this.redClaims=this.objs[0].claims;
     this.settled={}; this.current=0; this.round=1; this.endTriggered=false; this.over=false; this.logs=[];
     // îles de départ
-    this.advanced=!!opts.advanced; // mise en place avancée : paires objectif + île choisies dans l'ordre inverse du tour, 8 cartes dont on garde 4
-    if(!this.advanced){ const starts=shuffle(START_TILES.slice()); // 4 tuiles de départ : Marais (A), Jungle (C), Désert (D), Toundra (F)
+    this.advanced=!!opts.advanced; // mise en place avancée : objectifs draftés (N+1) dans l'ordre inverse du tour, 8 cartes dont on garde 4
+    { const starts=shuffle(START_TILES.slice()); // l'île de départ est indiquée sur le plateau joueur : Marais (A), Jungle (C), Désert (D), Toundra (F)
     this.players.forEach((p,i)=>{p.flock=ISLANDS.indexOf(starts[i]); this.placeChickStart(p.i,starts[i]);}); }
     if(n===2){ this.placeChickStart('N','mountain'); this.placeChickStart('N','meadow'); } // 2 joueurs : Poussins neutres en Montagne et Prairie
     this.players.forEach(p=>{for(let k=0;k<(this.advanced?8:5);k++) p.hand.push(this.drawFromDeck());});
@@ -407,15 +407,15 @@ class Game{
     if(a!=='none') await this.applyBoardAction(p,a);
     this.row[k]=this.drawFromDeck(); this.io.render(); return true;}
   // Mise en place avancée (étapes 3 et 4 remplacées)
-  async advancedSetup(){ const n=this.players.length; const pd=shuffle(PERSONAL.slice()); const tiles=shuffle(START_TILES.slice());
-    const pairs=[]; for(let k=0;k<Math.min(n+1,tiles.length);k++) pairs.push({o:pd.pop(),isl:tiles[k]});
-    this.advPairs=pairs; this.log(`Mise en place avancée : ${pairs.length} paires objectif personnel + île de départ.`);
+  async advancedSetup(){ const n=this.players.length; const pd=shuffle(PERSONAL.slice());
+    const offer=[]; for(let k=0;k<n+1;k++) offer.push({o:pd.pop()});
+    this.log(`Mise en place avancée : ${offer.length} objectifs personnels à drafter.`);
     // à partir du joueur à droite du 1er joueur, dans le sens inverse : du dernier au premier
     for(let i=n-1;i>=0;i--){ const p=this.players[i]; const t={}; FAMS.forEach(f=>t[f]=0); p.hand.forEach(id=>{const c=this.card(id); for(const f in (c.tagMap||{})) t[f]+=c.tagMap[f];});
-      const left=pairs.filter(x=>!x.taken);
-      const ch=await this.ask(p,{personal:true,adv:true,title:'Choisissez une paire : objectif personnel + île de départ',options:left.map(x=>({label:`${x.o.name} — ${x.o.tags.join(' + ')} · île de départ : ${ISL_FR[x.isl]} · départ : ${resLabel(this.pres(x.o))}`,value:pairs.indexOf(x),pv:x.o,isl:x.isl,score:t[x.o.tags[0]]+t[x.o.tags[1]]+Math.random()*1.5}))});
-      const x=pairs[ch]; x.taken=true; p.pobj=x.o; p.flock=ISLANDS.indexOf(x.isl); this.placeChickStart(p.i,x.isl);
-      this.log(`${p.name} choisit ${x.o.name} (${x.o.tags.join(' + ')}) et démarre en ${ISL_FR[x.isl]}.`); this.io.render(); }
+      const left=offer.filter(x=>!x.taken);
+      const ch=await this.ask(p,{personal:true,adv:true,title:'Choisissez votre objectif personnel (draft)',options:left.map(x=>({label:`${x.o.name} — ${x.o.tags.join(' + ')} · départ : ${resLabel(this.pres(x.o))}`,value:offer.indexOf(x),pv:x.o,score:t[x.o.tags[0]]+t[x.o.tags[1]]+Math.random()*1.5}))});
+      const x=offer[ch]; x.taken=true; p.pobj=x.o;
+      this.log(`${p.name} choisit l'objectif personnel ${x.o.name} (${x.o.tags.join(' + ')}).`); this.io.render(); }
     // chacun garde 4 de ses 8 cartes
     for(const p of this.players){ for(let i=0;i<4;i++){ const c=await this.ask(p,{title:`Gardez 4 cartes : défaussez-en 4 (${i+1}/4)`,cards:true,options:p.hand.map(id=>({label:this.card(id).name,value:id,card:id,score:-this.cardValue(p,id)}))}); p.hand.splice(p.hand.indexOf(c),1); this.discardPile.push(c); }
       this.log(`${p.name} garde 4 cartes et en défausse 4.`); }
