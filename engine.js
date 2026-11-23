@@ -91,7 +91,7 @@ class Game{
     // îles de départ
     this.advanced=!!opts.advanced; // mise en place avancée : objectifs draftés (N+1) dans l'ordre inverse du tour, 8 cartes dont on garde 4
     { const starts=shuffle(START_TILES.slice()); // l'île de départ est indiquée sur le plateau joueur : Marais (A), Jungle (C), Désert (D), Toundra (F)
-    this.players.forEach((p,i)=>{p.flock=ISLANDS.indexOf(starts[i]); this.placeChickStart(p.i,starts[i]);}); }
+    this.players.forEach((p,i)=>{p.startIsl=starts[i]; p.flock=ISLANDS.indexOf(starts[i]); this.placeChickStart(p.i,starts[i]);}); }
     if(n===2){ this.placeChickStart('N','mountain'); this.placeChickStart('N','meadow'); } // 2 joueurs : Poussins neutres en Montagne et Prairie
     this.players.forEach(p=>{for(let k=0;k<(this.advanced?8:5);k++) p.hand.push(this.drawFromDeck());});
     const pd=shuffle(PERSONAL.slice()); this.players.forEach(p=>{p.pOffer=[pd.pop(),pd.pop()];});

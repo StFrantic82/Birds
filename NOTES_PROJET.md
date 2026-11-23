@@ -139,3 +139,5 @@ L'île de départ est imprimée sur le plateau joueur (attribuée au hasard parm
 
 ### Règle de mise en place (version du 23/11/2026)
 25 Poussins par joueur ; Nuée + 1 Poussin sur l'île indiquée sur le plateau joueur (Marais/Jungle/Désert/Toundra) ; l'objectif personnel indique le nombre de Poussins (zone Poussins) et d'Œufs (Nid en haut à gauche) de départ — dans l'app : 3 Poussins ± le « Poussin » de l'objectif, 2 Œufs ; puis ressources de l'objectif (nourriture, Mouette niveau 1, +1 Chemin des Anciens, Rune sur l'emplacement au choix — celui du haut coûte 1 graine ou 1 fruit).
+
+Plateau joueur : icône de l'île de départ (p.startIsl) dans un rond, à gauche de la séquence de Couvée.
