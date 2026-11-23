@@ -118,7 +118,7 @@ function renderPersonal(){let M=$('#pchoice'); const show=pending&&mine(pending.
 const BTYPE=l=>{const m=/\b(Nid|Sanctuaire|Atelier)\b/.exec(l||''); return m?{Nid:'nest',Sanctuaire:'shrine',Atelier:'workshop'}[m[1]]:null;};
 const bico=(t,c)=>`<i class="bico wood${String(c).toLowerCase()==='#ffffff'?' wt':''}" style="--c:${c};--ico:${IC(t,c)}"></i>`;
 function undoBtn(Q){ if(!canUndo()) return; const b=el('button','ob undo','↶ Annuler mon dernier choix'); b.title='Revenir au choix précédent (Ctrl+Z)'; b.onclick=undo; const h=Q.querySelector('.qt'); h.appendChild(b);}
-function renderPrompt(){const Q=$('#prompt'); Q.innerHTML=''; if(renderPersonal()){Q.innerHTML=`<div class="qt">Choisissez votre objectif personnel sur le plateau.</div>`; return;}
+function renderPrompt(){const Q=$('#prompt'); Q.innerHTML=''; const perso=renderPersonal(); Q.hidden=!!perso; if(perso) return;
   if(G.over){Q.innerHTML='<div class="qt">Partie terminée</div>'; return;}
   if(!pending||!mine(pending.p)){const p=pending?pending.p:G.players[G.current]; Q.innerHTML=`<div class="qt wait" style="--c:${p.color}">${esc(p.name)} réfléchit…${p.remote?' <small class="onl">en ligne</small>':''}</div>`; return;}
   const {p,q}=pending; const h=el('div','qt',`<span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — <span>${FMT(q.title)}</span>`); Q.appendChild(h);
