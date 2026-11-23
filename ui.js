@@ -112,8 +112,8 @@ function renderElders(){const E=$('#elders'); E.innerHTML='<div class="eh">Chemi
 function renderPersonal(){let M=$('#pchoice'); const show=pending&&mine(pending.p)&&pending.q.personal;
   if(!show){if(M) M.remove(); return false;}
   if(!M){M=el('div',''); M.id='pchoice'; $('#boardwrap').appendChild(M);}
-  const {p,q}=pending; M.innerHTML=`<div class="pcbox"><div class="pct"><span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — choisissez votre objectif personnel</div><div class="pcsub">L'autre est défaussé. 1 Étoile quand le total des deux tags atteint 5, puis 1 autre à 9. Les ressources du bas sont gagnées tout de suite.</div><div class="pcards"></div><div class="pchint">Votre main est visible plus bas : faites défiler si besoin.</div></div>`;
-  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="${G.persoSet==='new'?'perso2':'perso'}/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}<small>${v.tags.join(' + ')}</small><small class="pres">Départ : ${esc(BG.resLabel?BG.resLabel(G.pres?G.pres(v):(v.res||{})):'')}</small></span>`); if(TOFF(q,o)) b.disabled=true; else b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
+  const {p,q}=pending; M.innerHTML=`<div class="pcbox"><div class="pct"><span class="dot" style="background:${p.color}"></span> ${esc(p.name)} — choisissez votre objectif personnel</div><div class="pcards"></div><div class="pchint">Votre main est visible plus bas : faites défiler si besoin.</div></div>`;
+  q.options.forEach(o=>{const v=o.pv||o.value; const b=el('button','pcard',`<img src="${G.persoSet==='new'?'perso2':'perso'}/${v.id}.jpg" alt="${esc(v.name)}"><span>${esc(v.name)}</span>`); if(TOFF(q,o)) b.disabled=true; else b.onclick=()=>answer(o.value); M.querySelector('.pcards').appendChild(b);});
   return true;}
 const BTYPE=l=>{const m=/\b(Nid|Sanctuaire|Atelier)\b/.exec(l||''); return m?{Nid:'nest',Sanctuaire:'shrine',Atelier:'workshop'}[m[1]]:null;};
 const bico=(t,c)=>`<i class="bico wood${String(c).toLowerCase()==='#ffffff'?' wt':''}" style="--c:${c};--ico:${IC(t,c)}"></i>`;
