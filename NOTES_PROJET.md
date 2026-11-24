@@ -45,6 +45,8 @@ Italien : Poussin / Pulcino, Œuf / Uovo, Nid / Nido, Sanctuaire / Santuario, At
 - **Sacrifier** = détruire une de ses cartes en jeu (une Mouette compte). **Défausser** = depuis la main.
 - **Search the next X cards** : garder 1 carte, défausser les autres. Archivist = deux recherches de 3.
 - **Supply Crate** : pour chaque Oiseau joué, on peut dépenser 1 graine ou 1 fruit pour réduire son coût de 2.
+- **Multiplicateurs de tags** (« for each X tag », ex. B10, P7, R4) : les tags joker (Mouettes niv. 3+, Rune joker, cartes joker) comptent.
+- **Couvée** : les Œufs éclosent d'abord, puis le joueur choisit l'ordre des effets (Nids, Atelier, chaque Mouette, chaque carte).
 - **Étoile éclair** = « lorsque vous gagnez une Étoile ». Les cartes Feather Pouch, Messenger Pouch et Shadow Cloak ont été corrigées dans ce sens (fichiers fournis).
 
 ## Ce que fait l'application
