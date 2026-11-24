@@ -1,6 +1,6 @@
 // Effets des 80 cartes Oiseau. i = instantané, d = capacité Écaille (dc = coût en Écailles), b = Couvée
 (function(){
-const T=(g,p,f)=>g.tags(p)[f];
+const T=(g,p,f)=>g.tags(p)[f]+g.wild(p); // les tags joker (Mouettes niv. 3+, Rune, cartes joker) comptent pour chaque type
 const N=(g,p)=>p.nests; // Nids construits (dont le Nid de départ)
 const A=(g,p)=>g.allyCount(p);
 const R=(g,p)=>g.relicCount(p);

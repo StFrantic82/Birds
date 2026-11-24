@@ -42,7 +42,7 @@ const R=[
 [/^Manche (\d+)( — dernière manche)? · Pioche (\d+)$/,(m,a,b,c)=>`Round ${a}${b?' — ultimo round':''} · Mazzo ${c}`],
 [/^(.+) — main \((\d+)\)( : cachée)?$/,(m,a,b,c)=>`${a} — mano (${b})${c?' : nascosta':''}`],
 [/^Cartes en jeu \((\d+)\)/,'Carte in gioco ($1)'],
-[/^Votre tour : que faites-vous \?$/,'Il tuo turno: cosa fai?'],[/^Choisissez votre objectif personnel sur le plateau\.$/,'Scegli il tuo obiettivo personale sul tabellone.'],
+[/^Couvée : quel effet résoudre maintenant \?$/,'Covata: quale effetto risolvi ora?'],[/^Nids : pondre (\d+) Œufs?$/,'Nidi: deponi $1 uova'],[/^Atelier : défausser 1 carte pour avancer d'1 case \(et déclencher vos Ateliers\)$/,'Laboratorio: scarta 1 carta per avanzare di 1 casella (e attivare i tuoi Laboratori)'],[/^Mouette niveau (\d)$/,'Gabbiano livello $1'],[/^Votre tour : que faites-vous \?$/,'Il tuo turno: cosa fai?'],[/^Choisissez votre objectif personnel sur le plateau\.$/,'Scegli il tuo obiettivo personale sul tabellone.'],
 [/^(.+) — choisissez votre objectif personnel$/,'$1 — scegli il tuo obiettivo personale'],
 [/^L'autre est défaussé\. 1 Étoile quand le total des deux tags atteint 5, puis 1 autre à 9\. Les ressources du bas sont gagnées tout de suite\.$/,'L\'altro viene scartato. 1 Stella quando il totale dei due tag arriva a 5, un\'altra a 9. Le risorse in basso si ottengono subito.'],
 [/^Votre main est visible plus bas : faites défiler si besoin\.$/,'La tua mano è visibile più in basso: scorri se serve.'],

@@ -35,7 +35,7 @@ const R=[
 [/^Manche (\d+)( — dernière manche)? · Pioche (\d+)$/,(m,a,b,c)=>`Round ${a}${b?' — final round':''} · Deck ${c}`],
 [/^(.+) — main \((\d+)\)( : cachée)?$/,(m,a,b,c)=>`${a} — hand (${b})${c?' : hidden':''}`],
 [/^Cartes en jeu \((\d+)\)/,'Cards in play ($1)'],
-[/^Votre tour : que faites-vous \?$/,'Your turn: what do you do?'],[/^Choisissez votre objectif personnel sur le plateau\.$/,'Choose your personal objective on the board.'],
+[/^Couvée : quel effet résoudre maintenant \?$/,'Brood: which effect do you resolve now?'],[/^Nids : pondre (\d+) Œufs?$/,'Nests: lay $1 egg(s)'],[/^Atelier : défausser 1 carte pour avancer d'1 case \(et déclencher vos Ateliers\)$/,"Workshop: discard 1 card to advance 1 space (and trigger your Workshops)"],[/^Mouette niveau (\d)$/,'Seagull level $1'],[/^Votre tour : que faites-vous \?$/,'Your turn: what do you do?'],[/^Choisissez votre objectif personnel sur le plateau\.$/,'Choose your personal objective on the board.'],
 [/^(.+) — choisissez votre objectif personnel$/,'$1 — choose your personal objective'],
 [/^L'autre est défaussé\. 1 Étoile quand le total des deux tags atteint 5, puis 1 autre à 9\. Les ressources du bas sont gagnées tout de suite\.$/,'The other one is discarded. 1 Star when the total of both tags reaches 5, another at 9. The resources at the bottom are gained immediately.'],
 [/^Votre main est visible plus bas : faites défiler si besoin\.$/,'Your hand is visible below: scroll down if needed.'],

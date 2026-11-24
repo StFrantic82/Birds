@@ -340,11 +340,24 @@ class Game{
     const fx=window.CARD_FX[id]; if(fx&&fx.i) await fx.i(this,p,e); delete e.justPlayed; this.io.render(); await this.onPlayed(p,c); await this.checkCondStars(p); return true;}
   // ---------- Couvée ----------
   async brood(p){this.log(`${p.name} fait une Couvée.`); await this.growEgg(p,p.eggs);
-    await this.layEgg(p,p.nests);
-    if(p.hand.length){const ok=await this.discardCards(p,1,'Atelier : défausser 1 carte pour avancer d\'1 case sur le Chemin des Anciens (et déclencher vos Ateliers) ?',1.2);
-      if(ok){ await this.elders(p,1); for(const l of p.built.workshop.slice()) await this.workshopEffect(p,l); for(let t=0;t<this.rm(p,2)&&p.built.workshop.length;t++) await this.triggerWorkshop(p);} }
-    for(const l of p.seagulls.slice()){ this.log(`Couvée — Mouette niveau ${l}`); await this.layEgg(p,1); if(l>=2) await this.elders(p,1);}
-    for(const e of p.tableau.slice()){const fx=window.CARD_FX[e.id]; if(fx&&fx.b&&p.tableau.includes(e)){ this.log(`Couvée — ${this.card(e.id).name}`); await fx.b(this,p,e); this.io.render();}}
+    // Effets de Couvée : le joueur choisit l'ordre (les Œufs éclosent d'abord)
+    const todo=[{k:'nests'}]; if(p.hand.length) todo.push({k:'workshop'});
+    p.seagulls.forEach((l,i)=>todo.push({k:'gull',i,uid:'g'+i}));
+    p.tableau.forEach(e=>{const fx=window.CARD_FX[e.id]; if(fx&&fx.b) todo.push({k:'card',e});});
+    const label=t=>t.k==='nests'?`Nids : pondre ${p.nests} Œuf${p.nests>1?'s':''}`:t.k==='workshop'?'Atelier : défausser 1 carte pour avancer d\'1 case (et déclencher vos Ateliers)':t.k==='gull'?`Mouette niveau ${p.seagulls[t.i]}`:`${this.card(t.e.id).name}`;
+    const order=t=>t.k==='nests'?4:t.k==='workshop'?3:t.k==='gull'?2:1;
+    while(todo.length){
+      // retirer ce qui n'existe plus (carte sacrifiée, Mouette perdue)
+      for(let j=todo.length-1;j>=0;j--){const t=todo[j]; if((t.k==='card'&&!p.tableau.includes(t.e))||(t.k==='gull'&&t.i>=p.seagulls.length)||(t.k==='workshop'&&!p.hand.length)) todo.splice(j,1);}
+      if(!todo.length) break;
+      const t=todo.length===1?todo[0]:await this.ask(p,{title:'Couvée : quel effet résoudre maintenant ?',brood:true,options:todo.map(t=>({label:label(t),value:t,card:t.k==='card'?t.e.id:undefined,score:order(t)}))});
+      todo.splice(todo.indexOf(t),1);
+      if(t.k==='nests') await this.layEgg(p,p.nests);
+      else if(t.k==='workshop'){ const ok=await this.discardCards(p,1,'Atelier : défausser 1 carte pour avancer d\'1 case sur le Chemin des Anciens (et déclencher vos Ateliers) ?',1.2);
+        if(ok){ await this.elders(p,1); for(const l of p.built.workshop.slice()) await this.workshopEffect(p,l); for(let n=0;n<this.rm(p,2)&&p.built.workshop.length;n++) await this.triggerWorkshop(p);} }
+      else if(t.k==='gull'){ const l=p.seagulls[t.i]; this.log(`Couvée — Mouette niveau ${l}`); await this.layEgg(p,1); if(l>=2) await this.elders(p,1); }
+      else { const fx=window.CARD_FX[t.e.id]; this.log(`Couvée — ${this.card(t.e.id).name}`); await fx.b(this,p,t.e); }
+      this.io.render(); }
     const lim=6+(this.has(p,'OB1')?1:0); while(p.hand.length>lim){const c=await this.ask(p,{title:`Limite de main : défaussez jusqu'à ${lim} cartes`,options:p.hand.map(id=>({label:this.card(id).name,value:id,card:id,score:-this.cardValue(p,id)}))}); p.hand.splice(p.hand.indexOf(c),1); this.discardPile.push(c);}
   }
   // ---------- Capacité Écaille ----------
@@ -511,7 +524,17 @@ class Game{
   W(p){return Object.assign({},AIW_CLASSIC,AIW_TRAINED,p.aiw||window.AIW||{});}
   fxValue(p,c){const t=[c.instant,c.brood,c.dragonscale,c.text].filter(Boolean).join(' '); let v=0;
     const K=[[/Elders|Anciens/g,0.9+(p.elders>=8?0.8:0)],[/Chick|Poussin/g,0.8],[/Lay|Pondre|Pond/g,0.5],[/Grow|éclore/g,0.5],[/Search|Révéler|reveal/gi,0.6],[/Seagull|Mouette/g,0.5],[/Amulet|Rune|Rune/g,0.7],[/Build|Construire/g,1.0],[/Expand|étendre/g,0.9],[/Gather|Récolter/g,0.7],[/Play 1|Jouer 1/g,0.9],[/Star|Étoile/g,1.2]];
-    K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx;}
+    K.forEach(([re,w])=>{const m=t.match(re); if(m) v+=w*Math.min(2,m.length);}); if(c.brood) v+=0.5; return v*this.W(p).fx+this.synValue(p,c);}
+  // Synergies : valeur à long terme d'une carte selon le jeu déjà en place (multiplicateurs, Couvées restantes)
+  synValue(p,c){ const W=this.W(p); if(!W.synM&&!W.synB) return 0; let vb=0; const t=[c.instant,c.brood,c.dragonscale].filter(Boolean).join(' '); let v=0;
+    const tags=this.tags(p), wild=this.wild(p), handT={}; p.hand.forEach(id=>{const h=this.card(id); for(const f in (h.tagMap||{})) handT[f]=(handT[f]||0)+h.tagMap[f];});
+    const m=t.match(/for each (?:2 )?(Academy|Legion|Court|Guild|Circle) tag/i); if(m){const f=m[1][0].toUpperCase()+m[1].slice(1).toLowerCase(); v+=0.35*(tags[f]+wild+0.5*(handT[f]||0)+(c.tagMap&&c.tagMap[f]||0));}
+    const cnt=[[/each Nest/i,p.nests],[/Bird of cost 4\+/i,this.birds4(p)+0.5*p.hand.filter(id=>this.card(id).cost>=4).length],[/Bird of cost 3-/i,this.birds3(p)+0.5*p.hand.filter(id=>this.card(id).cost<=3).length],
+      [/each Ally/i,this.allyCount(p)],[/each Workshop/i,p.built.workshop.length],[/each Shrine/i,p.built.shrine.length],[/each Relic/i,this.relicCount(p)]];
+    cnt.forEach(([re,n])=>{ if(re.test(t)) v+=0.3*n; });
+    if(c.brood){ const left=Math.max(0,(W.horizon||22)-this.round); vb+=0.12*left; }   // effets de Couvée : rentables s'il reste du temps
+    if(c.dragonscale) vb+=0.05*Math.max(0,(W.horizon||22)-this.round);
+    return v*(W.synM||0)+vb*(W.synB||0);}
   playScore(p,id,free){const c=this.card(id); const ob=this.redObj; let objB=(!this.redClaims.includes(p.i)&&this.redNext()!==undefined)?(({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[ob.id]?1.8:0):0; objB*=this.W(p).red; const cs=this.W(p).cgoal?this.starCardValue(p,id,c):(window.COND_STARS&&window.COND_STARS[id]?2.5:0); const persoB=p.pobj&&p.pClaims<2&&p.pobj.tags.some(f=>(c.tagMap||{})[f])?1.6+0.4*(c.tagMap[p.pobj.tags[0]]||0)+0.4*(c.tagMap[p.pobj.tags[1]]||0):0; const gb=this.W(p).cgoal?((c.type==='ally'?this.cgB(p,'OG7'):0)+(c.type==='bird'?this.cgB(p,'OY6',c.cost):0)+this.cgB(p,'OB6',this.tagGain(p,c))):((c.type==='ally'&&this.goal(p,'OG7')?1.5:0)+(c.type==='bird'&&this.goal(p,'OY6')?c.cost*0.3:0));
     if(c.type!=='bird'){ let t2=0; const W2=this.W(p); if(W2.tempo){const o=this.objs[0]; if(o.d.id==='B04'&&c.type==='relic'&&this.objNear(o,p,1)) t2+=7; if(p.pobj&&p.pClaims<2){const a2=((c.tagMap||{})[p.pobj.tags[0]]||0)+((c.tagMap||{})[p.pobj.tags[1]]||0)+(c.wild||0); if(a2&&this.persoValue(p)+a2>=PERSO_TH[p.pClaims]) t2+=7;} t2*=W2.tempo;} return this.payments(p,id,1).length||free?2.2+c.cost*0.6+objB+cs+persoB+gb+t2:-9;} const pays=free?[{cost:0}]:this.payments(p,id,1); if(!pays.length) return -9; const t=this.tags(p);
     const W1=this.W(p); let tempoB=0; if(W1.tempo){ const o=this.objs[0]; const add=({B01:c.cost<=2,B02:c.cost===3,B03:c.cost>=4,B04:c.type==='relic',B06:!!c.dragonscale})[o.d.id]?1:0; if(add&&this.objNear(o,p,1)) tempoB+=7;
