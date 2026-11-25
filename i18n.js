@@ -98,7 +98,7 @@ const R=[
 [/^Atelier : défausser 1 carte pour avancer d'1 case sur le Chemin des Anciens \(et déclencher vos Ateliers\) \?$/,"Workshop: discard 1 card to advance 1 space on the Elders' Path (and trigger your Workshops)?"],
 [/^Ant : défausser des cartes couvrant les 5 tags pour 1 Étoile \?$/,'Ant: discard cards covering all 5 tags for 1 Star?'],[/^Défaussez une carte apportant un tag manquant$/,'Discard a card that adds a missing tag'],
 [/^Défaussez une carte (\w+) \((\d)\/4\)$/,'Discard a $1 card ($2/4)'],
-[/^Provision Cache : payer 2\/2\/2 pour 1 Étoile$/,'Provision Cache: pay 2/2/2 for 1 Star'],[/^Soul Reliquary : sacrifier pour 1 Étoile$/,'Soul Reliquary: sacrifice for 1 Star'],
+[/^Soul Reliquary : (.+) revient dans la main de (.+)\.$/,'Soul Reliquary: $1 returns to $2\'s hand.'],[/^Soul Reliquary : sacrifier 1 carte \(elle revient dans votre main\) \?$/,'Soul Reliquary: sacrifice 1 card (it returns to your hand)?'],[/^Provision Cache : payer 2\/2\/2 pour 1 Étoile$/,'Provision Cache: pay 2/2/2 for 1 Star'],[/^Soul Reliquary : sacrifier pour 1 Étoile$/,'Soul Reliquary: sacrifice for 1 Star'],
 [/^Black Codex : défausser 4 cartes du même tag pour 1 Étoile$/,'Black Codex: discard 4 cards of the same tag for 1 Star'],
 [/^(.+) — total (.+) : 5 puis 9 \(1 Étoile chacun\) · départ : (.+)$/,(m,a,b,c)=>`${a} — total ${b}: 5 then 9 (1 Star each) · start: ${tr(c)}`],
 [/^Dépenser 1 ver pour construire gratuitement (.+) ici \?$/,(m,b)=>`Spend 1 worm to build ${tr(b)} here for free?`],

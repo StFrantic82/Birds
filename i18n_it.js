@@ -105,7 +105,7 @@ const R=[
 [/^Atelier : défausser 1 carte pour avancer d'1 case sur le Chemin des Anciens \(et déclencher vos Ateliers\) \?$/,'Laboratorio: scartare 1 carta per avanzare di 1 casella sul Sentiero degli Antichi (e attivare i tuoi Laboratori)?'],
 [/^Ant : défausser des cartes couvrant les 5 tags pour 1 Étoile \?$/,'Ant: scartare carte che coprono i 5 tag per 1 Stella?'],[/^Défaussez une carte apportant un tag manquant$/,'Scarta una carta che aggiunge un tag mancante'],
 [/^Défaussez une carte (\w+) \((\d)\/4\)$/,'Scarta una carta $1 ($2/4)'],
-[/^Provision Cache : payer 2\/2\/2 pour 1 Étoile$/,'Provision Cache: paga 2/2/2 per 1 Stella'],[/^Soul Reliquary : sacrifier pour 1 Étoile$/,'Soul Reliquary: sacrifica per 1 Stella'],
+[/^Soul Reliquary : (.+) revient dans la main de (.+)\.$/,'Soul Reliquary: $1 torna nella mano di $2.'],[/^Soul Reliquary : sacrifier 1 carte \(elle revient dans votre main\) \?$/,'Soul Reliquary: sacrificare 1 carta (torna nella tua mano)?'],[/^Provision Cache : payer 2\/2\/2 pour 1 Étoile$/,'Provision Cache: paga 2/2/2 per 1 Stella'],[/^Soul Reliquary : sacrifier pour 1 Étoile$/,'Soul Reliquary: sacrifica per 1 Stella'],
 [/^Black Codex : défausser 4 cartes du même tag pour 1 Étoile$/,'Black Codex: scarta 4 carte dello stesso tag per 1 Stella'],
 [/^(.+) — total (.+) : 5 puis 9 \(1 Étoile chacun\) · départ : (.+)$/,(m,a,b,c)=>`${a} — totale ${b}: 5 poi 9 (1 Stella ciascuno) · inizio: ${tr(c)}`],
 [/^Dépenser 1 ver pour construire gratuitement (.+) ici \?$/,(m,b)=>`Spendere 1 verme per costruire gratis ${tr(b)} qui?`],

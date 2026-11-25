@@ -52,13 +52,13 @@ const ALLIES=[
  ALLY(32,'Wild Boar',1,null,1,[reqB('nest','tundra')],'↻ Défausser 2 cartes : 1 nourriture au choix + Anciens +1. Tag joker.'),
 ];
 const RELICS=[
- RELIC('OB1','Field Journal',1,T('Academy'),0,'⚡ Révéler 2, deux fois. ∞ Limite de main +1.'),
+ RELIC('OB1','Field Journal',2,T('Academy'),0,'⚡ Révéler 2, deux fois. ∞ Limite de main +2.'),
  RELIC('OB2','Ceremonial Baton',1,T('Academy'),0,'∞ Quand vous gagnez une Étoile : pondre 1 Œuf.'),
  RELIC('OB3','Songbook',1,T('Academy'),0,'∞ Quand vous jouez une carte Academy : défausser 1 pour piocher 1.'),
- RELIC('OB4','Scholar\'s Satchel',2,T('Academy'),0,'∞ Oiseaux Academy : coût -2 (min. 1).'),
- RELIC('OB5','Surveyor\'s Map',4,T('Academy'),0,'⚡ Révéler 4, deux fois. ∞ Vos Nids valent 3 de présence.'),
+ RELIC('OB4','Scholar\'s Satchel',1,T('Academy'),0,'∞ Oiseaux Academy : coût -1 (min. 1).'),
+ RELIC('OB5','Surveyor\'s Map',4,T('Academy'),0,'⚡ Révéler 4. ∞ Vos Nids valent 3 de présence.'),
  RELIC('OB6','Star Atlas',3,T('Academy'),0,'⚡ Révéler 3. ∞ 2 tags de chaque type = 1 Étoile.'),
- RELIC('OB7','Master\'s Diploma',4,T('Academy'),0,'⚡ Défausser 1 pour piocher 1. ∞ 4 Nids = 1 Étoile.'),
+ RELIC('OB7','Master\'s Diploma',4,T('Academy'),0,'⚡ Déplacer votre Nuée sur n\'importe quelle île. ∞ 4 Nids = 1 Étoile.'),
  RELIC('OB8','Magnifying Lens',1,T('Academy'),0,'⚡ Révéler 2. ∞ Chaque révélation : +2 cartes.'),
  RELIC('OG1','Guild Contract',1,T('Guild'),0,'∞ Quand vous jouez une carte Guild : défausser 1 pour 1 Écaille ici. ◈ 1 : prochain Allié, 1 condition en moins.',1),
  RELIC('OG2','Merchant Seal',1,T('Guild'),0,'∞ Compte comme 1 Allié de plus.'),
@@ -81,9 +81,9 @@ const RELICS=[
  RELIC('OP3','Whispering Totem',3,T('Circle'),0,'∞ Quand vous jouez une carte Circle : défausser 1 pour un Poussin sur une Ruine.'),
  RELIC('OP4','Shadow Cloak',2,T('Circle'),0,'∞ Quand vous gagnez une Étoile : 1 nourriture au choix.'),
  RELIC('OP5','Sacrificial Dagger',2,T('Circle'),0,'⚡ Sacrifier 1 carte. ∞ Quand vous sacrifiez : résoudre son effet ⚡.'),
- RELIC('OP6','Hidden Sanctuary',3,T('Circle'),0,'⚡ Défausser 1 carte. ∞ 4 Runes = 1 Étoile.'),
+ RELIC('OP6','Hidden Sanctuary',4,T('Circle'),0,'∞ 4 Runes = 1 Étoile.'),
  RELIC('OP7','Black Codex',3,T('Circle'),0,'⚡ Sacrifier 1 carte. ∞ Défausser 4 cartes du même tag : 1 Étoile (une fois).'),
- RELIC('OP8','Soul Reliquary',6,T('Circle'),0,'∞ Sacrifier cette carte : 1 Étoile.'),
+ RELIC('OP8','Soul Reliquary',2,T('Circle'),0,'⚡ Sacrifier 1 carte. ∞ Quand vous sacrifiez une carte (pas une Mouette), reprenez-la en main.'),
  RELIC('OR1','Signal Horn',1,T('Legion'),0,'⚡ Déclencher un Atelier. ∞ Construire un Atelier déclenche son effet.'),
  RELIC('OR2','Recruitment Banner',2,T('Legion'),0,'∞ Quand vous gagnez une Étoile : 1 Poussin.'),
  RELIC('OR3','Watchtower Plans',2,T('Legion'),0,'∞ Vos Ateliers valent 3 de présence.'),
@@ -104,7 +104,7 @@ const RELICS=[
 // ---- effets
 const BF=t=>window.BirdsGame.BUILD_FR[t];
 const yes=(g,p,title,score)=>g.ask(p,{title,options:[{label:'Oui',value:true,score:score??1},{label:'Non',value:false,score:0.5}]});
-const selfSac=(g,p,e)=>{const k=p.tableau.indexOf(e); if(k>=0){p.tableau.splice(k,1); g.discardPile.push(e.id); g.log(`${p.name} sacrifie ${g.card(e.id).name}.`);}};
+const selfSac=(g,p,e)=>{const k=p.tableau.indexOf(e); if(k>=0){p.tableau.splice(k,1); g.log(`${p.name} sacrifie ${g.card(e.id).name}.`); if(g.has(p,'OP8')){p.hand.push(e.id); g.log(`Soul Reliquary : ${g.card(e.id).name} revient dans la main de ${p.name}.`);} else g.discardPile.push(e.id);}};
 const wormBuild=type=>async(g,p)=>{ if(p.food.worm>0&&p.left[type].length&&g.buildTargets(window.BirdsGame.ISLANDS[p.flock]).length&&await yes(g,p,`Dépenser 1 ver pour construire gratuitement ${BF(type)} ici ?`,2)){p.food.worm--; await g.buildFreeHere(p,type);}};
 const FX={
  A1:{i:async(g,p,e)=>g.placeDSthis(p,e,g.diffTags(p)),dc:5,d:async(g,p,e)=>{await g.anyAction(p); selfSac(g,p,e);}},
@@ -138,9 +138,9 @@ const FX={
  A32:{b:async(g,p)=>{if(p.hand.length>=2&&await g.discardCards(p,2,'Wild Boar : défausser 2 cartes pour 1 nourriture + Anciens +1 ?',0.6)){await g.gainAnyFood(p,1); await g.elders(p,1);}}},
  // Reliques (effets instantanés et capacités Écaille ; les effets ∞ sont dans le moteur)
  OB1:{i:async(g,p)=>{await g.search(p,2); await g.search(p,2);}},
- OB5:{i:async(g,p)=>{await g.search(p,4); await g.search(p,4);}},
+ OB5:{i:async(g,p)=>{await g.search(p,4);}},
  OB6:{i:async(g,p)=>g.search(p,3)},
- OB7:{i:async(g,p)=>{if(await g.discardCards(p,1,'Défausser 1 carte pour piocher 1 ?',0.6)) await g.draw(p,1);}},
+ OB7:{i:async(g,p)=>g.moveFlockAny(p)},
  OB8:{i:async(g,p)=>g.search(p,2)},
  OG1:{dc:1,d:async(g,p)=>{p.allyDiscount=(p.allyDiscount||0)+1; g.log(`${p.name} : le prochain Allié demande 1 condition de moins.`);}},
  OG6:{dc:4,dok:(g,p)=>!p.tableau.find(e=>e.id==='OG6').starTaken,d:async(g,p)=>{p.tableau.find(e=>e.id==='OG6').starTaken=true; await g.gainStar(p,'Guild Treasury');}},
@@ -149,7 +149,7 @@ const FX={
  ON2:{i:async(g,p)=>g.draw(p,1)},
  ON7:{i:async(g,p)=>g.draw(p,1)},
  OP5:{i:async(g,p)=>g.sacrifice(p,'Sacrificial Dagger : sacrifier 1 carte ?',0.2)},
- OP6:{i:async(g,p)=>{if(p.hand.length) await g.discardCards(p,1,'Hidden Sanctuary : défaussez 1 carte',false);}},
+ OP8:{i:async(g,p)=>g.sacrifice(p,'Soul Reliquary : sacrifier 1 carte (elle revient dans votre main) ?',0.6)},
  OP7:{i:async(g,p)=>g.sacrifice(p,'Black Codex : sacrifier 1 carte ?',0.2)},
  OR1:{i:async(g,p)=>g.triggerWorkshop(p)},
  OR6:{i:async(g,p)=>g.seagull(p,1)},

@@ -110,7 +110,7 @@ class Game{
   shrineFree(p){const cap=l=>[2,3,4,5][l]+this.rm(p,4); return p.built.shrine.map(l=>({l,free:cap(l)-p.tableau.filter(e=>e.shrine===l).reduce((s,e)=>s+this.relicSpace(p,this.card(e.id)),0)}));}
   allyOK(p,c){const miss=c.req.filter(r=>!r.f(this,p)).length; return miss<=(p.allyDiscount||0);}
   birdCost(p,c){let n=c.cost; const m1=x=>Math.max(1,x);
-    if(c.family==='Academy'&&this.has(p,'OB4')) n=m1(n-2); if(c.family==='Legion'&&this.has(p,'OR4')) n=m1(n-2); if(c.family==='Circle'&&this.has(p,'OP1')) n=m1(n-1);
+    if(c.family==='Academy'&&this.has(p,'OB4')) n=m1(n-1); if(c.family==='Legion'&&this.has(p,'OR4')) n=m1(n-2); if(c.family==='Circle'&&this.has(p,'OP1')) n=m1(n-1);
     if(c.cost>=4&&this.has(p,'OY5')) n=Math.max(0,n-1); return n;}
   async anyAction(p){const isl=ISLANDS[p.flock]; const acts=this.boardActionOptions(p,isl,null);
     const o=await this.ask(p,{title:'Action au choix',options:[...acts,{label:'Jouer 1 carte',value:'play',score:1.5},{label:'Couvée',value:'brood',score:2}]});
@@ -149,12 +149,10 @@ class Game{
     await hook('ON6',null,'Forager\'s Basket : défausser 1 carte pour 1 ver + 1 graine + 1 fruit ?',async()=>{p.food.worm++;p.food.seed++;p.food.fruit++; this.eco(p,'gain',3); this.log(`${p.name} gagne 1 ver, 1 graine et 1 fruit.`);},2);}
   extras(p){const out=[];
     if(this.has(p,'ON3')&&!p.tableau.find(e=>e.id==='ON3').starTaken&&p.food.worm>=2&&p.food.seed>=2&&p.food.fruit>=2) out.push({label:'Provision Cache : payer 2/2/2 pour 1 Étoile',value:{x:'ON3'},card:'ON3',score:5});
-    if(this.has(p,'OP8')) out.push({label:'Soul Reliquary : sacrifier pour 1 Étoile',value:{x:'OP8'},card:'OP8',score:5});
     if(this.has(p,'OP7')&&!p.tableau.find(e=>e.id==='OP7').starTaken&&FAMS.some(f=>p.hand.filter(id=>(this.card(id).tagMap||{})[f]).length>=4)) out.push({label:'Black Codex : défausser 4 cartes du même tag pour 1 Étoile',value:{x:'OP7'},card:'OP7',score:4});
     return out;}
   async doExtra(p,x){const e=p.tableau.find(e=>e.id===x);
     if(x==='ON3'){p.food.worm-=2;p.food.seed-=2;p.food.fruit-=2; this.eco(p,'spent',6); e.starTaken=true; await this.gainStar(p,'Provision Cache');}
-    else if(x==='OP8'){p.tableau.splice(p.tableau.indexOf(e),1); this.discardPile.push(x); this.log(`${p.name} sacrifie Soul Reliquary.`); await this.gainStar(p,'Soul Reliquary');}
     else if(x==='OP7'){const f=FAMS.find(f=>p.hand.filter(id=>(this.card(id).tagMap||{})[f]).length>=4); for(let i=0;i<4;i++){const opts=p.hand.filter(id=>(this.card(id).tagMap||{})[f]); const id=await this.ask(p,{title:`Défaussez une carte ${f} (${i+1}/4)`,options:opts.map(id=>({label:this.card(id).name,value:id,card:id,score:0}))}); p.hand.splice(p.hand.indexOf(id),1); this.discardPile.push(id);} e.starTaken=true; await this.gainStar(p,'Black Codex');}
     this.io.render();}
   drawFromDeck(){ if(!this.deck.length){ if(!this.discardPile.length) return null; this.deck=shuffle(this.discardPile); this.discardPile=[]; this.log('La défausse est remélangée dans la pioche.'); } return this.deck.pop(); }
@@ -222,9 +220,9 @@ class Game{
   async sacrifice(p,title,value){const opts=p.tableau.filter(e=>!e.justPlayed).map(e=>({label:this.card(e.id).name,value:{e},card:e.id,score:-this.keepValue(p,{e})}));
     p.seagulls.forEach((l,k)=>opts.push({label:`Mouette (niveau ${l})`,value:{gull:k},score:-this.keepValue(p,{gull:k})}));
     if(!opts.length) return false;
-    const ok=await this.ask(p,{title:title||'Sacrifier une de vos cartes en jeu ?',options:[{label:'Oui',value:true,score:value||0},{label:'Non',value:false,score:0.5}]}); if(!ok) return false;
+    const ok=await this.ask(p,{title:title||'Sacrifier une de vos cartes en jeu ?',options:[{label:'Oui',value:true,score:(value||0)+(this.has(p,'OP8')?1.2:0)},{label:'Non',value:false,score:0.5}]}); if(!ok) return false;
     const v=await this.ask(p,{title:'Que sacrifiez-vous ?',options:opts});
-    if(v.e){p.tableau.splice(p.tableau.indexOf(v.e),1); this.discardPile.push(v.e.id); this.log(`${p.name} sacrifie ${this.card(v.e.id).name}.`); const fx=window.CARD_FX[v.e.id]; if(this.has(p,'OP5')&&fx&&fx.i&&v.e.id!=='OP5'){this.log('Sacrificial Dagger : son effet ⚡ est résolu.'); await fx.i(this,p,{id:v.e.id,ds:0});}} else {p.seagulls.splice(v.gull,1); this.log(`${p.name} sacrifie une Mouette.`);}
+    if(v.e){p.tableau.splice(p.tableau.indexOf(v.e),1); this.log(`${p.name} sacrifie ${this.card(v.e.id).name}.`); if(this.has(p,'OP8')){p.hand.push(v.e.id); this.log(`Soul Reliquary : ${this.card(v.e.id).name} revient dans la main de ${p.name}.`);} else this.discardPile.push(v.e.id); const fx=window.CARD_FX[v.e.id]; if(this.has(p,'OP5')&&fx&&fx.i&&v.e.id!=='OP5'){this.log('Sacrificial Dagger : son effet ⚡ est résolu.'); await fx.i(this,p,{id:v.e.id,ds:0});}} else {p.seagulls.splice(v.gull,1); this.log(`${p.name} sacrifie une Mouette.`);}
     return true;}
   async exchangeFood(p,n=1){for(let i=0;i<n;i++){const have=['worm','seed','fruit'].filter(t=>p.food[t]>0); if(!have.length) return;
       const g=await this.ask(p,{title:'Échanger : donner…',options:[{label:'Ne pas échanger',value:null,score:0.3},...have.map(t=>({label:'1 '+FOOD_FR[t],value:t,score:t==='worm'?0:0.4}))]}); if(!g) return;
@@ -358,7 +356,7 @@ class Game{
       else if(t.k==='gull'){ const l=p.seagulls[t.i]; this.log(`Couvée — Mouette niveau ${l}`); await this.layEgg(p,1); if(l>=2) await this.elders(p,1); }
       else { const fx=window.CARD_FX[t.e.id]; this.log(`Couvée — ${this.card(t.e.id).name}`); await fx.b(this,p,t.e); }
       this.io.render(); }
-    const lim=6+(this.has(p,'OB1')?1:0); while(p.hand.length>lim){const c=await this.ask(p,{title:`Limite de main : défaussez jusqu'à ${lim} cartes`,options:p.hand.map(id=>({label:this.card(id).name,value:id,card:id,score:-this.cardValue(p,id)}))}); p.hand.splice(p.hand.indexOf(c),1); this.discardPile.push(c);}
+    const lim=6+(this.has(p,'OB1')?2:0); while(p.hand.length>lim){const c=await this.ask(p,{title:`Limite de main : défaussez jusqu'à ${lim} cartes`,options:p.hand.map(id=>({label:this.card(id).name,value:id,card:id,score:-this.cardValue(p,id)}))}); p.hand.splice(p.hand.indexOf(c),1); this.discardPile.push(c);}
   }
   // ---------- Capacité Écaille ----------
   dsReady(p){ if((p.dsUsed||0)>=1+(this.has(p,'OG8')?1:0)) return []; return p.tableau.filter(e=>{const fx=window.CARD_FX[e.id]; return fx&&fx.d&&e.ds>=fx.dc&&(!fx.dok||fx.dok(this,p));});}
@@ -490,7 +488,8 @@ class Game{
   cgB(p,id,d=1){ const W=this.W(p); if(!W.cgoal||!this.goal(p,id)) return 0; const g=this.condGap(p,id); if(g===null||g<=0) return 0;
     const left=g-d; const late=this.players.some(q=>q.stars>=4)?1.3:1; return W.cgoal*late*(left<=0?6*W.tempo:left===1?2.6:left===2?1.6:0.9); }
   // valeur de conserver un élément en jeu (pour choisir quoi sacrifier) : on mesure ce qu'on perdrait
-  keepValue(p,it){ const was=p.tableau.slice(), wasG=p.seagulls.slice(); let item=null;
+  keepValue(p,it){ return this.keepValue0(p,it)*(it.e&&this.has(p,'OP8')&&it.e.id!=='OP8'?0.35:1);}
+  keepValue0(p,it){ const was=p.tableau.slice(), wasG=p.seagulls.slice(); let item=null;
     const snap=()=>({tags:this.tags(p),each:this.hasEachTag(p),wild:this.wild(p),perso:this.persoValue(p),b3:this.birds3(p),b4:this.birds4(p),
       red:this.objs[0].claims.includes(p.i)||this.objs[0].th[this.objs[0].claims.length]===undefined?null:this.objs[0].d.m(this,p),allies:this.allyCount(p),rel:this.relicCount(p)});
     const A=snap();
@@ -547,7 +546,7 @@ class Game{
     if(window.COND_STARS&&window.COND_STARS[id]){ let g=this.condGap(p,id); if(g===null) return 2.5;
       if(id==='OB6') g-=this.tagGain(p,c)+0;
       return late*(g<=0?T:g===1?3.5:g===2?2.5:g===3?1.5:0.5); }
-    if(id==='OP8') return T; if(id==='OG6') return 1.5;
+    if(id==='OG6') return 1.5;
     if(id==='ON3') return late*((p.food.worm>=2&&p.food.seed>=2&&p.food.fruit>=2)?T*0.8:1.5);
     if(id==='OP7'){ const mx=Math.max(...FAMS.map(f=>p.hand.filter(h=>h!==id&&(this.card(h).tagMap||{})[f]).length)); return late*(mx>=4?T*0.8:mx>=3?2:0.5); }
     if(id==='A3'){ const s=new Set(); p.hand.filter(h=>h!==id).forEach(h=>Object.keys(this.card(h).tagMap||{}).forEach(t=>s.add(t))); return FAMS.every(f=>s.has(f))?late*T:0; }
