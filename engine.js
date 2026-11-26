@@ -57,8 +57,11 @@ const NEST_CAP=2; // provisoire
 const CHICKS_TOTAL=25;
 const TREES_TOTAL={grey:14,yellow:8,green:8};
 
-function rnd(n){return Math.floor(Math.random()*n);}
+let RNG=()=>Math.random(), NOISE=()=>Math.random(); // mécanique du jeu / bruit des choix IA (remplaçables pendant les simulations)
+function mulberry(seed){let a=seed>>>0; return ()=>{a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296;};}
+function rnd(n){return Math.floor(RNG()*n);}
 // Poids de l'IA : réglage d'origine, et réglage appris par auto-apprentissage (parties IA contre IA)
+const AIV=[0.051,0.222,-0.076,0.464,0.131,0.436,0.114,0.377,0.067,0.009,-0.062,0.242,0.359,1.178,0.161,0.743,0.792,0.682,0.14,0.098,1.124,0.114,1.531,-0.158,0,-0.32,-0.046,-0.508,0.138,-0.386,-0.181,-0.113,0.618,0.018,-0.42,-0.723,-0.162,0.497,0.496,0.182,0.471,0.149,-0.878,0.07]; // poids de la fonction de valeur (voir winProb)
 const AIW_CLASSIC={play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1,tempo:1,cgoal:1};
 const AIW_TRAINED={"play":0,"play2":0.7,"fx":-0.224,"pres":1.5,"colDone":11,"gp":0.935,"blue":2.145,"red":0.641,"gull":2.399,"shr":1.167,"gctx":1,"brood":-0.277,"bmode":2.047,"b3":1.5,"amu":0.464,"lvl":1,"tempo":1.211,"cgoal":2};
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -374,7 +377,11 @@ class Game{
     const o={}; memo.set(v,o); for(const k in v) o[k]=Game.deepClone(v[k],memo); return o;}
   snapshot(){const keep=new Set(['io','B','regions','nestById','cardById']); const src={}; for(const k of Object.keys(this)) if(!keep.has(k)) src[k]=this[k]; return Game.deepClone(src,new Map());}
   restore(snap){const keep=new Set(['io','B','regions','nestById','cardById']); for(const k of Object.keys(this)) if(!keep.has(k)&&!(k in snap)) delete this[k]; Object.assign(this,Game.deepClone(snap,new Map()));}
-  async takeTurnUndoable(){const p=this.players[this.current]; if(p.ai||!this.io.undoable) return this.takeTurn();
+  laOf(p){ if(this.io.rollout) return null; if(p.la!==undefined) return p.la; const L=this.io.lookahead; return L&&(!L.seats||L.seats.includes(p.i))?L:null; }
+  // Tour d'une IA avec anticipation « profonde » : chaque décision du tour peut être évaluée par simulations (rejeu du début du tour)
+  async takeTurnDeep(p,L){ const prev=RNG; const seed=(Math.random()*4294967296)>>>0; const D=this._la={snap:this.snapshot(),seed,trace:[],p:p.i,L,rng:mulberry(seed),n:0,ty:Date.now()};
+    RNG=D.rng; try{ await this.takeTurn(); } finally { RNG=prev; this._la=null; } }
+  async takeTurnUndoable(){const p=this.players[this.current]; if(p.ai){ const L=this.laOf(p); return L&&L.deep?this.takeTurnDeep(p,L):this.takeTurn(); } if(!this.io.undoable) return this.takeTurn();
     const snap=this.snapshot(); const seed=(Math.random()*4294967296)>>>0; const orig=Math.random; let replay=[];
     const rng=()=>{let a=seed; return ()=>{a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296;};};
     this.io.beginTurn&&this.io.beginTurn(null,true);
@@ -451,10 +458,66 @@ class Game{
     this.ranking=r; this.log(`Fin de partie ! Vainqueur : ${r[0].name} avec ${r[0].stars} Étoiles.`); this.io.render(); this.io.gameOver&&this.io.gameOver(r);}
   // ---------- Décisions ----------
   async ask(p,q){ q.options=q.options.filter(o=>o); if(!q.options.length) return null;
-    if(p.ai){ const t0=Date.now(); if(q.main&&this.io.lookahead&&!this.io.rollout&&(!this.io.lookahead.seats||this.io.lookahead.seats.includes(p.i))){ const v=await this.aiMainLookahead(p,q); if(v!==undefined){ const left=(this.io.aiDelay||0)-(Date.now()-t0); if(left>0) await this.io.sleep(left); return v;} }
+    const R=this._rp; // simulation en phase de rejeu : on rejoue les choix déjà faits ce tour, puis on force le choix à évaluer
+    if(R){ if(R.i<R.trace.length){ const t=R.trace[R.i++]; if(t.n!==q.options.length||t.pi!==p.i) throw new Error('desync'); return q.options[t.k].value; }
+      this._rp=null; const f=R.forced; if(f.pi!==p.i||f.n!==q.options.length) throw new Error('desync'); R.done(this);
+      if(f.k!==undefined) return q.options[f.k].value; p.broodStreak=f.v==='brood'?(p.broodStreak||0)+1:0; p.plan=f.plan.slice(); return f.v; }
+    const D=this._la; let v;
+    if(D&&p.ai&&p.i===D.p&&q.options.length>1&&!D.broken){ const t0=Date.now(); v=await this.aiDeep(p,q,D); if(v!==undefined){ const left=(this.io.aiDelay||0)-(Date.now()-t0); if(left>0) await this.io.sleep(left); } }
+    if(v===undefined) v=await this.ask0(p,q);
+    if(D){ const k=q.options.findIndex(o=>o.value===v); if(k<0) D.broken=true; else D.trace.push({k,n:q.options.length,pi:p.i}); }
+    return v; }
+  async ask0(p,q){
+    if(p.ai){ const t0=Date.now(); const L=this.laOf(p); if(q.main&&L&&!L.deep){ const v=await this.aiMainLookahead(p,q,L); if(v!==undefined){ const left=(this.io.aiDelay||0)-(Date.now()-t0); if(left>0) await this.io.sleep(left); return v;} }
       await this.io.sleep(this.io.aiDelay||0); return this.aiPick(p,q);} return await this.io.ask(p,q);}
+  // ---------- IA : anticipation profonde (toutes les décisions du tour) ----------
+  async aiDeep(p,q,D){ const L=D.L; let cands;
+    if(q.main){ const all=this.aiMain(p,q,true); if(!all) return undefined;
+      const seen=new Set(), u=[]; all.slice().sort((a,b)=>b.s-a.s).forEach(c=>{const key=c.v+':'+JSON.stringify(c.plan); if(!seen.has(key)){seen.add(key); u.push(c);}});
+      const pick=u.slice(0,L.k||6); ['play','brood','move'].forEach(v=>{ if(!pick.some(c=>c.v===v)){const c=u.find(c=>c.v===v); if(c) pick.push(c);} });
+      cands=pick.map(c=>({prior:c.s,f:{v:c.v,plan:c.plan,pi:p.i,n:q.options.length},main:c})); }
+    else { if(p.plan&&p.plan.length) return undefined; if(L.k2===0||(L.skip&&L.skip.test(q.title||''))) return undefined;
+      const o=q.options.map((o,k)=>({k,s:o.score||0})).sort((a,b)=>b.s-a.s).slice(0,L.k2||4);
+      if(L.gap!==undefined&&o[0].s-o[1].s>L.gap) return undefined;
+      cands=o.filter(x=>o[0].s-x.s<=(L.gap2===undefined?1e9:L.gap2)).map(x=>({prior:x.s,f:{k:x.k,pi:p.i,n:q.options.length}})); }
+    if(cands.length<2) return undefined; D.n++; if(window.LAS){const t=(q.title||'').replace(/[0-9]+/g,'#').slice(0,40); window.LAS[t]=(window.LAS[t]||0)+1;}
+    const lam=q.main?(L.lam===undefined?0.02:L.lam):(L.lam2===undefined?0.05:L.lam2);
+    cands.forEach(c=>{c.tot=0;c.cnt=0;}); let live=cands.slice(); const stages=q.main?(L.stages||[L.r||3]):(L.stages2||[L.r2||L.r||3]); let si=0;
+    for(const r of stages){ for(let j=0;j<r;j++){ const sd=(D.seed^Math.imul(si+1,0x9E3779B1))>>>0; si++;
+        for(const c of live){ const x=await this.rollout2(D,p.i,c.f,L.crn===false?(Math.random()*4294967296)>>>0:sd); if(x!==null){c.tot+=x;c.cnt++;} if(L.yield&&Date.now()-D.ty>40){ await new Promise(res=>setTimeout(res,0)); D.ty=Date.now(); } } }
+      live.forEach(c=>c.sc=(c.cnt?c.tot/c.cnt:-9)+c.prior*lam); live.sort((a,b)=>b.sc-a.sc); if(live.length>2) live=live.slice(0,Math.max(2,Math.ceil(live.length/2))); }
+    RNG=D.rng; const best=live[0]; if(!best.cnt) return undefined;
+    if(best.main){ p.broodStreak=best.f.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.f.plan.slice(); return best.f.v; }
+    return q.options[best.f.k].value; }
+  // Fonction de valeur apprise sur des parties IA contre IA : force estimée d'un joueur (softmax entre joueurs = probabilité de victoire)
+  vfeat(p){ let birds=0,allies=0,relics=0,brood=0,cond=0,dsc=0;
+    p.tableau.forEach(e=>{const c=this.card(e.id); if(c.type==='bird')birds++; else if(c.type==='ally')allies++; else relics++; const fx=window.CARD_FX[e.id]||{}; if(fx.b)brood++; if(fx.d)dsc++;
+      if(window.COND_STARS[e.id]&&!e.starTaken){const gp=this.condGap(p,e.id); cond+=gp===null?0.3:Math.max(0,1-gp/4);} });
+    let best=0,tot=0; ISLANDS.forEach(isl=>{ if(this.settled[isl]!==undefined) return; const m=this.presence(isl,p.i); tot+=m; if(m>best)best=m; });
+    const perso=p.pobj&&p.pClaims<2?Math.min(1,this.persoValue(p)/PERSO_TH[p.pClaims]):0;
+    const o=this.objs[0]; const red=(!o.claims.includes(p.i)&&o.th[o.claims.length]!==undefined)?Math.min(1,o.d.m(this,p)/o.th[o.claims.length]):0;
+    const food=p.food.worm+p.food.seed+p.food.fruit;
+    return [p.stars,Math.min(p.chicks,6)/3,Math.min(p.eggs,6)/3,p.nests/2,p.built.workshop.length/2,p.built.shrine.length/2,Math.min(p.hand.length,8)/4,Math.min(food,10)/5,
+      birds/4,allies/2,relics/3,brood/2,p.seagulls.length/2,p.seagulls.reduce((a,b)=>a+b,0)/4,p.runes.length/2,(p.elders||0)/ELDERS_LEN,perso,best/6,tot/8,cond,red,dsc/2]; }
+  winProb(mi){ const ph=Math.max(...this.players.map(p=>p.stars))/6, W=window.AIV||AIV, F=W.length/2;
+    const s=this.players.map(p=>{const f=this.vfeat(p); let a=0; for(let i=0;i<F;i++) a+=f[i]*(W[i]+ph*W[F+i]); return a;}); const m=Math.max(...s); const e=s.map(a=>Math.exp(a-m)); return e[mi]/e.reduce((a,b)=>a+b,0); }
+  async rollout2(D,mi,forced,seed){ const rio={aiDelay:0,sim:true,rollout:true,sleep:()=>Promise.resolve(),log(){},render(){},ask(){throw new Error('rollout');},gameOver(){}};
+    const g=Object.create(Game.prototype); g.io=rio; g.B=this.B; g.regions=this.regions; g.nestById=this.nestById; g.cardById=this.cardById; g.restore(D.snap);
+    g.players.forEach(x=>{x.ai=true; delete x.remote; delete x.la;}); const pR=RNG, pN=NOISE; let ok=false;
+    g._rp={trace:D.trace,i:0,forced,done:(g)=>{ ok=true; RNG=mulberry(seed); NOISE=mulberry(seed^0x5bd1e995);
+      // les cartes cachées (mains adverses, pioche) sont redistribuées au hasard
+      const pool=g.deck.slice(); g.players.forEach(x=>{ if(x.i!==mi) pool.push(...x.hand);}); shuffle(pool);
+      g.players.forEach(x=>{ if(x.i!==mi){ const n=x.hand.length; x.hand=pool.splice(0,n);} }); g.deck=pool; }};
+    RNG=mulberry(D.seed); const r0=g.round, n=g.players.length; let guard=0, myT=0; const H=D.L.h||0;
+    try{ while(!g.over&&guard++<400){ await g.takeTurn(); g.current=(g.current+1)%n; if(g.current===0){ if(g.endTriggered){g.over=true; break;} g.round++; if(g.round-r0>40) break; } if(H&&g.current===mi&&!g.endTriggered&&++myT>=H) break; } }
+    catch(e){ if(!ok){ RNG=pR; NOISE=pN; D.desync=(D.desync||0)+1; if(window.LAS) window.LAS.DESYNC=(window.LAS.DESYNC||0)+1; return null; } RNG=pR; NOISE=pN; return 0; }
+    RNG=pR; NOISE=pN; if(!ok) return null;
+    if(H&&!g.over) return 5*g.winProb(mi);
+    const me=g.players[mi], opp=Math.max(...g.players.filter(x=>x.i!==mi).map(x=>x.stars));
+    const win=me.stars>opp||(me.stars===opp&&g.players.filter(x=>x.i!==mi).every(x=>me.chicks>x.chicks||(me.chicks===x.chicks&&me.eggs>=x.eggs)));
+    if(H) return win?5:0; return (win?4:0)+(me.stars-opp)-(win?0.12*(g.round-r0):0);}
   aiPick(p,q){ if(q.main) return this.aiMain(p,q); if(p.plan&&p.plan.length){const want=p.plan[0]; const o=q.options.find(o=>o.value===want||(o.value&&want&&typeof want==='object'&&o.value.kind===want.kind&&o.value.r===want.r&&o.value.s===want.s&&o.value.type===want.type&&o.value.lvl===want.lvl)); if(o){p.plan.shift(); return o.value;}}
-    let best=null,bs=-1e9; q.options.forEach(o=>{const s=(o.score||0)+Math.random()*0.3; if(s>bs){bs=s;best=o;}}); return best.value;}
+    let best=null,bs=-1e9; q.options.forEach(o=>{const s=(o.score||0)+NOISE()*0.3; if(s>bs){bs=s;best=o;}}); return best.value;}
   // ---------- Heuristiques IA ----------
   cardValue(p,id){const c=this.card(id); const pays=this.payments(p,id,1); return 1+(pays.length?0.6:0)+(c.brood?0.5:0)+(c.cost>=4?0.3:0);}
   presenceScore(p,isl,gain){if(this.settled[isl]!==undefined) return 0.3*gain; const mine=this.presence(isl,p.i);
@@ -552,7 +615,7 @@ class Game{
     if(id==='A3'){ const s=new Set(); p.hand.filter(h=>h!==id).forEach(h=>Object.keys(this.card(h).tagMap||{}).forEach(t=>s.add(t))); return FAMS.every(f=>s.has(f))?late*T:0; }
     return 0; }
   // ---------- IA : anticipation par simulations (Monte-Carlo) ----------
-  async aiMainLookahead(p,q){ const L=this.io.lookahead; const K=L.k||6, R=L.r||3;
+  async aiMainLookahead(p,q,L){ const K=L.k||6, R=L.r||3;
     const all=this.aiMain(p,q,true); if(!all) return undefined; // capacité Écaille prioritaire : comportement habituel
     const seen=new Set(), cands=[]; all.slice().sort((a,b)=>b.s-a.s).forEach(c=>{const key=c.v+':'+JSON.stringify(c.plan); if(!seen.has(key)){seen.add(key); cands.push(c);}});
     const pick=[]; for(const c of cands){ if(pick.length>=K) break; pick.push(c);} ['play','brood','move'].forEach(v=>{ if(!pick.some(c=>c.v===v)){const c=cands.find(c=>c.v===v); if(c) pick.push(c);} });
@@ -590,7 +653,7 @@ class Game{
     cands.push({s:bv+eggHold+bAdj,plan:[],v:'brood'});
     const ds=q.options.find(o=>o.value&&o.value.ds); if(ds) return all?null:ds.value;
     if(all) return cands;
-    cands.forEach(c=>c.s+=Math.random()*0.5); cands.sort((a,b)=>b.s-a.s); const best=cands[0]; p.broodStreak=best.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.plan.slice(); return best.v;}
+    cands.forEach(c=>c.s+=NOISE()*0.5); cands.sort((a,b)=>b.s-a.s); const best=cands[0]; p.broodStreak=best.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.plan.slice(); return best.v;}
 }
 window.BirdsGame={Game,resLabel,AIW_CLASSIC,AIW_TRAINED,PERSONAL,PERSO_TH,RED_OBJ,BLUE_OBJ,ISLANDS,ISL_FR,FOOD_FR,BUILD,BUILD_FR,RUNES,ELDERS_LEN,ELDERS_BONUS,ELDERS_FR,COLORS,FAM,FAMS,TREE_FOOD,NEUTRAL};
 })();
