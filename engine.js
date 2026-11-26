@@ -46,8 +46,8 @@ const PERSONAL=[
   {id:'A04',name:'Ravens',tags:['Academy','Circle'],res:{elders:1,worm:1,fruit:1},resNew:{seed:1,worm:1,fruit:1,rune:1}},
   {id:'A05',name:'Eagles',tags:['Legion','Court'],res:{seagull:1,worm:1,fruit:1},resNew:{seagull:1,chick:-1,fruit:1}},
   {id:'A06',name:'Kingfishers',tags:['Legion','Guild'],res:{elders:1,worm:1,seed:1},resNew:{elders:1,worm:2,seed:1,fruit:1}},
-  {id:'A07',name:'Falcons',tags:['Legion','Circle'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,worm:2,rune:1}},
-  {id:'A08',name:'Woodpeckers',tags:['Court','Guild'],res:{elders:1,worm:3},resNew:{elders:2,worm:1,fruit:1}},
+  {id:'A07',name:'Falcons',tags:['Legion','Circle'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,seed:1,rune:1}},
+  {id:'A08',name:'Woodpeckers',tags:['Court','Guild'],res:{elders:1,worm:3},resNew:{elders:2,worm:3}},
   {id:'A09',name:'Owls',tags:['Court','Circle'],res:{worm:2,fruit:1},resNew:{worm:3,seed:1,fruit:1}},
   {id:'A10',name:'Magpies',tags:['Guild','Circle'],res:{seagull:1,worm:1,seed:1},resNew:{chick:1,elders:1,worm:2,fruit:1}},
 ];
