@@ -54,9 +54,9 @@ S.fetchShared=async()=>{ const N=S.net(); if(!N) return null; const sn=await N.d
 let running=false, stopReq=false;
 async function simulate(n,np,onProgress){ running=true; stopReq=false; S.batch=true; const BG=window.BirdsGame;
   for(let k=0;k<n&&!stopReq;k++){ const N=np==='mix'?2+(k%3):+np;
-    const io={sim:true,aiDelay:0,sleep:()=>Promise.resolve(),log(){},render(){},ask(){throw new Error('no human');},gameOver(){}};
+    const io={sim:true,aiDelay:0,lookahead:Object.assign({yield:true},BG.AI_LA),sleep:()=>Promise.resolve(),log(){},render(){},ask(){throw new Error('no human');},gameOver(){}}; // même IA que dans les parties
     try{ const g=new BG.Game({players:Array.from({length:N},(_,i)=>({name:'IA '+(i+1),ai:true})),persoSet:window.BirdsPersoSet||'new'},io); let t=0; const o=g.takeTurn.bind(g); g.takeTurn=async()=>{ if(++t>500) throw new Error('long'); return o(); }; await g.run(); }catch(e){ console.warn('sim',e); }
-    if(k%5===4){ save(); onProgress(k+1,n); await new Promise(r=>setTimeout(r,0)); } }
+    save(); onProgress(k+1,n); await new Promise(r=>setTimeout(r,0)); }
   S.batch=false; save(); running=false; onProgress(n,n,true);}
 
 // ---------- calculs ----------
@@ -66,7 +66,7 @@ function cardType(id){return /^A\d/.test(id)?'ally':/^O/.test(id)?'relic':'bird'
 function famOf(id){const c=window.BIRDS.find(x=>x.id===id); return c?c.family:(cardType(id)==='ally'?'Ally':'Relic');}
 function compute(f){
   const own=load(), ids=new Set(own.map(g=>g.id)); const base=f.src==='shared'?(recv||[]):f.src==='all'?own.concat((recv||[]).filter(g=>!ids.has(g.id))):own;
-  let G=base.filter(g=>(f.src==='all'||f.src==='shared'||(f.src==='sim'?g.sim:!g.sim))&&(f.n==='all'||g.n===+f.n)&&(!f.ps||f.ps==='all'||(g.pset||'classic')===f.ps));
+  let G=base.filter(g=>!(g.sim&&g.aiv!==2)&&(f.src==='all'||f.src==='shared'||(f.src==='sim'?g.sim:!g.sim))&&(f.n==='all'||g.n===+f.n)&&(!f.ps||f.ps==='all'||(g.pset||'classic')===f.ps));
   const res={games:G.length}; if(!G.length) return res;
   const P=[]; G.forEach(g=>g.players.forEach(p=>P.push(Object.assign({g},p))));
   res.players=P.length; res.baseWin=P.filter(p=>p.win).length/P.length;
@@ -265,7 +265,7 @@ function seg(k,opts){return `<span class="seg sseg" data-k="${k}">${opts.map(([v
 function wire(){document.querySelectorAll('#statsbody .sseg').forEach(sg=>sg.querySelectorAll('button').forEach(b=>b.onclick=()=>{const k=sg.dataset.k; filt[k]=k==='minG'?+b.dataset.v:b.dataset.v; render();}));}
 function open(){ let M=document.getElementById('stats'); if(!M){ M=document.createElement('div'); M.id='stats'; document.body.appendChild(M); }
   M.innerHTML=`<div class="sbox2"><div class="shead"><h2>${L('Statistiques','Statistics')}</h2><button class="sclose" title="${L('Fermer','Close')}">✕</button></div>
-   <div class="ssim"><b>${L('Simuler des parties entre IA','Simulate AI games')}</b> : <select id="simN"><option>20</option><option selected>100</option><option>300</option><option>1000</option></select>
+   <div class="ssim"><b>${L('Simuler des parties entre IA','Simulate AI games')}</b> : <select id="simN"><option>10</option><option selected>20</option><option>50</option><option>100</option><option>300</option></select>
     ${L('parties à','games with')} <select id="simP"><option value="mix">2-4</option><option>2</option><option selected>3</option><option>4</option></select> ${L('joueurs','players')}
     <button id="simGo" class="ob">${L('Lancer','Run')}</button><span id="simMsg"></span>
     <span class="sright"><button id="sPdf" class="ob ghost">📄 ${L3('Enregistrer en PDF','Save as PDF','Salva in PDF')}</button><button id="sImg" class="ob ghost">🖼 ${L('Enregistrer en image','Save as image')}</button><button id="sExp" class="ob ghost">${L('Copier les données (JSON)','Copy data (JSON)')}</button><button id="sClr" class="ob ghost">${L('Effacer','Clear')}</button></span></div>
@@ -275,7 +275,7 @@ function open(){ let M=document.getElementById('stats'); if(!M){ M=document.crea
    <div id="statsbody"></div></div>`;
   M.style.display='flex'; M.querySelector('.sclose').onclick=()=>{M.style.display='none';};
   M.querySelector('#simGo').onclick=()=>{ if(running){stopReq=true; return;} const b=M.querySelector('#simGo'); b.textContent=L('Arrêter','Stop');
-    simulate(+M.querySelector('#simN').value,M.querySelector('#simP').value,(k,n,done)=>{M.querySelector('#simMsg').textContent=done?` ${L('Terminé','Done')} (${k})`:` ${k} / ${n}…`; if(done){b.textContent=L('Lancer','Run'); render();} else if(k%25===0) render();});};
+    simulate(+M.querySelector('#simN').value,M.querySelector('#simP').value,(k,n,done)=>{M.querySelector('#simMsg').textContent=done?` ${L('Terminé','Done')} (${k})`:` ${k} / ${n}…`; if(done){b.textContent=L('Lancer','Run'); render();} else if(k%5===0) render();});};
   M.querySelector('#sClr').onclick=()=>{ const b=M.querySelector('#sClr'); if(b.dataset.c){S.clear(); b.dataset.c=''; b.textContent=L('Effacer','Clear'); render();} else {b.dataset.c='1'; b.textContent=L('Confirmer l\'effacement','Confirm clear');}};
   M.querySelector('#sImg').onclick=()=>saveImage(M);
   M.querySelector('#sPdf').onclick=()=>savePdf(M);

@@ -62,6 +62,7 @@ function mulberry(seed){let a=seed>>>0; return ()=>{a|=0; a=a+0x6D2B79F5|0; let 
 function rnd(n){return Math.floor(RNG()*n);}
 // Poids de l'IA : réglage d'origine, et réglage appris par auto-apprentissage (parties IA contre IA)
 const AIV=[0.051,0.222,-0.076,0.464,0.131,0.436,0.114,0.377,0.067,0.009,-0.062,0.242,0.359,1.178,0.161,0.743,0.792,0.682,0.14,0.098,1.124,0.114,1.531,-0.158,0,-0.32,-0.046,-0.508,0.138,-0.386,-0.181,-0.113,0.618,0.018,-0.42,-0.723,-0.162,0.497,0.496,0.182,0.471,0.149,-0.878,0.07]; // poids de la fonction de valeur (voir winProb)
+const AI_LA={deep:true,k:6,k2:3,h:3,stages:[6,6,6],stages2:[5,5],lam2:0.15}; // réglage de l'anticipation de l'IA (parties et simulations)
 const AIW_CLASSIC={play:0,play2:0.7,fx:0,pres:1.5,colDone:11,gp:1.5,blue:1,red:1,gull:1.5,shr:2,gctx:1,brood:0,bmode:2,b3:1.5,amu:1,lvl:1,tempo:1,cgoal:1};
 const AIW_TRAINED={"play":0,"play2":0.7,"fx":-0.224,"pres":1.5,"colDone":11,"gp":0.935,"blue":2.145,"red":0.641,"gull":2.399,"shr":1.167,"gctx":1,"brood":-0.277,"bmode":2.047,"b3":1.5,"amu":0.464,"lvl":1,"tempo":1.211,"cgoal":2};
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -375,8 +376,8 @@ class Game{
     if(Object.getPrototypeOf(v)!==Object.prototype) return v;
     if(Object.values(v).some(x=>typeof x==='function')) return v; // données statiques (objectifs…) : par référence
     const o={}; memo.set(v,o); for(const k in v) o[k]=Game.deepClone(v[k],memo); return o;}
-  snapshot(){const keep=new Set(['io','B','regions','nestById','cardById']); const src={}; for(const k of Object.keys(this)) if(!keep.has(k)) src[k]=this[k]; return Game.deepClone(src,new Map());}
-  restore(snap){const keep=new Set(['io','B','regions','nestById','cardById']); for(const k of Object.keys(this)) if(!keep.has(k)&&!(k in snap)) delete this[k]; Object.assign(this,Game.deepClone(snap,new Map()));}
+  snapshot(){const keep=new Set(['io','B','regions','nestById','cardById']); const src={}; for(const k of Object.keys(this)) if(!keep.has(k)&&typeof this[k]!=='function') src[k]=this[k]; return Game.deepClone(src,new Map());}
+  restore(snap){const keep=new Set(['io','B','regions','nestById','cardById']); for(const k of Object.keys(this)) if(!keep.has(k)&&!(k in snap)&&typeof this[k]!=='function') delete this[k]; Object.assign(this,Game.deepClone(snap,new Map()));}
   laOf(p){ if(this.io.rollout) return null; if(p.la!==undefined) return p.la; const L=this.io.lookahead; return L&&(!L.seats||L.seats.includes(p.i))?L:null; }
   // Tour d'une IA avec anticipation « profonde » : chaque décision du tour peut être évaluée par simulations (rejeu du début du tour)
   async takeTurnDeep(p,L){ const prev=RNG; const seed=(Math.random()*4294967296)>>>0; const D=this._la={snap:this.snapshot(),seed,trace:[],p:p.i,L,rng:mulberry(seed),n:0,ty:Date.now()};
@@ -446,7 +447,7 @@ class Game{
       await this.io.sleep(50);}
     this.finish();}
   statRecord(r){const w=r[0];
-    return {v:1,t:Date.now(),pset:this.persoSet,adv:this.advanced?1:0,n:this.players.length,rounds:this.round,sim:!!this.io.sim,red:this.objs[0].d.id,blue:this.objs[1].d.id,
+    return {v:1,t:Date.now(),pset:this.persoSet,adv:this.advanced?1:0,n:this.players.length,rounds:this.round,sim:!!this.io.sim,aiv:this.io.lookahead&&this.io.lookahead.deep?2:1,red:this.objs[0].d.id,blue:this.objs[1].d.id,
       redClaims:this.objs[0].claims.slice(),blueClaims:this.objs[1].claims.slice(),settled:Object.assign({},this.settled),
       players:this.players.map(p=>({i:p.i,ai:p.ai,win:p===w,rank:r.indexOf(p)+1,stars:p.stars,starRounds:p.starRounds||[],
         pobj:p.pobj&&p.pobj.id,pClaims:p.pClaims,pOffer:(p.pOffer||[]).map(o=>o.id),played:(p.played||[]).map(x=>x.id),
@@ -655,5 +656,5 @@ class Game{
     if(all) return cands;
     cands.forEach(c=>c.s+=NOISE()*0.5); cands.sort((a,b)=>b.s-a.s); const best=cands[0]; p.broodStreak=best.v==='brood'?(p.broodStreak||0)+1:0; p.plan=best.plan.slice(); return best.v;}
 }
-window.BirdsGame={Game,resLabel,AIW_CLASSIC,AIW_TRAINED,PERSONAL,PERSO_TH,RED_OBJ,BLUE_OBJ,ISLANDS,ISL_FR,FOOD_FR,BUILD,BUILD_FR,RUNES,ELDERS_LEN,ELDERS_BONUS,ELDERS_FR,COLORS,FAM,FAMS,TREE_FOOD,NEUTRAL};
+window.BirdsGame={AI_LA,Game,resLabel,AIW_CLASSIC,AIW_TRAINED,PERSONAL,PERSO_TH,RED_OBJ,BLUE_OBJ,ISLANDS,ISL_FR,FOOD_FR,BUILD,BUILD_FR,RUNES,ELDERS_LEN,ELDERS_BONUS,ELDERS_FR,COLORS,FAM,FAMS,TREE_FOOD,NEUTRAL};
 })();

@@ -59,7 +59,7 @@ function answer(v){ if(NET.role==='guest'){ netAct(v===null||v===undefined?{c:1}
 
 function start(opts,before){ opts.persoSet=opts.persoSet||persoSet; if(opts.advanced===undefined) opts.advanced=advSetup==='adv'; $('#setup').style.display='none'; $('#game').style.display='flex'; $('#log').innerHTML='';
   G=new BG.Game(opts,io); io.aiDelay=aiSpeed;
-  io.lookahead={deep:true,k:6,k2:3,h:3,stages:[6,6,6],stages2:[5,5],lam2:0.15,yield:true}; // IA : anticipation par simulations de toutes les décisions du tour + fonction de valeur apprise
+  io.lookahead=Object.assign({yield:true},BG.AI_LA); // IA : anticipation par simulations de toutes les décisions du tour + fonction de valeur apprise
   $('#boardimg').src=G.boardKey==='p2'?'board2p.jpg':'board34p.jpg'; if(before) before(G);
   viewer=G.players.findIndex(p=>mine(p)); if(viewer<0) viewer=0; lastHuman=null; render(); G.run();}
 
