@@ -168,7 +168,7 @@ const W=[[/(\d) Anciens\b/g,'$1 Antichi'],[/avancer d'1 case sur le Chemin des A
  [/s'étendre sur toute île/g,'espandersi su qualsiasi isola'],[/Poussin sur Ruine/g,'pulcino su Rovina'],[/retirer un bâtiment/g,'togliere un edificio'],[/jouer 1 carte/g,'giocare 1 carta'],
  [/piocher 1 carte/g,'pescare 1 carta'],[/placer 1 Écaille/g,'piazzare 1 scaglia'],[/poussin sur une Ruine/g,'pulcino su una Rovina'],
  [/Anciens \+(\d)/g,'Antichi +$1'],[/Cartes de coût/g,'Carte di costo'],[/Œufs dans vos Nids/g,'Uova nei tuoi Nidi'],[/Cartes avec capacité Écaille/g,'Carte con abilità Scaglia'],
- [/Îles avec au moins 1 de vos bâtiments/g,'Isole con almeno 1 tuo edificio'],[/Poussins dans des régions à arbre (vert|jaune|gris)/g,(m,c)=>`Pulcini in regioni con albero ${ARB[c]}`],
+ [/Îles avec au moins 1 de vos bâtiments/g,'Isole con almeno 1 tuo edificio'],[/Îles avec 1 de vos Poussins dans une région à arbre (vert|jaune|gris)/g,(m,c)=>`Isole con un tuo pulcino in una regione con albero ${ARB[c]}`],[/Îles avec 1 de vos Poussins dans une région avec Ruine/g,'Isole con un tuo pulcino in una regione con Rovina'],
  [/Îles où vous avez au moins 2 Poussins/g,'Isole dove hai almeno 2 pulcini'],[/Régions différentes avec Ruine où vous avez un Poussin/g,'Regioni diverse con Rovina dove hai un pulcino'],[/Poussins dans des régions avec Ruine/g,'Pulcini in regioni con Rovina'],
  [/Seuils/g,'Soglie'],[/Vous : /g,'Tu: '],
  [/Reliques/g,'Reliquie'],[/Relique/g,'Reliquia'],[/\bRunes\b/g,'Rune'],[/\b(une|1|la|votre|par|chaque) Rune\b/g,(m,d)=>({'une':'una','1':'1','la':'la','votre':'la tua','par':'per','chaque':'ogni'})[d]+' Runa'],[/Mouettes/g,'Gabbiani'],[/Mouette/g,'Gabbiano'],

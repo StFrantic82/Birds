@@ -32,12 +32,12 @@ const RED_OBJ=[
   {id:'B06',name:'Feather Sellers',fr:'Cartes avec capacité Écaille',p2:[3,4],p34:[3,4,5,5],m:(g,p)=>p.tableau.filter(e=>g.card(e.id).dragonscale).length},
 ];
 const BLUE_OBJ=[
-  {id:'C01',name:'Keen Builders',fr:'Îles avec au moins 1 de vos bâtiments',p2:[3,4],p34:[3,3,3,3],m:(g,p)=>ISLANDS.filter(i=>g.islandNests(i).some(s=>{const b=g.nestOwner[s.id]; return b&&b.owner===p.i;})).length},
-  {id:'C02',name:'Fruit Lovers',fr:'Poussins dans des régions à arbre vert',p2:[4,5],p34:[4,4,4,4],m:(g,p)=>g.chicksByTree(p,'green')},
-  {id:'C03',name:'Seeds Lovers',fr:'Poussins dans des régions à arbre jaune',p2:[4,5],p34:[4,4,4,4],m:(g,p)=>g.chicksByTree(p,'yellow')},
-  {id:'C04',name:'Worm Eaters',fr:'Poussins dans des régions à arbre gris',p2:[5,6],p34:[5,5,5,5],m:(g,p)=>g.chicksByTree(p,'grey')},
+  {id:'C01',name:'Keen Builders',fr:'Îles avec au moins 1 de vos bâtiments',p2:[3,4],p34:[4,4,4,4],m:(g,p)=>ISLANDS.filter(i=>g.islandNests(i).some(s=>{const b=g.nestOwner[s.id]; return b&&b.owner===p.i;})).length},
+  {id:'C02',name:'Fruit Lovers',fr:'Îles avec 1 de vos Poussins dans une région à arbre vert',p2:[4,5],p34:[4,4,4,4],m:(g,p)=>g.islandsWith(p,r=>r.tree.color==='green')},
+  {id:'C03',name:'Seeds Lovers',fr:'Îles avec 1 de vos Poussins dans une région à arbre jaune',p2:[4,5],p34:[4,4,4,4],m:(g,p)=>g.islandsWith(p,r=>r.tree.color==='yellow')},
+  {id:'C04',name:'Worm Eaters',fr:'Îles avec 1 de vos Poussins dans une région à arbre gris',p2:[5,6],p34:[5,5,5,5],m:(g,p)=>g.islandsWith(p,r=>r.tree.color==='grey')},
   {id:'C05',name:'Natural Explorers',fr:'Îles où vous avez au moins 2 Poussins',p2:[4,5],p34:[4,4,4,4],m:(g,p)=>ISLANDS.filter(i=>g.islandRegions(i).reduce((n,r)=>n+g.chicksIn(r.id,p.i),0)>=2).length},
-  {id:'C06',name:'Experienced Watchers',fr:'Poussins dans des régions avec Ruine',p2:[5,6],p34:[5,5,5,5],m:(g,p)=>g.B.regions.filter(r=>r.ruins.length).reduce((n,r)=>n+g.chicksIn(r.id,p.i),0)},
+  {id:'C06',name:'Experienced Watchers',fr:'Îles avec 1 de vos Poussins dans une région avec Ruine',p2:[5,6],p34:[5,5,5,5],m:(g,p)=>g.islandsWith(p,r=>r.ruins.length>0)},
 ];
 const PERSONAL=[
   {id:'A01',name:'Robins',tags:['Academy','Legion'],res:{worm:1,seed:1,fruit:1},resNew:{chick:1,elders:1,worm:2,fruit:1}},
@@ -90,7 +90,8 @@ class Game{
       if(r.tree.start){this.trees[r.id]=r.tree.color; this.treeSupply[r.tree.color]--;}});
     this.deck=shuffle(Object.keys(this.cardById)); this.discardPile=[];
     this.row=[]; for(let k=0;k<6;k++) this.row.push(this.drawFromDeck());
-    this.objs=[RED_OBJ[rnd(6)],BLUE_OBJ[rnd(6)]].map((d,k)=>({d,color:k?'blue':'red',th:n===2?d.p2:d.p34.slice(0,n),claims:[]})); this.redObj=this.objs[0].d; this.redThresholds=this.objs[0].th; this.redClaims=this.objs[0].claims;
+    // opts.blue / blueTh / persoRes / forcePerso : réglages d'essai pour les simulations d'équilibrage
+    this.objs=[RED_OBJ[rnd(6)],opts.blue?BLUE_OBJ.find(o=>o.id===opts.blue):BLUE_OBJ[rnd(6)]].map((d,k)=>({d,color:k?'blue':'red',th:(k&&opts.blueTh)||(n===2?d.p2:d.p34.slice(0,n)),claims:[]})); this.redObj=this.objs[0].d; this.redThresholds=this.objs[0].th; this.redClaims=this.objs[0].claims;
     this.settled={}; this.current=0; this.round=1; this.endTriggered=false; this.over=false; this.logs=[];
     // îles de départ
     this.advanced=!!opts.advanced; // mise en place avancée : objectifs draftés (N+1) dans l'ordre inverse du tour, 8 cartes dont on garde 4
@@ -98,7 +99,8 @@ class Game{
     this.players.forEach((p,i)=>{p.startIsl=starts[i]; p.flock=ISLANDS.indexOf(starts[i]); this.placeChickStart(p.i,starts[i]);}); }
     if(n===2){ this.placeChickStart('N','mountain'); this.placeChickStart('N','meadow'); } // 2 joueurs : Poussins neutres en Montagne et Prairie
     this.players.forEach(p=>{for(let k=0;k<(this.advanced?8:5);k++) p.hand.push(this.drawFromDeck());});
-    const pd=shuffle(PERSONAL.slice()); this.players.forEach(p=>{p.pOffer=[pd.pop(),pd.pop()];});
+    const pd=shuffle(PERSONAL.slice()); this.players.forEach(p=>{p.pOffer=[pd.pop(),pd.pop()];}); this.testRes=opts.persoRes||null;
+    if(opts.forcePerso) this.players.forEach(p=>{const id=opts.forcePerso[p.i]; if(id){const o=PERSONAL.find(x=>x.id===id); this.players.forEach(q=>{q.pOffer=q.pOffer.map(x=>x===o?pd.pop():x);}); p.pOffer=[o];}});
   }
   // ---------- utilitaires ----------
   log(m){this.logs.push(m); if(this.logs.length>200) this.logs.shift(); this.io.log&&this.io.log(m);}
@@ -129,6 +131,9 @@ class Game{
   sizeCount(p,a,b){return p.tableau.filter(e=>{const c=this.card(e.id).cost; return c>=a&&c<=b;}).length+p.seagulls.filter(l=>l>=a&&l<=b).length;}
   redNext(){return this.redThresholds[this.redClaims.length];}
   chicksIn(rid,o){return this.slots[rid].filter(x=>x===o).length+this.ruins[rid].filter(x=>x===o).length;}
+  islandsWith(p,f){return ISLANDS.filter(i=>this.islandRegions(i).some(r=>f(r)&&this.chicksIn(r.id,p.i)>0)).length;} // îles où le joueur a un Poussin dans une région du type voulu
+  blueMatch(id,r){const tc=r.tree.color; return (id==='C02'&&tc==='green')||(id==='C03'&&tc==='yellow')||(id==='C04'&&tc==='grey')||(id==='C06'&&r.ruins.length>0);}
+  blueNew(p,r){const id=this.objs[1].d.id; return this.blueMatch(id,r)&&!this.islandRegions(r.island).some(x=>this.blueMatch(id,x)&&this.chicksIn(x.id,p.i)>0);} // ce Poussin ajouterait une île à l'objectif bleu
   chicksByTree(p,c){return this.B.regions.filter(r=>this.trees[r.id]===c).reduce((n,r)=>n+this.chicksIn(r.id,p.i),0);}
   persoValue(p){if(!p.pobj) return 0; const t=this.tags(p); return t[p.pobj.tags[0]]+t[p.pobj.tags[1]]+this.wild(p);}
   async choosePersonal(p){const t={}; FAMS.forEach(f=>t[f]=0); p.hand.forEach(id=>{const c=this.card(id); for(const f in (c.tagMap||{})) t[f]+=c.tagMap[f];});
@@ -137,7 +142,7 @@ class Game{
     await this.giveStart(p,this.pres(o));
     this.io.render();}
   // jeu d'objectifs personnels : 'classic' (règle d'origine) ou 'new' (ressources recommandées)
-  pres(o){return this.persoSet==='new'&&o.resNew?o.resNew:o.res;}
+  pres(o){ if(this.testRes&&this.testRes[o.id]) return this.testRes[o.id]; return this.persoSet==='new'&&o.resNew?o.resNew:o.res;}
   async giveStart(p,res){ for(const [k,v] of Object.entries(res)){ if(!v) continue; if(k==='seagull'){for(let i=0;i<v;i++){p.seagulls.push(1);} this.log(`${p.name} gagne une Mouette (niveau 1).`);} else if(k==='elders') await this.elders(p,v); else if(k==='rune'){ for(let i=0;i<v;i++) await this.rune1(p);} else if(k==='chick'){ const d=Math.max(-p.chicks,Math.min(v,p.supply)); p.chicks+=d; p.supply-=d; if(d>0) this.log(`${p.name} gagne ${d} Poussin${d>1?'s':''}.`);} else { p.food[k]+=v; this.eco(p,'start',v); } } }
   async checkObjectives(p){ while(p.pobj&&p.pClaims<PERSO_TH.length&&this.persoValue(p)>=PERSO_TH[p.pClaims]){p.pClaims++; await this.gainStar(p,`Objectif personnel ${p.pobj.name} (${PERSO_TH[p.pClaims-1]})`);}
     for(const o of this.objs){ const next=o.th[o.claims.length]; if(o.claims.includes(p.i)||next===undefined) continue;
@@ -532,11 +537,11 @@ class Game{
   gatherScore(p,r){const bb=this.blueBonus(p,r)*this.W(p).blue+this.gatherUnlock(p,r); const n=2+this.treesOnIsland(r.island).length-1; const need=this.foodNeed(p,TREE_FOOD[this.trees[r.id]]); return bb+n*0.9+need+this.presenceScore(p,r.island,1)-0.6;}
   objNear(o,p,gain){ if(o.claims.includes(p.i)) return 0; const th=o.th[o.claims.length]; if(th===undefined) return 0; return o.d.m(this,p)+gain>=th?1:0;}
   blueBonus(p,r){ const W=this.W(p); if(W.tempo){ const o=this.objs[1], id=o.d.id, tc=this.trees[r.id]||r.tree.color;
-      const g=((id==='C02'&&tc==='green')||(id==='C03'&&tc==='yellow')||(id==='C04'&&tc==='grey')||(id==='C06'&&r.ruins.length))?1:(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)===1?1:0);
+      const g=this.blueNew(p,r)?1:(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)===1?1:0);
       if(g&&this.objNear(o,p,1)) return W.tempo*8+this.blueBonus0(p,r); }
     return this.blueBonus0(p,r);}
   blueBonus0(p,r){const o=this.objs[1]; if(o.claims.includes(p.i)||o.th[o.claims.length]===undefined) return 0; const id=o.d.id, tc=this.trees[r.id]||r.tree.color;
-    if((id==='C02'&&tc==='green')||(id==='C03'&&tc==='yellow')||(id==='C04'&&tc==='grey')||(id==='C06'&&r.ruins.length)) return 1.4;
+    if(this.blueNew(p,r)) return 1.4;
     if(id==='C05'&&this.islandRegions(r.island).reduce((n,x)=>n+this.chicksIn(x.id,p.i),0)<2) return 1.2; return 0;}
   foodNeed(p,t){let need=0; if(this.W(p).cgoal&&this.goal(p,'ON3')&&p.food[t]<2) need+=0.9*this.W(p).cgoal; p.hand.forEach(id=>{const c=this.card(id); if(c.color==='red'&&t==='worm') need+=0.2; if(c.color==='yellow'&&t==='seed') need+=0.15; if(c.color==='green'&&t==='fruit') need+=0.15;}); return need-(p.food[t]>4?0.6:0);}
   buildScore(p,s,b){const o=this.objs[1]; const bb=(o.d.id==='C01'&&!o.claims.includes(p.i)&&!this.islandNests(s.island).some(x=>{const q=this.nestOwner[x.id]; return q&&q.owner===p.i;}))?2:0; return bb+this.buildScore0(p,s,b);}
