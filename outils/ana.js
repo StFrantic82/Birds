@@ -1,0 +1,15 @@
+const fs=require('fs'); const files=process.argv.slice(2); let R=[]; for(const f of files) if(fs.existsSync(f)) R=R.concat(fs.readFileSync(f,'utf8').trim().split('\n').filter(x=>x).map(JSON.parse));
+const avg=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length):NaN, f1=x=>isNaN(x)?'  -':x.toFixed(1), pc=x=>isNaN(x)?' -':(100*x).toFixed(0)+'%';
+for(const n of [...new Set(R.map(r=>r.n))].sort()){ const G=R.filter(r=>r.n===n); console.log(`\n=== ${n} joueurs : ${G.length} parties, ${f1(avg(G.map(g=>g.rounds)))} manches`);
+  console.log('Bleu  seuils      parties  étoiles prises/dispo  ≥1 prise  manche 1re  manche dern.  manches partie  gagnant a pris');
+  for(const b of [...new Set(G.map(g=>g.blue))].sort()){ const g=G.filter(x=>x.blue===b); const slots=g[0].bth.length;
+    const firsts=[],lasts=[]; g.forEach(x=>{const rs=[]; x.players.forEach(p=>p.starRounds.forEach(s=>{if(/Objectif bleu/.test(s.why)) rs.push(s.round);})); rs.sort((a,b)=>a-b); if(rs.length){firsts.push(rs[0]); if(rs.length===slots) lasts.push(rs[rs.length-1]);}});
+    console.log(b.padEnd(5),String(g[0].bth).padEnd(10),String(g.length).padStart(7),'   ',pc(avg(g.map(x=>x.blueClaims.length/slots))).padStart(12),'       ',pc(avg(g.map(x=>x.blueClaims.length?1:0))).padStart(6),'   ',f1(avg(firsts)).padStart(6),'     ',f1(avg(lasts)).padStart(6),'      ',f1(avg(g.map(x=>x.rounds))).padStart(6),'      ',pc(avg(g.map(x=>x.blueClaims.includes(x.players.find(p=>p.win).i)?1:0))).padStart(6)); }
+  console.log('Rouge (référence)'); for(const b of [...new Set(G.map(g=>g.red))].sort()){ const g=G.filter(x=>x.red===b); const firsts=[]; g.forEach(x=>{const rs=[]; x.players.forEach(p=>p.starRounds.forEach(s=>{if(/Objectif rouge/.test(s.why)) rs.push(s.round);})); if(rs.length) firsts.push(Math.min(...rs));});
+    console.log(b.padEnd(5),String(g.length).padStart(5),' prises',pc(avg(g.map(x=>x.redClaims.length/(n===2?2:n)))).padStart(5),' ≥1',pc(avg(g.map(x=>x.redClaims.length?1:0))).padStart(5),' manche 1re',f1(avg(firsts))); }
+  console.log('Objectif perso   choisi  (proposé)  victoires   ±    étoiles  étoiles perso  manche 1re étoile perso');
+  const P=G.flatMap(g=>g.players.map(p=>Object.assign({g},p))); const base=1/n;
+  for(const o of [...new Set(P.map(p=>p.pobj))].sort()){ const ps=P.filter(p=>p.pobj===o), off=P.filter(p=>p.pOffer.includes(o)); const w=avg(ps.map(p=>p.win?1:0)); const fr=[]; ps.forEach(p=>{const s=p.starRounds.find(s=>/Objectif personnel/.test(s.why)); if(s) fr.push(s.round);});
+    console.log(o.padEnd(5),String(ps.length).padStart(16),('('+pc(ps.length/off.length)+')').padStart(9),pc(w).padStart(10),('±'+(196*Math.sqrt(w*(1-w)/ps.length)).toFixed(0)).padStart(6),f1(avg(ps.map(p=>p.stars))).padStart(8),f1(avg(ps.map(p=>p.pClaims))).padStart(10),f1(avg(fr)).padStart(14)); }
+  const src={}; let tot=0; P.forEach(p=>p.starRounds.forEach(s=>{const k=s.why.replace(/^(Colonie|Objectif rouge|Objectif bleu|Objectif personnel).*/,'$1').replace(/ \(.*/,'').slice(0,28); src[k]=(src[k]||0)+1; tot++;}));
+  console.log('Sources des étoiles :',Object.entries(src).sort((a,b)=>b[1]-a[1]).slice(0,9).map(([k,v])=>k+' '+pc(v/tot)).join(' · ')); }

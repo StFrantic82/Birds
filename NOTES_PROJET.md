@@ -2,6 +2,26 @@
 
 À donner en début de nouvelle conversation pour reprendre le travail.
 
+## État au 28 novembre 2026 (pour reprendre dans une nouvelle conversation)
+
+Dire à Claude : « reprends le projet Birds, lis NOTES_PROJET.md dans le dépôt StFrantic82/Birds ». Tout est publié : l'artefact et la branche `main` contiennent le même code.
+
+Derniers changements (25 au 26 novembre) :
+
+- **Cartes** : Reliques OB1, OB4, OB5, OB7, OP6, OP8 et Oiseau R13 (Warlord) mis à jour ; les tags joker comptent dans tous les effets « pour chaque tag X » ; le joueur choisit l'ordre des effets de Couvée.
+- **IA** : anticipation profonde + fonction de valeur apprise (voir la section IA). 82 % de victoires à 2 contre l'ancienne IA ; environ 19 manches en moyenne contre elle-même à 2. Les simulations de l'onglet Statistiques utilisent cette même IA (environ 6 s par partie) ; les anciennes simulations de l'IA simple sont conservées mais non comptées.
+- **Objectifs bleus** : C02, C03, C04, C06 comptent les îles ; seuils C01 3/4 et 4, C02, C03, C05 4/5 et 4, C04 et C06 5/6 et 5. Une Étoile bleue par joueur au maximum, les seuils sont ceux du 1er, 2e, 3e… joueur à réussir.
+- **Objectifs personnels « Recommandés »** : départs recalculés d'après la force des tags (tableau plus bas), 6 graines et 6 fruits au total, images `perso2/` à jour. Base : 3 Poussins en réserve + 1 sur l'île de départ ; « −1 Poussin » = 2 en réserve.
+
+Reste à faire ou à surveiller :
+
+- L'image `obj/C01_34.jpg` affiche encore 3 3 3 3 (le seuil est 4).
+- Swans (Mouette) : équilibré avec l'IA simple, mais 59 % ±11 avec la vraie IA sur 80 parties ; à confirmer.
+- L'auteur gagnait trop souvent contre l'IA : attendre son retour sur la nouvelle. Piste suivante : réentraîner `AIV` sur des parties de la nouvelle IA (`outils/vdata.js`, `outils/vfit.js`).
+- Les mesures fines d'équilibrage (écarts de 1 point) ne sont possibles qu'avec l'IA simple (`NOLA=1`), 60 000 parties en 3 minutes ; la vraie IA demande environ 6 s par partie à 2 joueurs.
+
+Outils (dossier `outils/`, à lancer avec node depuis ce dossier) : `bench.js` + `par.sh` (duel entre deux réglages d'IA), `col.js` (collecte de parties ; `NOLA=1` pour l'IA simple ; options JSON `blues`, `blueTh`, `persoRes`, `forceAll`, `force`, `neutral`), `ana.js` (objectifs bleus, rouges, personnels, sources d'Étoiles), `fam.js` (force des familles et des objectifs personnels), `vdata.js` / `vfit.js` / `feats.js` (entraînement de la fonction de valeur), `fuzz3.py` (partie complète au hasard dans le navigateur, Playwright).
+
 ## Où se trouve le jeu
 
 - **Dépôt GitHub** : https://github.com/StFrantic82/Birds (branche `main`)
@@ -103,7 +123,7 @@ Valeur mesurée d'une ressource ajoutée au départ (gain de victoire, 2 joueurs
 1. **Ressources de départ des objectifs personnels** : la Mouette de départ vaut à elle seule environ 12 à 15 points de victoire (Magpies 44 %, Swans 42 %, Storks 26 %). La meilleure variante testée, sans Mouette et avec 1 ver + 1 nourriture par famille (graine pour l'Academy et la Court, ver pour la Legion et le Circle, fruit pour la Guild), ramène les victoires entre 29 et 37 %. **À faire** : proposer et simuler une variante qui garde des cases du Chemin des Anciens au départ (demande de l'autrice). Rien n'est encore appliqué dans le jeu.
 2. **Objectifs bleus (26 novembre 2026)** : C02, C03, C04 et C06 comptent désormais les **îles** où le joueur a au moins 1 Poussin dans une région du type voulu (avant : le nombre de Poussins) — `islandsWith`, `blueNew` pour l'IA. Seuils : C01 3/4 à 2 joueurs, 4 à 3-4 ; C02, C03, C05 4/5 et 4 ; C04 et C06 5/6 et 5 (un cran de plus, car chaque joueur démarre avec 1 Poussin dans une région grise à Ruine). Mesures avec la vraie IA, manche où le 1er puis le dernier joueur réussit, à 2 joueurs : C01 7 / 14 ; C02 7,5 / 18 ; C03 7 / 14 ; C04 6 / 12 ; C05 13 / 18 ; C06 7 / 14,5 (avec 4/5, C04 et C06 tombaient aux manches 3 / 8). L'image `obj/C01_34.jpg` affiche encore 3 au lieu de 4.
 4. **Objectifs personnels calculés d'après la force des tags (26 novembre 2026, **appliqué** ; les 10 images `perso2/` ont été remplacées par celles de l'auteur ; version finale à 6 graines et 6 fruits : Falcons +1 Poussin, 1 graine, 1 Rune ; Woodpeckers 2 Anciens, 3 vers ; 49,6 à 50,6 % à 2 joueurs sur 60 000 parties)**. Méthode : objectif attribué au hasard (option `forcePerso`), IA simple pour la précision (30 000 à 60 000 parties à 2, marge ±1). Force propre des tags, tous avec le même départ (1 ver, 1 graine, 1 fruit) : de 48,7 % (Kingfishers) à 52,0 % (Owls) ; effet par famille : Court +0,8, Circle +0,6, Academy −0,2, Guild −0,6, Legion −0,7. Départs actuels : 49,0 à 51,5 % sauf Owls 46,9 %. Proposition testée (49,1 à 50,9 % à 2 joueurs) : Owls 3 vers, 1 graine, 1 fruit ; Eagles Mouette, −1 Poussin, 1 fruit ; Woodpeckers 2 Anciens, 1 ver, 1 fruit ; Magpies +1 Poussin, 1 Ancien, 2 vers, 1 fruit ; Falcons +1 Poussin, 2 vers, 1 Rune. Remplacer un ver par une graine vaut environ +5 points (Magpies 47,7 → 52,8 %).
-3. **Objectifs personnels avec la vraie IA** (396 parties à 2) : tous entre 44 % et 59 % de victoires, marge ±11. Les deux objectifs à Mouette (Swans, Eagles) : 59 % ±8 à eux deux ; réduits à « Mouette, −1 Poussin » seuls : 43 % ±9. Rien de modifié : l'écart est trop proche de la marge. Outils : `test/col.js` (collecte, options `blue`, `blueTh`, `persoRes`, `forcePerso` du moteur) et `test/ana.js` (non versionnés).
+3. **Objectifs personnels avec la vraie IA** (396 parties à 2) : tous entre 44 % et 59 % de victoires, marge ±11. Les deux objectifs à Mouette (Swans, Eagles) : 59 % ±8 à eux deux ; réduits à « Mouette, −1 Poussin » seuls : 43 % ±9. Rien de modifié : l'écart est trop proche de la marge. Outils : `outils/col.js` (collecte, options `blue`, `blueTh`, `persoRes`, `forcePerso` du moteur) et `outils/ana.js`.
 3. **Prairie** : île la moins colonisée (grande île, pas une île de départ, bonus peu attractifs).
 4. **Jeu en ligne entre amis** : fait, sur claude.ai (base de l'artefact) **et** sur GitHub Pages (connexion directe entre navigateurs, WebRTC via PeerJS chargé depuis unpkg.com, `peerdb.js` ; le code de partie sert d'adresse `birds-v1-CODE` ; aucun compte ni serveur à gérer). Sur GitHub, une partie se joue entre joueurs passant tous par GitHub ; certains réseaux très fermés (entreprise, certains mobiles) peuvent bloquer la connexion directe. L'envoi des statistiques à l'auteur reste réservé à claude.ai.
 5. **Choix des cartes par l'IA** : c'est son point faible.
